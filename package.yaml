@@ -1,0 +1,20 @@
+name: Lam
+version: 0.1.0.0
+
+extra-source-files:
+- README.md
+- LICENSE
+
+default-extensions:
+- OverloadedStrings
+
+library:
+  source-dirs: src
+  dependencies:
+  - array
+  - base
+  - bytestring
+  build-tools:
+  - alex
+  - happy
+

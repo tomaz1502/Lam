@@ -1,0 +1,14 @@
+identity function:
+
+lam x -> x
+
+two in church numerals:
+
+lam s -> lam z -> s . s . z
+
+
+term = "lam" ID "->" term | 
+        term . term |
+        ID
+
+ID = [a-zA-Z_][a-zA-z0-9_]
