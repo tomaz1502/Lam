@@ -2,6 +2,7 @@
 ## Goals
   - [x] Lexer
   - [x] Parser
+  - [ ] De Bruijn Indices
   - [ ] Values
   - [ ] Interpretation of Values
   - [ ] Simple Types

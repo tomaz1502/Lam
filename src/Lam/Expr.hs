@@ -8,5 +8,7 @@ data Expr =
   | Var Id
   deriving Show
 
-eval :: Expr -> Int
+data Value = VLam Id Value
+
+eval :: Expr -> Value
 eval = undefined
