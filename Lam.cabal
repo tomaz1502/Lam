@@ -33,3 +33,4 @@ library
   build-depends:
       base >= 4.7 && < 5
     , array >= 0.4
+    , containers >= 0.5

@@ -4,14 +4,14 @@
 module Lam.Parser (parseLam) where
 
 import Lam.Lexer qualified as L
-import Lam.Expr (Expr(..))
+import Lam.Expr (RawExpr(..))
 }
 
 %name parseLam
 %tokentype { L.Token }
 %error { parseError }
 
-%left "."
+%right "."
   
 %token
   lam  { L.Lam }
@@ -21,9 +21,9 @@ import Lam.Expr (Expr(..))
 
 %%
 
-Expr : Expr "." Expr { App $1 $3 }
-     | lam var "->" Expr %shift { Lam $2 $4 }
-     | var { Var $1 }
+Expr : Expr "." Expr { RawApp $1 $3 }
+     | lam var "->" Expr %shift { RawLam $2 $4 }
+     | var { RawVar $1 }
 
 {
 parseError :: [L.Token] -> a
