@@ -6,7 +6,7 @@ import Data.Map qualified as M
 
 import Lam.Lexer (alexScanTokens)
 import Lam.Parser (parseLam)
-import Lam.Expr (Expr, RawExpr, debruijn)
+import Lam.Expr (Expr, RawExpr, removeNames)
 
 parse :: String -> Expr
-parse = debruijn 0 M.empty . parseLam . alexScanTokens
+parse = removeNames . parseLam . alexScanTokens

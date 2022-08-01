@@ -1,2 +1,6 @@
 .stack-work
 
+*.agda
+*.agdai
+
+TaglessFinal.hs
