@@ -20,18 +20,25 @@ data RawExpr =
 
 -- | Representation of lambda terms with DeBruijn indices
 data Expr =
-    Lam Expr
+    Var Int
+  | Lam Expr
   | App Expr Expr
-  | Var Int
-  deriving Show
+
+instance Show Expr where
+    show (Var i) = show i
+    show (Lam e) = "\\ " <> show e
+    show (App e1 e2) =
+        let f e@(Var _) = show e
+            f e         = unwords ["(", show e, ")"]
+        in unwords [f e1, " . ", f e2]
 
 removeNames' :: Int -> M.Map Id Int -> RawExpr -> Expr
-removeNames' t m (RawLam n e)   = Lam $ removeNames' (t + 1) (M.insert n (t + 1) m) e
-removeNames' t m (RawApp e1 e2) = App (removeNames' t m e1) (removeNames' t m e2)
 removeNames' t m (RawVar n)     =
     case M.lookup n m of
       Just t' -> Var (t - t')
       Nothing -> error "Free variable!"
+removeNames' t m (RawLam n e)   = Lam $ removeNames' (t + 1) (M.insert n (t + 1) m) e
+removeNames' t m (RawApp e1 e2) = App (removeNames' t m e1) (removeNames' t m e2)
 
 removeNames :: RawExpr -> Expr
 removeNames = removeNames' 0 M.empty
@@ -46,9 +53,9 @@ restoreNames = undefined
 -- the variables and pass it through the functions for this to work.
 
 shift' :: Int -> Int -> Expr -> Expr
+shift' c d (Var k)     = if k < c then Var k else Var $ k + d
 shift' c d (Lam e)     = Lam (shift' (c + 1) d e)
 shift' c d (App e1 e2) = App (shift' c d e1) (shift' c d e2)
-shift' c d (Var k)     = if k < c then Var k else Var $ k + d
 
 shift :: Int -> Expr -> Expr
 shift = shift' 0
@@ -59,11 +66,11 @@ substitute i s (App e1 e2) = App (substitute i s e1) (substitute i s e2)
 substitute i s (Var k)     = if i == k then s else Var k
 
 smallStep :: Expr -> Maybe Expr
-smallStep (Lam e) = smallStep e >>= \e' -> Just $ Lam e'
+smallStep (Var _)          = Nothing
+smallStep (Lam e)          = smallStep e >>= \e' -> Just $ Lam e'
 smallStep (App (Lam e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
-smallStep (App (Var _) _) = Nothing
-smallStep (App e1 e2) = smallStep e1 >>= \e1' -> Just $ App e1' e2
-smallStep (Var _) = Nothing
+smallStep (App (Var _) _)  = Nothing
+smallStep (App e1 e2)      = smallStep e1 >>= \e1' -> Just $ App e1' e2
 
 eval :: Expr -> Expr
 eval e = maybe e eval (smallStep e)
