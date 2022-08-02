@@ -4,4 +4,4 @@ import Lam.Wrapper (parse)
 import Lam.Expr (eval)
 
 main :: IO ()
-main = print $ parse "(lam s -> lam z -> s . s . z) . (lam x -> x)"
+main = print $ eval $ parse "(lam x -> lam y -> y . y) . (lam x -> x)"
