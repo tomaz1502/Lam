@@ -13,6 +13,8 @@ tokens :-
 <0> "->" { \_ -> Arrow }
 <0> "."  { \_ -> Dot }
 <0> "lam" { \_ -> Lam }
+<0> "("   { \_ -> LPar }
+<0> ")"   { \_ -> RPar }
 <0> @id   { \s -> Var s }
 
 {
@@ -21,5 +23,7 @@ data Token =
   | Dot
   | Lam
   | Var String
+  | LPar
+  | RPar
   deriving Show
 }

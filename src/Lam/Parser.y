@@ -18,12 +18,17 @@ import Lam.Expr (Expr(..))
   var  { L.Var $$ }
   "->" { L.Arrow } 
   "."  { L.Dot }
+  "("  { L.LPar }
+  ")"  { L.RPar }
 
 %%
 
 Expr : Expr "." Expr { App $1 $3 }
      | lam var "->" Expr %shift { Lam $2 $4 }
      | var { Var $1 }
+     | ParExpr { $1 }
+
+ParExpr : "(" Expr ")" { $2 }
 
 {
 parseError :: [L.Token] -> a
