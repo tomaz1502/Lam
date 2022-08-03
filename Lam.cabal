@@ -5,9 +5,9 @@ version:             0.1.0.0
 homepage:            https://github.com/githubuser/Lam#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2022 Author name here
+author:              Tomaz Gomes Mascarenhas
+maintainer:          tomgm1502@gmail.com
+copyright:           2022 Tomaz Gomes Mascarenhas
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
