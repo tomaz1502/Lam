@@ -2,11 +2,10 @@
 
 module Lam.Wrapper (parse)  where
 
-import Data.Map qualified as M
-
 import Lam.Lexer (alexScanTokens)
 import Lam.Parser (parseLam)
-import Lam.Expr (Expr, RawExpr, removeNames)
+import Lam.Expr (Expr)
 
 parse :: String -> Expr
-parse = removeNames . parseLam . alexScanTokens
+parse = flip parseLam [] . alexScanTokens
+

@@ -1,76 +1,44 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
-module Lam.Expr ( RawExpr(..)
-                , Expr(..)
-                , removeNames
+module Lam.Expr ( Expr(..)
                 , eval) where
 
-import Data.Map qualified as M
-
+-- probably gonna change that later
 type Id = String
-type Context = Id -> Int
-
--- We still need regular Expr for reporting errors regarding
--- variables defined by the user
-data RawExpr =
-    RawLam Id RawExpr
-  | RawApp RawExpr RawExpr
-  | RawVar Id
-  deriving Show
 
 -- | Representation of lambda terms with DeBruijn indices
 data Expr =
     Var Int
-  | Lam Expr
+  | Lam Id Expr
   | App Expr Expr
 
 instance Show Expr where
-    show (Var i) = show i
-    show (Lam e) = "\\ " <> show e
-    show (App e1 e2) =
-        let f e@(Var _) = show e
-            f e         = unwords ["(", show e, ")"]
-        in unwords [f e1, " . ", f e2]
-
-removeNames' :: Int -> M.Map Id Int -> RawExpr -> Expr
-removeNames' t m (RawVar n)     =
-    case M.lookup n m of
-      Just t' -> Var (t - t')
-      Nothing -> error "Free variable!"
-removeNames' t m (RawLam n e)   = Lam $ removeNames' (t + 1) (M.insert n (t + 1) m) e
-removeNames' t m (RawApp e1 e2) = App (removeNames' t m e1) (removeNames' t m e2)
-
-removeNames :: RawExpr -> Expr
-removeNames = removeNames' 0 M.empty
-
-restoreNames :: Expr -> RawExpr
-restoreNames = undefined
-
--- We should have:
---   1. removeNames (restoreNames e) = e
---   2. restoreNames (removeNames re) = re
--- But obviously we will need to define some context to store the name of 
--- the variables and pass it through the functions for this to work.
+  show = go []
+    where go ctx (Var i) = ctx !! i
+          go ctx (Lam n e) = "\\ " <> n <> " -> " <> go (n : ctx) e
+          go ctx (App e1 e2) =
+            let f e@(Var _) = go ctx e
+                f e         = unwords ["(", go ctx e, ")"]
+            in unwords [f e1, " . ", f e2]
 
 shift' :: Int -> Int -> Expr -> Expr
 shift' c d (Var k)     = if k < c then Var k else Var $ k + d
-shift' c d (Lam e)     = Lam (shift' (c + 1) d e)
+shift' c d (Lam n e)   = Lam n (shift' (c + 1) d e)
 shift' c d (App e1 e2) = App (shift' c d e1) (shift' c d e2)
 
 shift :: Int -> Expr -> Expr
 shift = shift' 0
 
 substitute :: Int -> Expr -> Expr -> Expr
-substitute i s (Lam e)     = Lam $ substitute (i + 1) (shift 1 s) e
+substitute i s (Lam n e)   = Lam n $ substitute (i + 1) (shift 1 s) e
 substitute i s (App e1 e2) = App (substitute i s e1) (substitute i s e2)
 substitute i s (Var k)     = if i == k then s else Var k
 
 smallStep :: Expr -> Maybe Expr
-smallStep (Var _)          = Nothing
-smallStep (Lam e)          = smallStep e >>= \e' -> Just $ Lam e'
-smallStep (App (Lam e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
-smallStep (App (Var _) _)  = Nothing
-smallStep (App e1 e2)      = smallStep e1 >>= \e1' -> Just $ App e1' e2
+smallStep (Var _)            = Nothing
+smallStep (Lam n e)          = smallStep e >>= Just . Lam n
+smallStep (App (Lam n e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
+smallStep (App e1 e2)        = smallStep e1 >>= Just . flip App e2
 
 eval :: Expr -> Expr
 eval e = maybe e eval (smallStep e)
