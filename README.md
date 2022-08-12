@@ -2,12 +2,11 @@
 ## Goals
   - [x] Lexer
   - [x] Parser
-  - [ ] De Bruijn Indices
-  - [ ] Values
-  - [ ] Interpretation of Values
+  - [x] De Bruijn Indices
   - [ ] Simple Types
   - [ ] Extensions (TaPL ch 11)
   - [ ] Verify properties using Agda (Progress/Preservation)
+  - [ ] Code Generation
   
   - [ ] Support for commentary
   - [ ] Error messages
