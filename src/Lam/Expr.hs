@@ -11,6 +11,7 @@ data Expr =
     Var Int
   | Lam Id Expr
   | App Expr Expr
+  deriving Eq
 
 instance Show Expr where
   show = go []
