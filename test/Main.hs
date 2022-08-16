@@ -1,10 +1,10 @@
 module Main where
 
-import Lam.Wrapper
-import Lam.Expr
+import Lam.Wrapper ( parse )
+import Lam.Expr ( Expr(..), eval )
 
-import Test.Tasty
-import Test.Tasty.HUnit
+import Test.Tasty ( defaultMain, testGroup, TestTree )
+import Test.Tasty.HUnit ( testCase, (@?=) )
 
 main :: IO ()
 main = defaultMain $ testGroup "lam tests" [parserTest, evalTest]

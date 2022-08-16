@@ -1,9 +1,10 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 module Lam.Expr ( Expr(..)
-                , eval) where
+                , eval
+                , debugDeBruijn) where
 
--- probably gonna change that later
+-- probably gonna change this later
 type Id = String
 
 -- | Representation of lambda terms with DeBruijn indices
@@ -22,6 +23,16 @@ instance Show Expr where
                 f e         = unwords ["(", go ctx e, ")"]
             in unwords [f e1, " . ", f e2]
 
+debugDeBruijn :: Expr -> String
+debugDeBruijn (Var i)     = show i
+debugDeBruijn (Lam _ e)   = unwords [ "(lam. ", debugDeBruijn e, ")" ]
+debugDeBruijn (App e1 e2) = unwords [ "("
+                                   , debugDeBruijn e1
+                                   , " "
+                                   , debugDeBruijn e2
+                                   , ")"
+                                   ]
+
 shift' :: Int -> Int -> Expr -> Expr
 shift' c d (Var k)     = if k < c then Var k else Var $ k + d
 shift' c d (Lam n e)   = Lam n (shift' (c + 1) d e)
@@ -39,7 +50,10 @@ smallStep :: Expr -> Maybe Expr
 smallStep (Var _)            = Nothing
 smallStep (Lam n e)          = smallStep e >>= Just . Lam n
 smallStep (App (Lam n e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
-smallStep (App e1 e2)        = smallStep e1 >>= Just . flip App e2
+smallStep (App e1 e2)        =
+    case smallStep e1 of
+      Just e1' -> Just $ App e1' e2
+      Nothing  -> smallStep e2 >>= Just . App e1
 
 eval :: Expr -> Expr
 eval e = maybe e eval (smallStep e)
