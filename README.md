@@ -8,6 +8,7 @@
 
 ### Features
   - [x] De Bruijn Indices
+  - [ ] Conversion to Haskell expression
   - [ ] Simple Types
   - [ ] Extensions (TaPL ch 11)
   - [ ] Verify properties using Agda (Progress/Preservation)
