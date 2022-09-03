@@ -12,6 +12,7 @@
   - [ ] Simple Types
   - [ ] Extensions (TaPL ch 11)
   - [ ] Verify properties using Agda (Progress/Preservation)
+  - [ ] Conversion to Haskell value
 
 ### Usability
   - [ ] Code Generation

@@ -1,10 +1,13 @@
-{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Lam.Expr ( Expr(..)
-                , eval) where
+                , eval
+                , debugDeBruijn
+                , Id) where
 
--- probably gonna change that later
+-- probably gonna change this later
 type Id = String
+type Context = [Id]
 
 -- | Representation of lambda terms with DeBruijn indices
 data Expr =
@@ -12,14 +15,39 @@ data Expr =
   | Lam Id Expr
   | App Expr Expr
 
+pickFresh :: Context -> Id -> Id
+pickFresh ctx nm
+ | nm `elem` ctx = pickFresh ctx (nm <> "'")
+ | otherwise     = nm
+
+instance Eq Expr where -- if we derive we don't get alpha equivalence
+  (==) :: Expr -> Expr -> Bool
+  (==) (Var i) (Var j) = i == j
+  (==) (Lam _ e1') (Lam _ e2') = e1' == e2'
+  (==) (App e11 e12) (App e21 e22) = e11 == e21 && e12 == e22
+  (==) _ _ = False
+
 instance Show Expr where
   show = go []
-    where go ctx (Var i) = ctx !! i
-          go ctx (Lam n e) = "\\ " <> n <> " -> " <> go (n : ctx) e
+    where go :: Context -> Expr -> String
+          go ctx (Var i) = ctx !! i
+          go ctx (Lam n e) =
+            let freshName = pickFresh ctx n
+            in  "\\ " <> freshName <> " -> " <> go (freshName : ctx) e
           go ctx (App e1 e2) =
             let f e@(Var _) = go ctx e
                 f e         = unwords ["(", go ctx e, ")"]
             in unwords [f e1, " . ", f e2]
+
+debugDeBruijn :: Expr -> String
+debugDeBruijn (Var i)     = show i
+debugDeBruijn (Lam _ e)   = unwords [ "(lam. ", debugDeBruijn e, ")" ]
+debugDeBruijn (App e1 e2) = unwords [ "("
+                                   , debugDeBruijn e1
+                                   , " "
+                                   , debugDeBruijn e2
+                                   , ")"
+                                   ]
 
 shift' :: Int -> Int -> Expr -> Expr
 shift' c d (Var k)     = if k < c then Var k else Var $ k + d
@@ -38,8 +66,15 @@ smallStep :: Expr -> Maybe Expr
 smallStep (Var _)            = Nothing
 smallStep (Lam n e)          = smallStep e >>= Just . Lam n
 smallStep (App (Lam n e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
-smallStep (App e1 e2)        = smallStep e1 >>= Just . flip App e2
+smallStep (App e1 e2)        =
+    case smallStep e1 of
+      Just e1' -> Just $ App e1' e2
+      Nothing  -> smallStep e2 >>= Just . App e1
 
 eval :: Expr -> Expr
 eval e = maybe e eval (smallStep e)
+
+evalWithGas :: Int -> Expr -> Expr
+evalWithGas 0 e = e
+evalWithGas n e = maybe e (evalWithGas (n - 1)) (smallStep e)
 

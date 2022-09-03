@@ -1,0 +1,10 @@
+cradle:
+  stack:
+    - path: "./app/Main.hs"
+      component: "Lam:exe:Lam"
+
+    - path: "./src"
+      component: "Lam:lib"
+
+    - path: "./test"
+      component: "Lam:test:unit-test"
