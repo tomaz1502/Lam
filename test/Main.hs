@@ -29,7 +29,8 @@ testSumChurch n m = testCase (unwords ["sum church", show n, show m]) $
 
 testMulChurch :: Int -> Int -> TestTree
 testMulChurch n m = testCase (unwords ["mul church", show n, show m]) $
-    encodeChurchE (n * m) @?= eval (Lam "f" (Lam "x" (App (App (encodeChurchE n) (App (encodeChurchE m) (Var 1))) (Var 0))))
+    encodeChurchE (n * m) @?=
+        eval (Lam "f" (Lam "x" (App (App (encodeChurchE n) (App (encodeChurchE m) (Var 1))) (Var 0))))
 
 main :: IO ()
 main = defaultMain $ testGroup "lam tests"
