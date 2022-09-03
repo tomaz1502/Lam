@@ -19,10 +19,10 @@ main :: IO ()
 main =
   do args <- getArgs
     -- print args
-     case length args of
-       0 -> repl
-       1 -> readFile (head args) >>= print . eval . parse
-       _ -> putStrLn wrongUsageMsg >> exitFailure
+     case args of
+       []      -> repl
+       [fName] -> readFile fName >>= print . eval . parse
+       _       -> putStrLn wrongUsageMsg >> exitFailure
   where
     wrongUsageMsg :: String
     wrongUsageMsg =
