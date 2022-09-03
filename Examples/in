@@ -1,2 +1,1 @@
-lam x -> x
 lam s -> lam z -> s . s . z

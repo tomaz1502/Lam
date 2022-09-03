@@ -1,7 +1,1 @@
-lam x -> x
-
-lam s -> lam z -> s . s . z
-
-
 (lam T -> (lam f -> lam x -> (T . (T . (T . (T . T)))) . f . x)) . (lam f -> lam x -> f . f . x)
-

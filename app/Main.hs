@@ -1,6 +1,31 @@
 module Main (main) where
 
+import System.Environment (getArgs)
+import System.Exit        (exitSuccess, exitFailure)
+import System.IO          (hFlush, stdout)
+
 import Lam.Wrapper (parse)
+import Lam.Expr    (eval)
+
+repl :: IO ()
+repl =
+  do putStr "> "
+     hFlush stdout
+     command <- getLine
+     if command == ":q" then exitSuccess
+     else print (eval $ parse command) >> repl
 
 main :: IO ()
-main = print $ show $ parse "lam f -> lam x -> f . (f . x)"
+main =
+  do args <- getArgs
+    -- print args
+     case length args of
+       0 -> repl
+       1 -> readFile (head args) >>= print . eval . parse
+       _ -> putStrLn wrongUsageMsg >> exitFailure
+  where
+    wrongUsageMsg :: String
+    wrongUsageMsg =
+      unlines [ "[Error]: Incorrect number of arguments."
+              , "Usage: Lam <filename>?"]
+
