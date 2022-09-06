@@ -1,1 +1,1 @@
-lam s -> lam z -> s . s . z
+eval: lam s -> lam z -> s . s . z;

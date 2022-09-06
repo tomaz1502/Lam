@@ -2,10 +2,14 @@
 
 module Lam.Wrapper (parse)  where
 
-import Lam.Lexer (alexScanTokens)
+import Lam.Lexer (alexMonadScan, runAlex)
 import Lam.Parser (parseLam)
 import Lam.Expr (Expr)
+import Lam.Prog (Prog)
 
-parse :: String -> Expr
-parse = flip parseLam [] . alexScanTokens
+parse :: String -> Prog
+parse s =
+    case runAlex s parseLam of
+      Left err -> error $ "error at runAlex: " ++ err
+      Right p  -> p
 
