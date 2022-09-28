@@ -16,10 +16,11 @@ tokens :-
 <0> "eval"   { tok Eval      }
 <0> "define" { tok Define    }
 <0> ":"      { tok Colon     }
+<0> "="      { tok Equals    }
 <0> ";"      { tok Semicolon }
 <0> "("      { tok LPar      }
 <0> ")"      { tok RPar      }
-<0> @id      { tok (Var "") }
+<0> @id      { tok (Var "")  }
 
 {
 
@@ -31,6 +32,7 @@ data Token =
   | Define
   | Colon
   | Semicolon
+  | Equals
   | Var String
   | LPar
   | RPar

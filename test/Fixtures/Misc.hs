@@ -15,7 +15,7 @@ miscTestCases = [ tc1, tc2 ]
 tc1, tc2 :: MiscTest
 tc1 =
   TC
-    { prog = "(lam x -> lam y -> y . y) . (lam x -> x)"
+    { prog = "eval: (lam x -> lam y -> y . y) . (lam x -> x);"
     , eInp  = App
                 (Lam "x"
                   (Lam "y"
@@ -27,7 +27,7 @@ tc1 =
     }
 tc2 =
   TC
-    { prog = "lam y -> ((lam x -> x . x) . (lam f -> f . f . y) . (lam x -> x))"
+    { prog = "eval: lam y -> ((lam x -> x . x) . (lam f -> f . f . y) . (lam x -> x));"
     , eInp = Lam "y"
                (App
                  (Lam "x"

@@ -7,7 +7,7 @@ module Lam.Expr ( Expr(..)
 
 -- probably gonna change this later
 type Id = String
-type Context = [Id]
+type LocalContext = [Id]
 
 -- | Representation of lambda terms with DeBruijn indices
 data Expr =
@@ -15,7 +15,7 @@ data Expr =
   | Lam Id Expr
   | App Expr Expr
 
-pickFresh :: Context -> Id -> Id
+pickFresh :: LocalContext -> Id -> Id
 pickFresh ctx nm
  | nm `elem` ctx = pickFresh ctx (nm <> "'")
  | otherwise     = nm
@@ -29,7 +29,7 @@ instance Eq Expr where -- if we derive we don't get alpha equivalence
 
 instance Show Expr where
   show = go []
-    where go :: Context -> Expr -> String
+    where go :: LocalContext -> Expr -> String
           go ctx (Var i) = ctx !! i
           go ctx (Lam n e) =
             let freshName = pickFresh ctx n
@@ -37,14 +37,13 @@ instance Show Expr where
           go ctx (App e1 e2) =
             let f e@(Var _) = go ctx e
                 f e         = unwords ["(", go ctx e, ")"]
-            in unwords [f e1, " . ", f e2]
+            in unwords [f e1, ".", f e2]
 
 debugDeBruijn :: Expr -> String
 debugDeBruijn (Var i)     = show i
-debugDeBruijn (Lam _ e)   = unwords [ "(lam. ", debugDeBruijn e, ")" ]
+debugDeBruijn (Lam _ e)   = unwords [ "(lam.", debugDeBruijn e, ")" ]
 debugDeBruijn (App e1 e2) = unwords [ "("
                                    , debugDeBruijn e1
-                                   , " "
                                    , debugDeBruijn e2
                                    , ")"
                                    ]
@@ -76,5 +75,5 @@ eval e = maybe e eval (smallStep e)
 
 evalWithGas :: Int -> Expr -> Expr
 evalWithGas 0 e = e
-evalWithGas n e = maybe e (evalWithGas (n - 1)) (smallStep e)
+evalWithGas gas e = maybe e (evalWithGas (gas - 1)) (smallStep e)
 

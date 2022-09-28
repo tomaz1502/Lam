@@ -4,19 +4,21 @@ import System.Environment (getArgs)
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
 
-import Lam.Wrapper (parse)
+import Lam.Wrapper (parse, unsafeGetExprDef)
 import Lam.Expr    (eval)
-import Lam.Prog
-import Lam.Repl
+import Lam.Program
 
 main :: IO ()
-main = do
-  args <- getArgs
-  case args of 
-    [] -> error "unimplemented"
-    [fName] -> error "unimplemented"
-    _ -> error "wrong usage"
-  return ()
+main =
+  let p = unsafeGetExprDef "eval: lam x -> x;"
+   in print p
+
+  -- args <- getArgs
+  -- case args of 
+  --   []      -> error "unimplemented"
+  --   [fName] -> error "unimplemented"
+  --   _       -> error "wrong usage"
+  -- return ()
 
 -- repl :: IO ()
 -- repl =
