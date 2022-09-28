@@ -2,20 +2,22 @@ module Fixtures.ChurchNum where
 
 import Lam.Expr ( Expr(..) )
 
-import Fixtures.Common
+import Fixtures.Common ( SourceCode )
 
 applyN :: Int -> (a -> a) -> a -> a
 applyN 0 f a = a
 applyN n f a = f (applyN (n - 1) f a)
 
-encodeChurchP :: Int -> Prog
+encodeChurchP :: Int -> SourceCode
 encodeChurchP n
   | n >= 0    =
      let concatRep s = concat (replicate n s)
-     in  concat [ "lam f -> lam x -> "
+     in  concat [ "eval: "
+                , "lam f -> lam x -> "
                 , concatRep "f . ("
                 , "x"
                 , concatRep ")"
+                , ";"
                 ]
   | otherwise = error "negative church (program)"
 

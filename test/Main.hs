@@ -3,7 +3,7 @@
 
 module Main where
 
-import Lam.Wrapper ( parse )
+import Lam.Wrapper ( parse, unsafeGetExprDef )
 import Lam.Expr ( Expr(..), eval )
 
 import Fixtures
@@ -11,16 +11,17 @@ import Fixtures
 import Test.Tasty ( defaultMain, testGroup, TestTree )
 import Test.Tasty.HUnit ( testCase, (@?=) )
 
-parserTest :: Prog -> Expr -> TestTree
+parserTest :: SourceCode -> Expr -> TestTree
 parserTest prog e = testCase "parser test" $
-  parse prog @?= e
+  unsafeGetExprDef prog @?= e
 
 evalTest :: Expr -> Expr -> TestTree
 evalTest inp out = testCase "eval test" $
   eval inp @?= out
 
 testParseChurch :: Int -> TestTree
-testParseChurch n = testCase ("parse church " <> show n) $ parse (encodeChurchP n) @?= encodeChurchE n
+testParseChurch n = testCase ("parse church " <> show n) $
+  unsafeGetExprDef (encodeChurchP n) @?= encodeChurchE n
 
 testSumChurch :: Int -> Int -> TestTree
 testSumChurch n m = testCase (unwords ["sum church", show n, show m]) $

@@ -1,1 +1,1 @@
-(lam T -> (lam f -> lam x -> (T . (T . (T . (T . T)))) . f . x)) . (lam f -> lam x -> f . f . x)
+eval: (lam T -> (lam f -> lam x -> (T . (T . (T . (T . T)))) . f . x)) . (lam f -> lam x -> f . f . x);
