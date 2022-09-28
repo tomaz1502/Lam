@@ -2,9 +2,9 @@ module Fixtures.Misc where
 
 import Lam.Expr ( Expr(..) )
 
-import Fixtures.Common
+import Fixtures.Common ( SourceCode )
 
-data MiscTest = TC { prog :: Prog
+data MiscTest = TC { prog :: SourceCode
                    , eInp :: Expr
                    , eOut :: Expr
                    }

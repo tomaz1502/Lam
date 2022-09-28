@@ -11,7 +11,7 @@ import Fixtures
 import Test.Tasty ( defaultMain, testGroup, TestTree )
 import Test.Tasty.HUnit ( testCase, (@?=) )
 
-parserTest :: Prog -> Expr -> TestTree
+parserTest :: SourceCode -> Expr -> TestTree
 parserTest prog e = testCase "parser test" $
   parse prog @?= e
 
