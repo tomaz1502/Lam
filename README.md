@@ -19,7 +19,7 @@
   - [ ] Error messages
   - [ ] Commands
     - [x] Eval
-    - [ ] Define
+    - [x] Define
     - [ ] Include
 
 ## Future Work
