@@ -36,7 +36,6 @@ import Lam.Program (Program, GlobalContext)
   eof       { L.EOF       }
 %%
 
--- (TODO: obviously this could be much simpler with State)
 Prog :: { Program [Maybe Expr] }
   : Command ";" Prog { $1 >>= \e ->
                        $3 >>= \es ->
