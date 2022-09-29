@@ -27,7 +27,7 @@ tc1 =
     }
 tc2 =
   TC
-    { prog = "eval: lam y -> ((lam x -> x . x) . (lam f -> f . f . y) . (lam x -> x));"
+    { prog = "eval: lam y -> ((lam x -> x . x) . ((lam f -> f . (f . y)) . (lam x -> x)));"
     , eInp = Lam "y"
                (App
                  (Lam "x"

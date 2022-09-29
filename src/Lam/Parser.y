@@ -3,12 +3,13 @@
 
 module Lam.Parser (parseLam) where
 
+import Control.Monad.State
+import Data.List (elemIndex)
+import Data.Map qualified  as M
+
 import Lam.Lexer qualified as L
 import Lam.Expr (Expr(..))
 import Lam.Program (Program, GlobalContext)
-
-import Data.List (elemIndex)
-import qualified Data.Map as M
 
 }
 
@@ -36,17 +37,16 @@ import qualified Data.Map as M
 %%
 
 -- (TODO: obviously this could be much simpler with State)
-Prog :: { GlobalContext -> ([Maybe Expr], GlobalContext) }
-  : Command ";" Prog { \globalCtx ->
-                         let (e, globalCtx') = $1 globalCtx
-                             (es, globalCtx'') = $3 globalCtx'
-                         in  (e : es, globalCtx'')
+Prog :: { Program [Maybe Expr] }
+  : Command ";" Prog { $1 >>= \e ->
+                       $3 >>= \es ->
+                       return (e : es)
                      }
-  | { \globalCtx -> ([], globalCtx) }
+  | { state $ \globalCtx -> ([], globalCtx) }
 
-Command :: { GlobalContext -> (Maybe Expr, GlobalContext) }
- : DefineCommand { \globalCtx -> (Nothing, $1 globalCtx) }
- | EvalCommand   { \globalCtx -> (Just ($1 globalCtx), globalCtx) }
+Command :: { Program (Maybe Expr) }
+ : DefineCommand { state $ \globalCtx -> (Nothing, $1 globalCtx) }
+ | EvalCommand   { state $ \globalCtx -> (Just ($1 globalCtx), globalCtx) }
 
 -- we allow name shadowing
 DefineCommand :: { GlobalContext -> GlobalContext }

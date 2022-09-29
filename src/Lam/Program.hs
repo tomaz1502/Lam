@@ -2,6 +2,7 @@
 
 module Lam.Program where
 
+import Control.Monad.State
 import Data.Map qualified as M
 
 import Lam.Expr
@@ -9,9 +10,7 @@ import Lam.Expr
 type GlobalContext = M.Map String Expr
 
 -- will catch the Just's in runtime for now
-type Program = GlobalContext -> ([Maybe Expr], GlobalContext)
+type Program a = State GlobalContext a
 
 emptyContext :: GlobalContext
 emptyContext = M.empty
-
-
