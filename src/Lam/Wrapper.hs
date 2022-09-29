@@ -7,7 +7,7 @@ import Data.Map qualified as M
 import Lam.Lexer (alexMonadScan, runAlex)
 import Lam.Parser (parseLam)
 import Lam.Expr (Expr)
-import Lam.Program (Program, GlobalContext)
+import Lam.Program
 
 parse :: String -> Program
 parse s =
@@ -22,4 +22,4 @@ unsafeGetExpr s c =
       _             -> error "unsafeGetExpr"
 
 unsafeGetExprDef :: String -> Expr
-unsafeGetExprDef = flip unsafeGetExpr M.empty
+unsafeGetExprDef = flip unsafeGetExpr emptyContext

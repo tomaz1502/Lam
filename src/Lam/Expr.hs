@@ -33,7 +33,7 @@ instance Show Expr where
           go ctx (Var i) = ctx !! i
           go ctx (Lam n e) =
             let freshName = pickFresh ctx n
-            in  "\\ " <> freshName <> " -> " <> go (freshName : ctx) e
+            in  unwords ["\\" <> freshName, "->", go (freshName : ctx) e]
           go ctx (App e1 e2) =
             let f e@(Var _) = go ctx e
                 f e         = unwords ["(", go ctx e, ")"]

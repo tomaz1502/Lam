@@ -18,7 +18,7 @@ import qualified Data.Map as M
 %monad { L.Alex } { >>= } { pure }
 %lexer { lexer } { L.EOF }
 
-%right "."
+%left "."
   
 %token
   "lam"     { L.Lam       }
@@ -35,7 +35,7 @@ import qualified Data.Map as M
   eof       { L.EOF       }
 %%
 
--- (TODO: obviously this is could be much simpler with State)
+-- (TODO: obviously this could be much simpler with State)
 Prog :: { GlobalContext -> ([Maybe Expr], GlobalContext) }
   : Command ";" Prog { \globalCtx ->
                          let (e, globalCtx') = $1 globalCtx
