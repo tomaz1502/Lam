@@ -1,19 +1,23 @@
 {
 {-# LANGUAGE ImportQualifiedPost #-}
 
-module Lam.Parser (parseLam) where
+module Lam.Parser ( hParseEval
+                  , hParseDefine
+                  , GlobalContext
+                  , emptyContext
+                  ) where
 
 import Control.Monad.State
 import Data.List (elemIndex)
 import Data.Map qualified  as M
 
 import Lam.Lexer qualified as L
-import Lam.Expr (Expr(..))
-import Lam.Program (Program, GlobalContext)
+import Lam.Expr (Expr(..), LocalContext)
 
 }
 
-%name parseLam
+%name hParseEval EvalCommand
+%name hParseDefine DefineCommand
 %tokentype { L.Token }
 %error { parseError }
 %monad { L.Alex } { >>= } { pure }
@@ -33,26 +37,14 @@ import Lam.Program (Program, GlobalContext)
   "."       { L.Dot       }
   "("       { L.LPar      }
   ")"       { L.RPar      }
-  eof       { L.EOF       }
 %%
-
-Prog :: { Program [Maybe Expr] }
-  : Command ";" Prog { $1 >>= \e ->
-                       $3 >>= \es ->
-                       return (e : es)
-                     }
-  | { state $ \globalCtx -> ([], globalCtx) }
-
-Command :: { Program (Maybe Expr) }
- : DefineCommand { state $ \globalCtx -> (Nothing, $1 globalCtx) }
- | EvalCommand   { state $ \globalCtx -> (Just ($1 globalCtx), globalCtx) }
 
 -- we allow name shadowing
 DefineCommand :: { GlobalContext -> GlobalContext }
-  : "define" var ":" "=" Expr { \globalCtx -> M.insert $2 ($5 globalCtx []) globalCtx  }
+  : "define" var ":" "=" Expr ";" { \globalCtx -> M.insert $2 ($5 globalCtx []) globalCtx  }
 
 EvalCommand :: { GlobalContext -> Expr }
-  : "eval" ":" Expr { \globalCtx -> $3 globalCtx [] }
+  : "eval" ":" Expr ";" { \globalCtx -> $3 globalCtx [] }
 
 Expr :: {  GlobalContext -> LocalContext -> Expr }
   : Expr "." Expr { \global local -> App ($1 global local) ($3 global local) }
@@ -70,7 +62,10 @@ Expr :: {  GlobalContext -> LocalContext -> Expr }
 ParExpr : "(" Expr ")" { $2 }
 
 {
-type LocalContext = [String]
+type GlobalContext = M.Map String Expr
+
+emptyContext :: GlobalContext
+emptyContext = M.empty
 
 lexer :: (L.Token -> L.Alex a) -> L.Alex a
 lexer = (=<< L.alexMonadScan)

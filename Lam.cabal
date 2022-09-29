@@ -25,9 +25,8 @@ library
   exposed-modules:
     Lam.Parser
     Lam.Lexer
-    Lam.Wrapper
     Lam.Expr
-    Lam.Program
+    Lam.Handler
   hs-source-dirs:      src
   default-language:    Haskell2010
   build-tools: happy, alex

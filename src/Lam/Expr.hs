@@ -3,6 +3,7 @@
 module Lam.Expr ( Expr(..)
                 , eval
                 , debugDeBruijn
+                , LocalContext
                 , Id) where
 
 -- probably gonna change this later

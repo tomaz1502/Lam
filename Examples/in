@@ -1,20 +1,16 @@
 define id := lam x -> x;
-
 define true  := lam x -> lam y -> x;
 define false := lam x -> lam y -> y;
 define ite   := lam b -> lam x -> lam y -> b . x . y;
-
 define zero := lam s -> lam z -> z;
 define succ := lam m -> lam s -> lam z -> s . (m . s . z);
 define plus := lam m -> lam n -> lam s -> lam z -> m . s . (n . s . z);
 define mul  := lam m -> lam n -> lam s -> lam z -> m . (n . s) . z;
-
 define one   := succ . zero;
 define two   := succ . one;
 define three := succ . two;
 define four  := succ . three;
 define five  := succ . four;
 define six   := succ . five;
-
 define program := mul . three . two;
 eval: program;
