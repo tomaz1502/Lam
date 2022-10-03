@@ -3,10 +3,13 @@
 
 module Main where
 
-import Lam.Handler
+import Lam.Handler ( parseEval, emptyContext )
 import Lam.Expr ( Expr(..), eval )
 
-import Fixtures
+import Fixtures.ChurchNum ( encodeChurchE, encodeChurchP )
+import Fixtures.Common ( SourceCode )
+import Fixtures.Misc
+    ( miscTestCases, MiscTest(TC, eOut, eInp, prog) )
 
 import Test.Tasty ( defaultMain, testGroup, TestTree )
 import Test.Tasty.HUnit ( testCase, (@?=) )
@@ -33,6 +36,7 @@ testMulChurch n m = testCase (unwords ["mul church", show n, show m]) $
     encodeChurchE (n * m) @?=
         eval (Lam "f" (Lam "x" (App (App (encodeChurchE n) (App (encodeChurchE m) (Var 1))) (Var 0))))
 
+-- TODO: write tests for define command
 main :: IO ()
 main = defaultMain $ testGroup "lam tests"
     [ testGroup "parser tests" $ map (\TC{..} -> parserTest prog eInp) miscTestCases

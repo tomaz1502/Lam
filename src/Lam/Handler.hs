@@ -8,7 +8,6 @@ module Lam.Handler ( repl
                    , parseEval
                    ) where
 
-import Control.Monad.State ()
 import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
@@ -18,12 +17,29 @@ import Lam.Parser
     ( emptyContext, hParseDefine, hParseEval, GlobalContext )
 import Lam.Lexer ( runAlex, Alex )
 
+loadFile :: String -> IO GlobalContext
+loadFile fName = do
+    sc <- readFile fName
+    f (lines sc) emptyContext
+    where
+      -- TODO: abstract pattern here and in handleFile
+      f :: [String] -> GlobalContext -> IO GlobalContext
+      f [] ctx = return ctx
+      f (c:cs) ctx = case take 2 c of
+                       "de" -> f cs (parseDefine c ctx)
+                       "lo" -> let target = parseLoad c
+                               in loadFile target >>= \ctx' ->
+                                  f cs (M.union ctx' ctx)
+                       _    -> f cs ctx
+
 handleCommand :: String -> GlobalContext -> IO GlobalContext
 handleCommand command ctx = do
   case take 2 command of
     ":q" -> exitSuccess
     "ev" -> print (eval $ parseEval command ctx) >> return ctx
     "de" -> return (parseDefine command ctx)
+    "lo" -> let target = parseLoad command
+            in loadFile target >>= \ctx' -> return (M.union ctx ctx')
     _    -> print "Unknown command!" >> return ctx
 
 repl :: GlobalContext -> IO ()
@@ -54,4 +70,12 @@ parseEval = getParser hParseEval
 
 parseDefine :: String -> GlobalContext -> GlobalContext
 parseDefine = getParser hParseDefine
+
+parseLoad :: String -> String
+parseLoad s = let s1 = dropWhile (/= ':') s -- remove load command
+                  s2 = drop 1 s1 -- remove colon
+                  s3 = dropWhile (== ' ') s2 -- remove trailing spaces
+                  s4 = init s3 -- remove trailing semicolon
+                  s5 = tail (init s4) -- remove quotes
+              in s5
 
