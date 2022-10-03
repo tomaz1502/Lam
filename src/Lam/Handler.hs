@@ -76,10 +76,8 @@ parseDefine :: String -> GlobalContext -> GlobalContext
 parseDefine = getParser hParseDefine
 
 parseLoad :: String -> String
-parseLoad s = let s1 = dropWhile (/= ':') s -- remove load command
-                  s2 = drop 1 s1 -- remove colon
-                  s3 = dropWhile (== ' ') s2 -- remove trailing spaces
-                  s4 = init s3 -- remove trailing semicolon
-                  s5 = tail (init s4) -- remove quotes
-              in s5
+parseLoad s = let s1 = dropWhile (/= '\"') s -- remove load command
+                  s2 = drop 1 s1 -- remove quote
+                  s3 = init (init s2) -- remove semicolon and other quote
+              in s3
 

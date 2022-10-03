@@ -37,7 +37,7 @@ instance Show Expr where
             in  unwords ["\\" <> freshName, "->", go (freshName : ctx) e]
           go ctx (App e1 e2) =
             let f e@(Var _) = go ctx e
-                f e         = unwords ["(", go ctx e, ")"]
+                f e         = concat ["(", go ctx e, ")"]
             in unwords [f e1, ".", f e2]
 
 debugDeBruijn :: Expr -> String
