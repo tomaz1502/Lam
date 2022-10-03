@@ -1,6 +1,7 @@
 module Main (main) where
 
-import System.Environment (getArgs)
+import System.Environment ( getArgs )
+import System.Exit        ( exitFailure )
 
 import Lam.Handler
 
@@ -10,7 +11,7 @@ main = do
   case args of 
     []      -> repl emptyContext
     [fName] -> handleFile fName
-    _       -> error wrongUsageMsg
+    _       -> putStrLn wrongUsageMsg >> exitFailure
   where
     wrongUsageMsg :: String
     wrongUsageMsg =

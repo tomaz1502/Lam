@@ -11,6 +11,8 @@ $alpha = [a-zA-Z]
 tokens :-
 <0> $white+ ;
 <0> "->"     { tok Arrow     }
+<0> "=>"     { tok TypeArrow }
+<0> "U"      { tok BaseType  }
 <0> "."      { tok Dot       }
 <0> "lam"    { tok Lam       }
 <0> "eval"   { tok Eval      }
@@ -26,6 +28,8 @@ tokens :-
 
 data Token =
     Arrow
+  | TypeArrow
+  | BaseType
   | Dot
   | Lam
   | Eval

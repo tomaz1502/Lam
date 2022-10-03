@@ -6,6 +6,8 @@ module Lam.Expr ( Expr(..)
                 , LocalContext
                 , Id) where
 
+import Lam.Type
+
 -- probably gonna change this later
 type Id = String
 type LocalContext = [Id]
@@ -13,7 +15,7 @@ type LocalContext = [Id]
 -- | Representation of lambda terms with DeBruijn indices
 data Expr =
     Var Int
-  | Lam Id Expr
+  | Lam Id Type Expr
   | App Expr Expr
 
 pickFresh :: LocalContext -> Id -> Id
@@ -24,7 +26,7 @@ pickFresh ctx nm
 instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) :: Expr -> Expr -> Bool
   (==) (Var i) (Var j) = i == j
-  (==) (Lam _ e1') (Lam _ e2') = e1' == e2'
+  (==) (Lam _ _ e1') (Lam _ _ e2') = e1' == e2'
   (==) (App e11 e12) (App e21 e22) = e11 == e21 && e12 == e22
   (==) _ _ = False
 
@@ -32,7 +34,7 @@ instance Show Expr where
   show = go []
     where go :: LocalContext -> Expr -> String
           go ctx (Var i) = ctx !! i
-          go ctx (Lam n e) =
+          go ctx (Lam n _ e) =
             let freshName = pickFresh ctx n
             in  unwords ["\\" <> freshName, "->", go (freshName : ctx) e]
           go ctx (App e1 e2) =
@@ -42,7 +44,7 @@ instance Show Expr where
 
 debugDeBruijn :: Expr -> String
 debugDeBruijn (Var i)     = show i
-debugDeBruijn (Lam _ e)   = unwords [ "(lam.", debugDeBruijn e, ")" ]
+debugDeBruijn (Lam _ _ e)   = unwords [ "(lam.", debugDeBruijn e, ")" ]
 debugDeBruijn (App e1 e2) = unwords [ "("
                                    , debugDeBruijn e1
                                    , debugDeBruijn e2
@@ -51,21 +53,21 @@ debugDeBruijn (App e1 e2) = unwords [ "("
 
 shift' :: Int -> Int -> Expr -> Expr
 shift' c d (Var k)     = if k < c then Var k else Var $ k + d
-shift' c d (Lam n e)   = Lam n (shift' (c + 1) d e)
+shift' c d (Lam n t e)   = Lam n t (shift' (c + 1) d e)
 shift' c d (App e1 e2) = App (shift' c d e1) (shift' c d e2)
 
 shift :: Int -> Expr -> Expr
 shift = shift' 0
 
 substitute :: Int -> Expr -> Expr -> Expr
-substitute i s (Lam n e)   = Lam n $ substitute (i + 1) (shift 1 s) e
+substitute i s (Lam n t e)   = Lam n t $ substitute (i + 1) (shift 1 s) e
 substitute i s (App e1 e2) = App (substitute i s e1) (substitute i s e2)
 substitute i s (Var k)     = if i == k then s else Var k
 
 smallStep :: Expr -> Maybe Expr
 smallStep (Var _)            = Nothing
-smallStep (Lam n e)          = smallStep e >>= Just . Lam n
-smallStep (App (Lam n e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
+smallStep (Lam n t e)          = smallStep e >>= Just . Lam n t
+smallStep (App (Lam n _ e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
 smallStep (App e1 e2)        =
     case smallStep e1 of
       Just e1' -> Just $ App e1' e2

@@ -11,9 +11,9 @@ import Control.Monad.State
 import Data.List (elemIndex)
 import Data.Map qualified  as M
 
-import Lam.Lexer qualified as L
 import Lam.Expr (Expr(..), LocalContext)
-
+import Lam.Lexer qualified as L
+import Lam.Type
 }
 
 %name hParseEval EvalCommand
@@ -34,6 +34,8 @@ import Lam.Expr (Expr(..), LocalContext)
   "define"  { L.Define    }
   var       { L.Var $$    }
   "->"      { L.Arrow     }
+  "=>"      { L.TypeArrow }
+  "U"       { L.BaseType  }
   "."       { L.Dot       }
   "("       { L.LPar      }
   ")"       { L.RPar      }
@@ -48,7 +50,7 @@ EvalCommand :: { GlobalContext -> Expr }
 
 Expr :: {  GlobalContext -> LocalContext -> Expr }
   : Expr "." Expr { \global local -> App ($1 global local) ($3 global local) }
-  | "lam" var "->" Expr %shift { \global local -> Lam $2 ($4 global ($2 : local)) }
+  | "lam" var ":" Type "->" Expr %shift { \global local -> Lam $2 $4 ($6 global ($2 : local)) }
   | var { \global local -> -- TODO: rewrite using maybe monad
             case elemIndex $1 local of
               Just i  -> Var i
@@ -60,6 +62,14 @@ Expr :: {  GlobalContext -> LocalContext -> Expr }
   | ParExpr { $1 }
 
 ParExpr : "(" Expr ")" { $2 }
+
+Type :: { Type }
+  : Type "=>" Type { Arrow $1 $3 }
+  | "U" { U }
+  | ParType { $1 }
+
+ParType :: { Type }
+  : "(" Type ")" { $2 }
 
 {
 type GlobalContext = M.Map String Expr
