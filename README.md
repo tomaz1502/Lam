@@ -17,10 +17,10 @@
   - [ ] Code Generation
   - [ ] Support for commentary
   - [ ] Error messages
-  - [ ] Commands
+  - [x] Commands
     - [x] Eval
     - [x] Define
-    - [ ] Include
+    - [x] Load
 
 ## Future Work
   - [ ] Tagless Final style
