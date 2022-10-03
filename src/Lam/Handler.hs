@@ -17,6 +17,7 @@ import Lam.Parser
     ( emptyContext, hParseDefine, hParseEval, GlobalContext )
 import Lam.Lexer ( runAlex, Alex )
 
+-- TODO: report cyclic dependencies
 loadFile :: String -> IO GlobalContext
 loadFile fName = do
     sc <- readFile fName
@@ -29,6 +30,9 @@ loadFile fName = do
                        "de" -> f cs (parseDefine c ctx)
                        "lo" -> let target = parseLoad c
                                in loadFile target >>= \ctx' ->
+                                -- use ctx' on the left because
+                                -- it was defined later, so should
+                                -- have priority in the context
                                   f cs (M.union ctx' ctx)
                        _    -> f cs ctx
 
@@ -39,7 +43,7 @@ handleCommand command ctx = do
     "ev" -> print (eval $ parseEval command ctx) >> return ctx
     "de" -> return (parseDefine command ctx)
     "lo" -> let target = parseLoad command
-            in loadFile target >>= \ctx' -> return (M.union ctx ctx')
+            in loadFile target >>= \ctx' -> return (M.union ctx' ctx)
     _    -> print "Unknown command!" >> return ctx
 
 repl :: GlobalContext -> IO ()
