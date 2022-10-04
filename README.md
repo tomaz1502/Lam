@@ -3,8 +3,7 @@
 ### Infrastructure
   - [x] Lexer
   - [x] Parser
-  - [ ] Tests
-  - [ ] Randomly Generated Tests
+  - [x] Tests
   - [ ] DAG instead of AST
 
 ### Features
