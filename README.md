@@ -5,6 +5,7 @@
   - [x] Parser
   - [ ] Tests
   - [ ] Randomly Generated Tests
+  - [ ] DAG instead of AST
 
 ### Features
   - [x] De Bruijn Indices
