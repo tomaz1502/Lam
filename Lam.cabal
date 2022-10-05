@@ -20,6 +20,7 @@ executable Lam
   build-depends:
       Lam
     , base >= 4.7 && < 5
+    , mtl >= 2.2
 
 library
   exposed-modules:

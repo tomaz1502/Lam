@@ -1,5 +1,6 @@
 module Main (main) where
 
+import Control.Monad.Except
 import System.Environment (getArgs)
 
 import Lam.Handler
@@ -8,8 +9,8 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of 
-    []      -> repl emptyContext
-    [fName] -> handleFile fName
+    []      -> run (repl emptyContext)
+    [fName] -> run (handleFile fName)
     _       -> error wrongUsageMsg
   where
     wrongUsageMsg :: String
@@ -17,4 +18,9 @@ main = do
       unlines [ "[Error]: Incorrect number of arguments."
               , "Usage: Lam <filename>?"
               ]
+    run :: Command a -> IO ()
+    run f = do result <- runExceptT f
+               case result of
+                 Right _  -> return ()
+                 Left err -> putStrLn err
 

@@ -1,13 +1,19 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Lam.Handler ( repl
                    , handleFile
+                   , Command
                    , GlobalContext
                    , emptyContext
                    , parseDefine
                    , parseEval
                    ) where
 
+import Control.Monad.Except
 import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
@@ -17,17 +23,19 @@ import Lam.Parser
     ( emptyContext, hParseDefine, hParseEval, GlobalContext )
 import Lam.Lexer ( runAlex, Alex )
 
+type Command a = ExceptT String IO a
+
 -- TODO: report cyclic dependencies
-loadFile :: String -> IO GlobalContext
+loadFile :: String -> Command GlobalContext
 loadFile fName = do
-    sc <- readFile fName
+    sc <- liftIO (readFile fName)
     f (lines sc) emptyContext
     where
       -- TODO: abstract pattern here and in handleFile
-      f :: [String] -> GlobalContext -> IO GlobalContext
+      f :: [String] -> GlobalContext -> Command GlobalContext
       f [] ctx = return ctx
       f (c:cs) ctx = case take 2 c of
-                       "de" -> f cs (parseDefine c ctx)
+                       "de" -> liftEither (parseDefine c ctx) >>= \ctx' -> f cs ctx'
                        "lo" -> let target = parseLoad c
                                in loadFile target >>= \ctx' ->
                                 -- use ctx' on the left because
@@ -36,30 +44,32 @@ loadFile fName = do
                                   f cs (M.union ctx' ctx)
                        _    -> f cs ctx
 
-handleCommand :: String -> GlobalContext -> IO GlobalContext
+handleCommand :: String -> GlobalContext -> Command GlobalContext
 handleCommand command ctx = do
   case take 2 command of
-    ":q" -> exitSuccess
-    "ev" -> print (eval $ parseEval command ctx) >> return ctx
-    "de" -> return (parseDefine command ctx)
+    ":q" -> liftIO exitSuccess
+    "ev" -> liftEither (parseEval command ctx) >>= \e ->
+            liftIO (print (eval e)) >>
+            return ctx
+    "de" -> liftEither $ parseDefine command ctx
     "lo" -> let target = parseLoad command
             in loadFile target >>= \ctx' -> return (M.union ctx' ctx)
-    _    -> print "Unknown command!" >> return ctx
+    _    -> liftIO (print "Unknown command!") >> return ctx
 
-repl :: GlobalContext -> IO ()
+repl :: GlobalContext -> Command ()
 repl ctx = do
-  putStr "> "
-  hFlush stdout
-  command <- getLine
+  command <- liftIO readRepl
   ctx' <- handleCommand command ctx
   repl ctx'
+      where readRepl :: IO String
+            readRepl = putStr "> " >> hFlush stdout >> getLine
 
-handleFile :: String -> IO ()
+handleFile :: String -> Command ()
 handleFile fName = do
-  sc <- readFile fName
+  sc <- liftIO $ readFile fName
   f (lines sc) emptyContext
   where
-    f :: [String] -> GlobalContext -> IO ()
+    f :: [String] -> GlobalContext -> Command ()
     f [] _ = return ()
     f (c:cs) ctx = handleCommand c ctx >>= f cs
 
@@ -69,10 +79,10 @@ getParser f s =
       Left err -> error "parsing error"
       Right p  -> p
 
-parseEval :: String -> GlobalContext -> Expr
+parseEval :: String -> GlobalContext -> Either String Expr
 parseEval = getParser hParseEval
 
-parseDefine :: String -> GlobalContext -> GlobalContext
+parseDefine :: String -> GlobalContext -> Either String GlobalContext
 parseDefine = getParser hParseDefine
 
 parseLoad :: String -> String

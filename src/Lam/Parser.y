@@ -40,27 +40,36 @@ import Lam.Expr (Expr(..), LocalContext)
 %%
 
 -- we allow name shadowing
-DefineCommand :: { GlobalContext -> GlobalContext }
-  : "define" var ":" "=" Expr ";" { \globalCtx -> M.insert $2 ($5 globalCtx []) globalCtx  }
+DefineCommand :: { GlobalContext -> Either String GlobalContext }
+  : "define" var ":" "=" Expr ";"
+    { \globalCtx -> 
+        case $5 globalCtx [] of
+          Right e  -> Right $ M.insert $2 e globalCtx  
+          Left err -> Left err
+    }
 
-EvalCommand :: { GlobalContext -> Expr }
+EvalCommand :: { GlobalContext -> Either String Expr }
   : "eval" ":" Expr ";" { \globalCtx -> $3 globalCtx [] }
 
-Expr :: {  GlobalContext -> LocalContext -> Expr }
-  : Expr "." Expr { \global local -> App ($1 global local) ($3 global local) }
-  | "lam" var "->" Expr %shift { \global local -> Lam $2 ($4 global ($2 : local)) }
-  | var { \global local -> -- TODO: rewrite using maybe monad
+Expr :: {  GlobalContext -> LocalContext -> Either String Expr }
+  : Expr "." Expr { \global local -> $1 global local >>= \e1 ->
+                                     $3 global local >>= \e2 ->
+                                     Right (App e1 e2)
+                  }
+    | "lam" var "->" Expr %shift { \global local ->
+                                     ($4 global ($2 : local)) >>= \e ->
+                                     Right (Lam $2 e)
+                                 }
+  | var { \global local ->
             case elemIndex $1 local of
-              Just i  -> Var i
-              Nothing ->
-                case M.lookup $1 global of
-                  Just e  -> e
-                  Nothing -> error $ "free variable! " ++ $1
+              Just i  -> Right $ Var i
+              Nothing -> case M.lookup $1 global of
+                           Just e  -> Right e
+                           Nothing -> Left $ "free variable: " <> $1
         }
   | ParExpr { $1 }
 
 ParExpr : "(" Expr ")" { $2 }
-
 {
 type GlobalContext = M.Map String Expr
 
