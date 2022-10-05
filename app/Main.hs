@@ -1,9 +1,9 @@
 module Main (main) where
 
-import Control.Monad.Except
+import Control.Monad.Except ( runExceptT )
 import System.Environment (getArgs)
 
-import Lam.Handler
+import Lam.Handler ( handleFile, emptyContext, repl, Command )
 
 main :: IO ()
 main = do
