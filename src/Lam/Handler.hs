@@ -13,7 +13,7 @@ module Lam.Handler ( repl
                    , parseEval
                    ) where
 
-import Control.Monad.Except
+import Control.Monad.Except ( liftEither, MonadIO(liftIO), ExceptT )
 import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
@@ -35,9 +35,9 @@ loadFile fName = do
       f :: [String] -> GlobalContext -> Command GlobalContext
       f [] ctx = return ctx
       f (c:cs) ctx = case take 2 c of
-                       "de" -> liftEither (parseDefine c ctx) >>= \ctx' -> f cs ctx'
-                       "lo" -> let target = parseLoad c
-                               in loadFile target >>= \ctx' ->
+                       "de" -> liftEither (parseDefine c ctx) >>= f cs
+                       "lo" -> do let target = parseLoad c
+                                  ctx' <- loadFile target
                                 -- use ctx' on the left because
                                 -- it was defined later, so should
                                 -- have priority in the context
@@ -48,13 +48,15 @@ handleCommand :: String -> GlobalContext -> Command GlobalContext
 handleCommand command ctx = do
   case take 2 command of
     ":q" -> liftIO exitSuccess
-    "ev" -> liftEither (parseEval command ctx) >>= \e ->
-            liftIO (print (eval e)) >>
-            return ctx
+    "ev" -> do e <-  liftEither (parseEval command ctx)
+               liftIO (print (eval e))
+               return ctx
     "de" -> liftEither $ parseDefine command ctx
-    "lo" -> let target = parseLoad command
-            in loadFile target >>= \ctx' -> return (M.union ctx' ctx)
-    _    -> liftIO (print "Unknown command!") >> return ctx
+    "lo" -> do let target = parseLoad command
+               ctx' <- loadFile target
+               return (M.union ctx' ctx)
+    _    -> do liftIO (print "Unknown command!")
+               return ctx
 
 repl :: GlobalContext -> Command ()
 repl ctx = do
