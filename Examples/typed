@@ -1,2 +1,2 @@
-define id := lam x : T -> x
+define id := lam x : U -> x;
 eval : id . id;

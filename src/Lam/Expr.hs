@@ -1,12 +1,18 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module Lam.Expr ( Expr(..)
+                , Type(..)
                 , debugDeBruijn
                 , LocalContext
                 , Id) where
 
 
 data Type = U | Arrow Type Type
+  deriving Eq
+
+instance Show Type where
+    show U = "U"
+    show (Arrow t1 t2) = show t1 <> " -> " <> show t2
 
 -- probably gonna change this later
 type Id = String
@@ -44,7 +50,7 @@ instance Show Expr where
 
 debugDeBruijn :: Expr -> String
 debugDeBruijn (Var i)     = show i
-debugDeBruijn (Lam _ _ e)   = unwords [ "(lam.", debugDeBruijn e, ")" ]
+debugDeBruijn (Lam _ _ e) = unwords [ "(lam.", debugDeBruijn e, ")" ]
 debugDeBruijn (App e1 e2) = unwords [ "("
                                     , debugDeBruijn e1
                                     , debugDeBruijn e2

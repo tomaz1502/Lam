@@ -11,9 +11,8 @@ import Control.Monad.State
 import Data.List (elemIndex)
 import Data.Map qualified  as M
 
-import Lam.Expr (Expr(..), LocalContext)
+import Lam.Expr (Expr(..), Type(..), LocalContext)
 import Lam.Lexer qualified as L
-import Lam.Type
 }
 
 %name hParseEval EvalCommand

@@ -1,10 +1,10 @@
-module Lam.Eval (eval, evalWithGas) where
+module Lam.Evaluator (eval, evalWithGas) where
 
 import Lam.Expr ( Expr(..) )
 
 shift' :: Int -> Int -> Expr -> Expr
 shift' c d (Var k)     = if k < c then Var k else Var $ k + d
-shift' c d (Lam n t e)   = Lam n t (shift' (c + 1) d e)
+shift' c d (Lam n t e) = Lam n t (shift' (c + 1) d e)
 shift' c d (App e1 e2) = App (shift' c d e1) (shift' c d e2)
 
 shift :: Int -> Expr -> Expr

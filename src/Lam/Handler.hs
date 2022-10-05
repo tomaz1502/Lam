@@ -15,11 +15,12 @@ import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
 
-import Lam.Eval ( eval )
+import Lam.Evaluator ( eval )
 import Lam.Expr ( Expr )
+import Lam.Lexer ( runAlex, Alex )
 import Lam.Parser
     ( emptyContext, hParseDefine, hParseEval, GlobalContext )
-import Lam.Lexer ( runAlex, Alex )
+import Lam.TypeChecker
 
 type Command a = ExceptT String IO a
 
@@ -47,7 +48,9 @@ handleCommand command ctx = do
   case take 2 command of
     ":q" -> liftIO exitSuccess
     "ev" -> do e <-  liftEither (parseEval command ctx)
-               liftIO (print (eval e))
+               case typeCheck e of
+                 Nothing -> liftIO (putStrLn "typing error")
+                 Just t  -> liftIO (putStrLn (show (eval e) <> " : " <> show t))
                return ctx
     "de" -> liftEither $ parseDefine command ctx
     "lo" -> do let target = parseLoad command

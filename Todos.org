@@ -1,0 +1,4 @@
+#+TITLE: Todos (LAM)
+#+AUTHOR: Tomaz
+
+* Add flag for parsing with or without types
