@@ -15,7 +15,8 @@ import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
 
-import Lam.Expr ( eval, Expr )
+import Lam.Eval ( eval )
+import Lam.Expr ( Expr )
 import Lam.Parser
     ( emptyContext, hParseDefine, hParseEval, GlobalContext )
 import Lam.Lexer ( runAlex, Alex )
@@ -86,7 +87,7 @@ parseDefine = getParser hParseDefine
 
 parseLoad :: String -> String
 parseLoad s = let s1 = dropWhile (/= '\"') s -- remove load command
-                  s2 = drop 1 s1 -- remove quote
-                  s3 = init (init s2) -- remove semicolon and other quote
+                  s2 = drop 1 s1             -- remove quote
+                  s3 = init (init s2)        -- remove semicolon and other quote
               in s3
 
