@@ -6,7 +6,7 @@ module Lam.Expr ( Expr(..)
                 , LocalContext
                 , Id) where
 
-import Lam.Type
+import Lam.Type ( Type )
 
 -- probably gonna change this later
 type Id = String
@@ -39,7 +39,7 @@ instance Show Expr where
             in  unwords ["\\" <> freshName, "->", go (freshName : ctx) e]
           go ctx (App e1 e2) =
             let f e@(Var _) = go ctx e
-                f e         = unwords ["(", go ctx e, ")"]
+                f e         = concat ["(", go ctx e, ")"]
             in unwords [f e1, ".", f e2]
 
 debugDeBruijn :: Expr -> String

@@ -12,11 +12,14 @@ import Fixtures.Misc
     ( miscTestCases, MiscTest(TC, eOut, eInp, prog) )
 
 import Test.Tasty ( defaultMain, testGroup, TestTree )
-import Test.Tasty.HUnit ( testCase, (@?=) )
+import Test.Tasty.HUnit ( testCase, (@?=), assertFailure )
 
 parserTest :: SourceCode -> Expr -> TestTree
 parserTest prog e = testCase "parser test" $
-  parseEval prog emptyContext @?= e
+  case parseEval prog emptyContext of
+    Right e' -> e' @?= e
+    Left  _ -> assertFailure $ "error on parsing" <> prog
+  -- parseEval prog emptyContext @?= e
 
 evalTest :: Expr -> Expr -> TestTree
 evalTest inp out = testCase "eval test" $
@@ -24,7 +27,9 @@ evalTest inp out = testCase "eval test" $
 
 testParseChurch :: Int -> TestTree
 testParseChurch n = testCase ("parse church " <> show n) $
-  parseEval (encodeChurchP n) emptyContext @?= encodeChurchE n
+  case parseEval (encodeChurchP n) emptyContext of
+    Right e' -> e' @?= encodeChurchE n
+    Left  _ -> assertFailure $ "error on parsing" <> encodeChurchP n
 
 testSumChurch :: Int -> Int -> TestTree
 testSumChurch n m = testCase (unwords ["sum church", show n, show m]) $
@@ -41,7 +46,7 @@ main :: IO ()
 main = defaultMain $ testGroup "lam tests"
     [ testGroup "parser tests" $ map (\TC{..} -> parserTest prog eInp) miscTestCases
     , testGroup "eval tests"   $ map (\TC{..} -> evalTest eInp eOut) miscTestCases
-    , testGroup "church tests" $ 
+    , testGroup "church tests" $
         concat [ [testParseChurch i | i <- [0 .. 10]]
                , [testSumChurch i j | i <- [0 .. 5] , j <- [0 .. 5]]
                , [testMulChurch i j | i <- [0 .. 5] , j <- [0 .. 5]]
