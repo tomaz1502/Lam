@@ -11,7 +11,7 @@ shift :: Int -> Expr -> Expr
 shift = shift' 0
 
 substitute :: Int -> Expr -> Expr -> Expr
-substitute i s (Lam n t e)   = Lam n t $ substitute (i + 1) (shift 1 s) e
+substitute i s (Lam n t e) = Lam n t $ substitute (i + 1) (shift 1 s) e
 substitute i s (App e1 e2) = App (substitute i s e1) (substitute i s e2)
 substitute i s (Var k)     = if i == k then s else Var k
 

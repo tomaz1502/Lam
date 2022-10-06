@@ -12,7 +12,12 @@ data Type = U | Arrow Type Type
 
 instance Show Type where
     show U = "U"
-    show (Arrow t1 t2) = show t1 <> " -> " <> show t2
+    show (Arrow t1 t2) = concat [ "("
+                                , show t1
+                                , ")"
+                                , " -> "
+                                , show t2
+                                ]
 
 -- probably gonna change this later
 type Id = String
