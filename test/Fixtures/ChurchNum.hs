@@ -23,8 +23,8 @@ encodeChurchP n
 
 encodeChurchE :: Int -> Expr
 encodeChurchE n
-  | n >= 0    = Lam "f" $
-                  Lam "x" $
+  | n >= 0    = Lam "f" (Arrow U U) $
+                  Lam "x" U $
                     applyN n (App (Var 1)) (Var 0)
   | otherwise = error "negative church (expr)"
 

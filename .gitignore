@@ -2,5 +2,6 @@
 
 *.agda
 *.agdai
+src/Agda
 
 TaglessFinal.hs

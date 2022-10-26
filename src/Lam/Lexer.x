@@ -10,19 +10,21 @@ $alpha = [a-zA-Z]
 
 tokens :-
 <0> $white+ ;
-<0> "->"     { tok Arrow     }
-<0> "=>"     { tok TypeArrow }
-<0> "U"      { tok BaseType  }
-<0> "."      { tok Dot       }
-<0> "lam"    { tok Lam       }
-<0> "eval"   { tok Eval      }
-<0> "define" { tok Define    }
-<0> ":"      { tok Colon     }
-<0> "="      { tok Equals    }
-<0> ";"      { tok Semicolon }
-<0> "("      { tok LPar      }
-<0> ")"      { tok RPar      }
-<0> @id      { tok (Var "")  }
+<0> "->"      { tok Arrow     }
+<0> "=>"      { tok TypeArrow }
+<0> "U"       { tok BaseType  }
+<0> "."       { tok Dot       }
+<0> "lam"     { tok Lam       }
+<0> "EVAL"    { tok Eval      }
+<0> "TYPEDEF" { tok Typedef   }
+<0> "DEFINE"  { tok Define    }
+<0> ":"       { tok Colon     }
+<0> "::"      { tok TypeColon }
+<0> ":="      { tok ColonEq   }
+<0> ";"       { tok Semicolon }
+<0> "("       { tok LPar      }
+<0> ")"       { tok RPar      }
+<0> @id       { tok (Var "")  }
 
 {
 
@@ -32,11 +34,13 @@ data Token =
   | BaseType
   | Dot
   | Lam
-  | Eval
+  | Eval   
+  | Typedef
   | Define
   | Colon
+  | TypeColon
   | Semicolon
-  | Equals
+  | ColonEq
   | Var String
   | LPar
   | RPar

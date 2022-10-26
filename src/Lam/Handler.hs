@@ -19,7 +19,6 @@ import Lam.Evaluator ( eval )
 import Lam.Expr ( Expr )
 import Lam.Lexer ( runAlex, Alex )
 import Lam.Parser
-    ( emptyContext, hParseDefine, hParseEval, GlobalContext )
 import Lam.TypeChecker
 
 type Command a = ExceptT String IO a
@@ -40,22 +39,23 @@ loadFile fName = do
                                 -- use ctx' on the left because
                                 -- it was defined later, so should
                                 -- have priority in the context
-                                  f cs (M.union ctx' ctx)
+                                  f cs (ctxUnion ctx' ctx)
                        _    -> f cs ctx
 
 handleCommand :: String -> GlobalContext -> Command GlobalContext
 handleCommand command ctx = do
   case take 2 command of
     ":q" -> liftIO exitSuccess
-    "ev" -> do e <-  liftEither (parseEval command ctx)
+    "EV" -> do e <-  liftEither (parseEval command ctx)
                case typeCheck e of
                  Nothing -> liftIO (putStrLn "typing error")
-                 Just t  -> liftIO (putStrLn (show (eval e) <> " : " <> show t))
+                 Just t  -> liftIO (putStrLn (show (eval e) <> " :: " <> show t))
                return ctx
-    "de" -> liftEither $ parseDefine command ctx
-    "lo" -> do let target = parseLoad command
+    "DE" -> liftEither $ parseDefine command ctx
+    "TY" -> liftEither $ parseTypedef command ctx
+    "LO" -> do let target = parseLoad command
                ctx' <- loadFile target
-               return (M.union ctx' ctx)
+               return (ctxUnion ctx' ctx)
     _    -> do liftIO (print "Unknown command!")
                return ctx
 
@@ -87,6 +87,9 @@ parseEval = getParser hParseEval
 
 parseDefine :: String -> GlobalContext -> Either String GlobalContext
 parseDefine = getParser hParseDefine
+
+parseTypedef :: String -> GlobalContext -> Either String GlobalContext
+parseTypedef = getParser hParseTypedef
 
 parseLoad :: String -> String
 parseLoad s = let s1 = dropWhile (/= '\"') s -- remove load command

@@ -16,7 +16,7 @@ substitute i s (App e1 e2) = App (substitute i s e1) (substitute i s e2)
 substitute i s (Var k)     = if i == k then s else Var k
 
 smallStep :: Expr -> Maybe Expr
-smallStep (Var _)            = Nothing
+smallStep (Var _)              = Nothing
 smallStep (Lam n t e)          = smallStep e >>= Just . Lam n t
 smallStep (App (Lam n _ e) e2) = Just $ shift (-1) (substitute 0 (shift 1 e2) e)
 smallStep (App e1 e2)        =
