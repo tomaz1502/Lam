@@ -3,6 +3,8 @@
 
 module Lam.Parser ( hParseCommand
                   , hParseProg
+                  , hParseUntypedCommand
+                  , hParseUntypedProg
                   ) where
 
 import Control.Monad.State
@@ -13,6 +15,8 @@ import Lam.Expr (RawExpr(..), RawType(..), Id, Command(..))
 import Lam.Lexer qualified as L
 }
 
+%name hParseUntypedProg UntypedProgram
+%name hParseUntypedCommand UntypedCommand
 %name hParseProg Program
 %name hParseCommand Command
 %tokentype { L.Token }
@@ -42,6 +46,22 @@ import Lam.Lexer qualified as L
   ")"       { L.RPar      }
 %%
 
+
+UntypedProgram :: { [Command] }
+  : UntypedCommand UntypedProgram { $1 : $2 }
+  | { [] }
+
+UntypedCommand :: { Command }
+  : UntypedDefineCommand { DefineC $1  }
+  | UntypedEvalCommand { EvalC $1  }
+  | LoadCommand { LoadC $1 }
+
+UntypedDefineCommand :: { (Id, RawExpr) }
+  : "DEFINE" ":" var ":=" UntypedRawExpr ";" { ($3, $5) }
+
+UntypedEvalCommand :: { RawExpr }
+  : "EVAL" ":" UntypedRawExpr ";" { $3 }
+
 Program :: { [Command] }
   : Command Program { $1 : $2 }
   | { [] }
@@ -66,6 +86,15 @@ EvalCommand :: { RawExpr }
 LoadCommand :: { String }
   : "LOAD" ":" var ";" { $3 }
   -- yes i will change that later to FilePath thank you
+
+UntypedRawExpr :: { RawExpr }
+  : UntypedRawExpr "." UntypedRawExpr { RawApp $1 $3  }
+  | "lam" var "->" UntypedRawExpr %shift
+    { RawLam $2 RawU $4 }
+  | var { RawVar $1 }
+  | UntypedParExpr { $1 }
+
+UntypedParExpr : "(" UntypedRawExpr ")" { $2 }
 
 RawExpr :: { RawExpr }
   : RawExpr "." RawExpr { RawApp $1 $3  }

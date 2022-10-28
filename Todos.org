@@ -1,4 +1,23 @@
 #+TITLE: Todos (LAM)
 #+AUTHOR: Tomaz
 
-* Add flag for parsing with or without types
+* DONE Add flag for parsing with or without types
+* TODO Monad Reader for flags
+* TODO Accept multiple bindings with one `lam`
+- Currently:
+  lam x -> lam y -> ...
+- Would like to be:
+  lam x, y -> ...
+
+* TODO Fix tests
+* TODO Add more intrinsics (pairs,) (cap 11 do TaPL)
+** TODO Let expressions
+** TODO Ascription
+** TODO Sequencing (;)
+** TODO Pairs
+** TODO Tuples
+** TODO Records
+** TODO Sums
+** TODO Variants
+** TODO General Recursion (intrinsic Y)
+** TODO Monormophic Lists

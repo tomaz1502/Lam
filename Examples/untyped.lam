@@ -1,0 +1,9 @@
+DEFINE: zero := lam s -> lam z -> z;
+DEFINE: succ := lam m -> lam s -> lam z -> s . (m . s . z);
+DEFINE: mul  := lam m -> lam n -> lam s -> lam z -> m . (n . s) . z;
+DEFINE: one   := succ . zero;
+DEFINE: two   := succ . one;
+DEFINE: three := succ . two;
+DEFINE: program := mul . three . two;
+EVAL: program;
+
