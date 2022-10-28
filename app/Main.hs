@@ -1,22 +1,27 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+
 module Main (main) where
 
 import Control.Monad.Except ( runExceptT )
+import Control.Monad.Reader (runReaderT)
+import Data.List (isPrefixOf)
 import System.Environment   ( getArgs )
 import System.Exit          ( exitFailure )
 
-import Lam.Handler ( emptyContext, repl, handleFile, Result )
-import Data.List (isPrefixOf)
+import Lam.Handler ( emptyContext, repl, handleFile, Result, Flag(..) )
 
 main :: IO ()
 main = do
   args <- getArgs
   let (flags, nonFlags) = spanComplete (isPrefixOf "--") args
-  -- for now is the only flag we have
-  -- when we have more we gave them a better treatment
-  let untyped = "--untyped" `elem` flags
+  let flagSet =
+        -- could be just map read?
+        if ("--untyped" `elem` flags) then [Untyped] else []
   case nonFlags of
-    []      -> run (repl emptyContext untyped)
-    [fName] -> run (handleFile fName untyped)
+    []      -> run (repl emptyContext) flagSet
+    [fName] -> run (handleFile fName) flagSet
     _       -> error wrongUsageMsg
   where
     wrongUsageMsg :: String
@@ -24,11 +29,12 @@ main = do
       unlines [ "[Error]: Incorrect number of arguments."
               , "Usage: Lam <filename>?"
               ]
-    run :: Result a -> IO ()
-    run f = do result <- runExceptT f
-               case result of
-                 Right _  -> return ()
-                 Left err -> putStrLn err
+    run :: Result a -> [Flag] -> IO ()
+    run f flags =
+        do result <- runExceptT (runReaderT f flags)
+           case result of
+             Right _  -> return ()
+             Left err -> putStrLn err
     -- Dont assume f to be monotonic
     spanComplete :: (a -> Bool) -> [a] -> ([a], [a])
     spanComplete _ [] = ([], [])
