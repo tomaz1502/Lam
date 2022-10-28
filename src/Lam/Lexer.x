@@ -10,6 +10,7 @@ $alpha = [a-zA-Z]
 
 tokens :-
 <0> $white+ ;
+<0> \n ;
 <0> "->"      { tok Arrow     }
 <0> "=>"      { tok TypeArrow }
 <0> "U"       { tok BaseType  }
@@ -18,6 +19,7 @@ tokens :-
 <0> "EVAL"    { tok Eval      }
 <0> "TYPEDEF" { tok Typedef   }
 <0> "DEFINE"  { tok Define    }
+<0> "LOAD"    { tok Load }
 <0> ":"       { tok Colon     }
 <0> "::"      { tok TypeColon }
 <0> ":="      { tok ColonEq   }
@@ -36,6 +38,7 @@ data Token =
   | Lam
   | Eval   
   | Typedef
+  | Load
   | Define
   | Colon
   | TypeColon

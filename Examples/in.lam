@@ -1,4 +1,5 @@
-TYPEDEF: Number := (U => U) => U => U;
+TYPEDEF: Fn := U => U;
+TYPEDEF: Number := Fn => U => U;
 DEFINE: id := lam x :: U -> x;
 DEFINE: true  := lam x :: U -> lam y :: U -> x;
 DEFINE: false := lam x :: U -> lam y :: U -> y;

@@ -3,11 +3,9 @@
 
 module Lam.Handler ( repl
                    , handleFile
-                   , Command
+                   , Result
                    , GlobalContext
                    , emptyContext
-                   , parseDefine
-                   , parseEval
                    ) where
 
 import Control.Monad.Except ( liftEither, MonadIO(liftIO), ExceptT )
@@ -16,84 +14,69 @@ import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
 
 import Lam.Evaluator ( eval )
-import Lam.Expr ( Expr )
+import Lam.Expr
 import Lam.Lexer ( runAlex, Alex )
 import Lam.Parser
 import Lam.TypeChecker
 
-type Command a = ExceptT String IO a
+type Result a = ExceptT String IO a
 
 -- TODO: report cyclic dependencies
-loadFile :: String -> Command GlobalContext
+loadFile :: String -> Result GlobalContext
 loadFile fName = do
     sc <- liftIO (readFile fName)
-    f (lines sc) emptyContext
+    f (parseProg sc) emptyContext
     where
-      -- TODO: abstract pattern here and in handleFile
-      f :: [String] -> GlobalContext -> Command GlobalContext
+      f :: [Command] -> GlobalContext -> Result GlobalContext
       f [] ctx = return ctx
-      f (c:cs) ctx = case take 2 c of
-                       "de" -> liftEither (parseDefine c ctx) >>= f cs
-                       "lo" -> do let target = parseLoad c
-                                  ctx' <- loadFile target
-                                -- use ctx' on the left because
-                                -- it was defined later, so should
-                                -- have priority in the context
-                                  f cs (ctxUnion ctx' ctx)
-                       _    -> f cs ctx
+      f ((EvalC _):cs) gctx = f cs gctx -- load just mean the macros
+      f (c:cs) gctx =
+          handleCommand c gctx >>= \gctx' -> f cs gctx'
 
-handleCommand :: String -> GlobalContext -> Command GlobalContext
-handleCommand command ctx = do
-  case take 2 command of
-    ":q" -> liftIO exitSuccess
-    "EV" -> do e <-  liftEither (parseEval command ctx)
-               case typeCheck e of
-                 Nothing -> liftIO (putStrLn "typing error")
-                 Just t  -> liftIO (putStrLn (show (eval e) <> " :: " <> show t))
-               return ctx
-    "DE" -> liftEither $ parseDefine command ctx
-    "TY" -> liftEither $ parseTypedef command ctx
-    "LO" -> do let target = parseLoad command
-               ctx' <- loadFile target
-               return (ctxUnion ctx' ctx)
-    _    -> do liftIO (print "Unknown command!")
-               return ctx
+handleCommand :: Command -> GlobalContext -> Result GlobalContext
+handleCommand (TypedefC (s, rt)) gctx = do
+    t <- liftEither (expandType gctx rt)
+    let boundTypes' = M.insert s t (boundTypes gctx)
+     in return $ gctx {boundTypes = boundTypes'}
+handleCommand (DefineC (s, re)) gctx = do
+    e <- liftEither (eraseNames gctx re)
+    let boundExprs' = M.insert s e (boundExprs gctx)
+     in return $ gctx {boundExprs = boundExprs'}
+handleCommand (EvalC re) gctx = do
+    e <- liftEither (eraseNames gctx re)
+    case typeCheck e of
+      Nothing -> liftIO (putStrLn "typing error")
+      Just t  -> liftIO (putStrLn (show (eval e) <> " :: " <> show t))
+    return gctx
+handleCommand (LoadC path) gctx = do
+    gctx' <- loadFile path
+    return (ctxUnion gctx' gctx)
 
-repl :: GlobalContext -> Command ()
+repl :: GlobalContext -> Result ()
 repl ctx = do
-  command <- liftIO readRepl
-  ctx' <- handleCommand command ctx
+  cmd <- liftIO readRepl
+  ctx' <- handleCommand (parseCommand cmd) ctx
   repl ctx'
-      where readRepl :: IO String
-            readRepl = putStr "> " >> hFlush stdout >> getLine
+  where readRepl :: IO String
+        readRepl = putStr "> " >> hFlush stdout >> getLine
 
-handleFile :: String -> Command ()
+handleFile :: String -> Result ()
 handleFile fName = do
   sc <- liftIO $ readFile fName
-  f (lines sc) emptyContext
+  f (parseProg sc) emptyContext
   where
-    f :: [String] -> GlobalContext -> Command ()
-    f [] _ = return ()
-    f (c:cs) ctx = handleCommand c ctx >>= f cs
+    f :: [Command] -> GlobalContext -> Result ()
+    f [] _       = return ()
+    f (c:cs) gctx = handleCommand c gctx >>= f cs
 
-getParser :: Alex a -> String -> a
-getParser f s =
-    case runAlex s f of
-      Left err -> error "parsing error"
+parseCommand :: String -> Command
+parseCommand s =
+    case runAlex s hParseCommand of
+      Left err -> error ("parsing error: " <> err)
       Right p  -> p
 
-parseEval :: String -> GlobalContext -> Either String Expr
-parseEval = getParser hParseEval
-
-parseDefine :: String -> GlobalContext -> Either String GlobalContext
-parseDefine = getParser hParseDefine
-
-parseTypedef :: String -> GlobalContext -> Either String GlobalContext
-parseTypedef = getParser hParseTypedef
-
-parseLoad :: String -> String
-parseLoad s = let s1 = dropWhile (/= '\"') s -- remove load command
-                  s2 = drop 1 s1             -- remove quote
-                  s3 = init (init s2)        -- remove semicolon and other quote
-              in s3
-
+parseProg :: String -> [Command]
+parseProg s =
+    case runAlex s hParseProg of
+      Left err -> error ("parsing error: " <> err)
+      Right p  -> p

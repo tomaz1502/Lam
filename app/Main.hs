@@ -4,7 +4,7 @@ import Control.Monad.Except ( runExceptT )
 import System.Environment   ( getArgs )
 import System.Exit          ( exitFailure )
 
-import Lam.Handler ( handleFile, emptyContext, repl, Command )
+import Lam.Handler ( emptyContext, repl, handleFile, Result )
 
 main :: IO ()
 main = do
@@ -19,7 +19,7 @@ main = do
       unlines [ "[Error]: Incorrect number of arguments."
               , "Usage: Lam <filename>?"
               ]
-    run :: Command a -> IO ()
+    run :: Result a -> IO ()
     run f = do result <- runExceptT f
                case result of
                  Right _  -> return ()

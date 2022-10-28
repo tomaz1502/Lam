@@ -1,0 +1,14 @@
+TYPEDEF: Number := (U => U) => U => U;
+DEFINE: zero := lam s :: U => U -> lam z :: U -> z;
+DEFINE: succ := lam m :: Number -> lam s :: U => U -> lam z :: U -> s . (m . s . z);
+DEFINE: plus := lam m :: Number ->
+lam n :: Number -> lam s :: U => U -> lam z :: U -> m . s . (n . s . z);
+DEFINE: zero := lam s :: U => U -> lam z :: U -> z;
+DEFINE: one   := succ . zero;
+DEFINE: two   := succ . one;
+DEFINE: three := succ . two;
+DEFINE: four  := succ . three;
+DEFINE: five  := succ . four;
+DEFINE: six   := succ . five;
+DEFINE: program := plus . two . three;
+EVAL: program;

@@ -20,6 +20,7 @@
     - [x] Eval
     - [x] Define
     - [x] Load
+    - [x] Typedef
 
 ## Future Work
   - [ ] Tagless Final style
