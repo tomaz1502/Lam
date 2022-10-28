@@ -1,20 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
-module Lam.Expr ( Expr(..)
-                , Type(..)
-                , debugDeBruijn
-                , LocalContext
-                , GlobalContext(..)
-                , emptyContext
-                , ctxUnion
-                , Id
-                , RawExpr(..)
-                , RawType(..)
-                , Command(..)
-                , expandType
-                , eraseNames
-                ) where
+module Lam.Expr  where
 
 import Data.Map qualified as M
 import Data.List (elemIndex)
@@ -31,20 +18,28 @@ instance Show Type where
                                 , show t2
                                 ]
 
--- probably gonna change this later
-type Id = String
-type LocalContext = [Id]
+data RawType =
+    RawU
+  | RawArrow RawType RawType
+  | FreeType Id
+
+expandType :: GlobalContext -> RawType -> Either String Type
+expandType _ RawU = Right U
+expandType gctx (RawArrow t1 t2) =
+    expandType gctx t1 >>= \t1' ->
+    expandType gctx t2 >>= \t2' ->
+    Right (Arrow t1' t2')
+expandType gctx (FreeType s) =
+    case M.lookup s (boundTypes gctx) of
+      Just t  -> Right t
+      Nothing -> Left $ "free type: " <> s
+
 
 -- | Representation of lambda terms with DeBruijn indices
 data Expr =
     Var Int
   | Lam Id Type Expr
   | App Expr Expr
-
-pickFresh :: LocalContext -> Id -> Id
-pickFresh ctx nm
- | nm `elem` ctx = pickFresh ctx (nm <> "'")
- | otherwise     = nm
 
 instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) :: Expr -> Expr -> Bool
@@ -65,35 +60,10 @@ instance Show Expr where
                 f e         = concat ["(", go ctx e, ")"]
             in unwords [f e1, ".", f e2]
 
-debugDeBruijn :: Expr -> String
-debugDeBruijn (Var i)     = show i
-debugDeBruijn (Lam _ _ e) = unwords [ "(lam.", debugDeBruijn e, ")" ]
-debugDeBruijn (App e1 e2) = unwords [ "("
-                                    , debugDeBruijn e1
-                                    , debugDeBruijn e2
-                                    , ")"
-                                    ]
-
 data RawExpr =
     RawVar Id
   | RawApp RawExpr RawExpr
   | RawLam Id RawType RawExpr
-
-data GlobalContext = GlobalContext
-    { boundTypes :: M.Map String Type
-    , boundExprs :: M.Map String Expr
-    }
-
-emptyContext :: GlobalContext
-emptyContext = GlobalContext M.empty M.empty
-
-ctxUnion :: GlobalContext -> GlobalContext -> GlobalContext
-ctxUnion ctx1 ctx2 =
-    let bTypes1 = boundTypes ctx1
-        bTypes2 = boundTypes ctx2
-        bExprs1 = boundExprs ctx1
-        bExprs2 = boundExprs ctx2
-    in  GlobalContext (M.union bTypes1 bTypes2) (M.union bExprs1 bExprs2)
 
 eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
@@ -114,24 +84,28 @@ eraseNames = go []
         expandType gctx ty >>= \ty' ->
         Right $ Lam s ty' e'
 
-data RawType =
-    RawU
-  | RawArrow RawType RawType
-  | FreeType Id
+-- probably gonna change this later
+type Id = String
+type LocalContext = [Id]
 
-expandType :: GlobalContext -> RawType -> Either String Type
-expandType _ RawU = Right U
-expandType gctx (RawArrow t1 t2) =
-    expandType gctx t1 >>= \t1' ->
-    expandType gctx t2 >>= \t2' ->
-    Right (Arrow t1' t2')
-expandType gctx (FreeType s) =
-    case M.lookup s (boundTypes gctx) of
-      Just t  -> Right t
-      Nothing -> Left $ "free type: " <> s
+pickFresh :: LocalContext -> Id -> Id
+pickFresh ctx nm
+ | nm `elem` ctx = pickFresh ctx (nm <> "'")
+ | otherwise     = nm
 
-data Command =
-    TypedefC (Id, RawType)
-  | DefineC (Id, RawExpr)
-  | EvalC RawExpr
-  | LoadC String
+data GlobalContext = GlobalContext
+    { boundTypes :: M.Map String Type
+    , boundExprs :: M.Map String Expr
+    }
+
+emptyContext :: GlobalContext
+emptyContext = GlobalContext M.empty M.empty
+
+ctxUnion :: GlobalContext -> GlobalContext -> GlobalContext
+ctxUnion ctx1 ctx2 =
+    let bTypes1 = boundTypes ctx1
+        bTypes2 = boundTypes ctx2
+        bExprs1 = boundExprs ctx1
+        bExprs2 = boundExprs ctx2
+    in  GlobalContext (M.union bTypes1 bTypes2) (M.union bExprs1 bExprs2)
+

@@ -1,18 +1,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE KindSignatures #-}
 
 module Lam.Handler ( repl
                    , handleFile
-                   , Result
                    , GlobalContext
                    , emptyContext
-                   , Flag(..)
                    ) where
 
-import Control.Monad.RWS (MonadReader, ask)
-import Control.Monad.Except ( liftEither, MonadIO(liftIO), ExceptT, MonadError )
+import Control.Monad.RWS (MonadReader)
+import Control.Monad.Except ( liftEither, MonadIO(liftIO), MonadError )
 import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
@@ -22,18 +19,7 @@ import Lam.Expr
 import Lam.Lexer ( runAlex, Alex )
 import Lam.Parser
 import Lam.TypeChecker
-
-data Flag = Untyped
-  deriving Eq
-
-type Result a =
-  forall (m :: * -> *). ( MonadIO m
-                        , MonadError String m
-                        , MonadReader [Flag] m
-                        ) => m a
-
-askUntyped :: Result Bool
-askUntyped = (Untyped `elem`) <$> ask
+import Lam.Result
 
 -- TODO: report cyclic dependencies
 loadFile :: String -> Result GlobalContext
@@ -94,16 +80,3 @@ handleFile fName = do
     f [] _       = return ()
     f (c:cs) gctx = handleCommand c gctx >>= f cs
 
-getParser :: Alex a -> String -> a
-getParser f s =
-    case runAlex s f of
-      Left err -> error ("parsing error:" <> err)
-      Right p  -> p
-
-parseCommand :: Bool -> String -> Command
-parseCommand True  = getParser hParseUntypedCommand
-parseCommand False = getParser hParseCommand
-
-parseProg :: Bool -> String -> [Command]
-parseProg True  = getParser hParseUntypedProg
-parseProg False = getParser hParseProg

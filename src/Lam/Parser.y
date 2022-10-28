@@ -5,13 +5,16 @@ module Lam.Parser ( hParseCommand
                   , hParseProg
                   , hParseUntypedCommand
                   , hParseUntypedProg
+                  , parseProg
+                  , parseCommand
+                  , Command(..)
                   ) where
 
 import Control.Monad.State
 import Data.List (elemIndex)
 import Data.Map qualified as M
 
-import Lam.Expr (RawExpr(..), RawType(..), Id, Command(..))
+import Lam.Expr (RawExpr(..), RawType(..), Id)
 import Lam.Lexer qualified as L
 }
 
@@ -119,4 +122,30 @@ lexer = (=<< L.alexMonadScan)
 
 parseError :: L.Token -> a
 parseError t = error $ "error while parsing " ++ (show t)
+
+data Command =
+    TypedefC (Id, RawType)
+  | DefineC (Id, RawExpr)
+  | EvalC RawExpr
+  | LoadC String
+
+getParser :: L.Alex a -> String -> a
+getParser f s =
+    case L.runAlex s f of
+      Left err -> error ("parsing error:" <> err)
+      Right p  -> p
+
+parseCommand :: Bool -> String -> Command
+parseCommand untyped =
+  if untyped then
+    getParser hParseUntypedCommand
+  else getParser hParseCommand
+
+parseProg :: Bool -> String -> [Command]
+parseProg untyped =
+  if untyped then
+    getParser hParseUntypedProg
+  else getParser hParseProg
+
+
 }

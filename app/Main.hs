@@ -10,15 +10,14 @@ import Data.List (isPrefixOf)
 import System.Environment   ( getArgs )
 import System.Exit          ( exitFailure )
 
-import Lam.Handler ( emptyContext, repl, handleFile, Result, Flag(..) )
+import Lam.Handler ( emptyContext, repl, handleFile )
+import Lam.Result
 
 main :: IO ()
 main = do
   args <- getArgs
   let (flags, nonFlags) = spanComplete (isPrefixOf "--") args
-  let flagSet =
-        -- could be just map read?
-        if ("--untyped" `elem` flags) then [Untyped] else []
+  let flagSet = [Untyped | "--untyped" `elem` flags]
   case nonFlags of
     []      -> run (repl emptyContext) flagSet
     [fName] -> run (handleFile fName) flagSet

@@ -2,7 +2,7 @@
 #+AUTHOR: Tomaz
 
 * DONE Add flag for parsing with or without types
-* TODO Monad Reader for flags
+* DONE Monad Reader for flags
 * TODO Accept multiple bindings with one `lam`
 - Currently:
   lam x -> lam y -> ...
