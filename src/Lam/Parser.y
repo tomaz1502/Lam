@@ -56,8 +56,10 @@ UntypedProgram :: { [Command] }
 
 UntypedCommand :: { Command }
   : UntypedDefineCommand { DefineC $1  }
-  | UntypedEvalCommand { EvalC $1  }
-  | LoadCommand { LoadC $1 }
+  | UntypedEvalCommand   { EvalC $1  }
+  | LoadCommand          { LoadC $1 }
+  -- we allow this here but throw an error later
+  | TypedefCommand       { TypedefC $1 }
 
 UntypedDefineCommand :: { (Id, RawExpr) }
   : "DEFINE" ":" var ":=" UntypedRawExpr ";" { ($3, $5) }
@@ -71,9 +73,9 @@ Program :: { [Command] }
 
 Command :: { Command }
   : TypedefCommand { TypedefC $1 }
-  | DefineCommand { DefineC $1 }
-  | EvalCommand { EvalC $1 }
-  | LoadCommand { LoadC $1 }
+  | DefineCommand  { DefineC $1 }
+  | EvalCommand    { EvalC $1 }
+  | LoadCommand    { LoadC $1 }
 
 TypedefCommand :: { (Id, RawType) }
   : "TYPEDEF" ":" var ":=" RawType ";"
