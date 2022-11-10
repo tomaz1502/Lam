@@ -1,7 +1,10 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
-module Lam.Expr  where
+module Lam.Expr where
+
+import Lam.RawExpr
+import Lam.Parser
 
 import Data.Map qualified as M
 import Data.List (elemIndex)
@@ -14,14 +17,9 @@ instance Show Type where
     show (Arrow t1 t2) = concat [ "("
                                 , show t1
                                 , ")"
-                                , " -> "
+                                , " => "
                                 , show t2
                                 ]
-
-data RawType =
-    RawU
-  | RawArrow RawType RawType
-  | FreeType Id
 
 expandType :: GlobalContext -> RawType -> Either String Type
 expandType _ RawU = Right U
@@ -33,7 +31,6 @@ expandType gctx (FreeType s) =
     case M.lookup s (boundTypes gctx) of
       Just t  -> Right t
       Nothing -> Left $ "free type: " <> s
-
 
 -- | Representation of lambda terms with DeBruijn indices
 data Expr =
@@ -49,21 +46,26 @@ instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) _ _ = False
 
 instance Show Expr where
-  show = go []
-    where go :: LocalContext -> Expr -> String
-          go ctx (Var i) = ctx !! i
-          go ctx (Lam n _ e) =
-            let freshName = pickFresh ctx n
-            in  unwords ["\\" <> freshName, "->", go (freshName : ctx) e]
-          go ctx (App e1 e2) =
-            let f e@(Var _) = go ctx e
-                f e         = concat ["(", go ctx e, ")"]
-            in unwords [f e1, ".", f e2]
+  show = prettyPrint
 
-data RawExpr =
-    RawVar Id
-  | RawApp RawExpr RawExpr
-  | RawLam Id RawType RawExpr
+-- print respecting Lam's syntax
+prettyPrint :: Expr -> String
+prettyPrint = go []
+  where go :: LocalContext -> Expr -> String
+        go ctx (Var i) = ctx !! i
+        go ctx (Lam n ty e) =
+            let freshName = pickFresh ctx n
+             in unwords [ "lam"
+                        , freshName
+                        , "::"
+                        , show ty
+                        , "->"
+                        , go (freshName : ctx) e
+                        ]
+        go ctx (App e1 e2) =
+          let f e@(Var _) = go ctx e
+              f e         = concat ["(", go ctx e, ")"]
+           in unwords [f e1, ".", f e2]
 
 eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
@@ -71,10 +73,9 @@ eraseNames = go []
     go lctx gctx (RawVar s) =
       case elemIndex s lctx of
         Just i  -> Right $ Var i
-        Nothing -> let bExprs = boundExprs gctx
-                   in case M.lookup s bExprs of
-                        Just e  -> Right e
-                        Nothing -> Left $ "free variable: " <> s
+        Nothing -> case M.lookup s (boundExprs gctx) of
+                     Just e  -> Right e
+                     Nothing -> Left $ "free variable: " <> s
     go lctx gctx (RawApp e1 e2) =
         go lctx gctx e1 >>= \e1' ->
         go lctx gctx e2 >>= \e2' ->
@@ -84,8 +85,12 @@ eraseNames = go []
         expandType gctx ty >>= \ty' ->
         Right $ Lam s ty' e'
 
--- probably gonna change this later
-type Id = String
+parseUntypedExpr :: String -> Either String Expr
+parseUntypedExpr = eraseNames emptyContext . parseRawExpr True
+
+parseTypedExpr :: String -> Either String Expr
+parseTypedExpr = eraseNames emptyContext . parseRawExpr False
+
 type LocalContext = [Id]
 
 pickFresh :: LocalContext -> Id -> Id
@@ -107,5 +112,5 @@ ctxUnion ctx1 ctx2 =
         bTypes2 = boundTypes ctx2
         bExprs1 = boundExprs ctx1
         bExprs2 = boundExprs ctx2
-    in  GlobalContext (M.union bTypes1 bTypes2) (M.union bExprs1 bExprs2)
+     in GlobalContext (M.union bTypes1 bTypes2) (M.union bExprs1 bExprs2)
 

@@ -1,12 +1,9 @@
 {
 {-# LANGUAGE ImportQualifiedPost #-}
 
-module Lam.Parser ( hParseCommand
-                  , hParseProg
-                  , hParseUntypedCommand
-                  , hParseUntypedProg
-                  , parseProg
+module Lam.Parser ( parseProg
                   , parseCommand
+                  , parseRawExpr
                   , Command(..)
                   ) where
 
@@ -14,7 +11,7 @@ import Control.Monad.State
 import Data.List (elemIndex)
 import Data.Map qualified as M
 
-import Lam.Expr (RawExpr(..), RawType(..), Id)
+import Lam.RawExpr (RawExpr(..), RawType(..), Id)
 import Lam.Lexer qualified as L
 }
 
@@ -22,6 +19,8 @@ import Lam.Lexer qualified as L
 %name hParseUntypedCommand UntypedCommand
 %name hParseProg Program
 %name hParseCommand Command
+%name hParseExpr RawExpr
+%name hParseUntypedExpr UntypedRawExpr
 %tokentype { L.Token }
 %error { parseError }
 %monad { L.Alex } { >>= } { pure }
@@ -52,7 +51,8 @@ import Lam.Lexer qualified as L
 
 UntypedProgram :: { [Command] }
   : UntypedCommand UntypedProgram { $1 : $2 }
-  | { [] }
+  | -- EMPTY
+    { [] }
 
 UntypedCommand :: { Command }
   : UntypedDefineCommand { DefineC $1  }
@@ -132,7 +132,7 @@ data Command =
 getParser :: L.Alex a -> String -> a
 getParser f s =
     case L.runAlex s f of
-      Left err -> error ("parsing error:" <> err)
+      Left err -> error ("parsing error for:" <> s)
       Right p  -> p
 
 parseCommand :: Bool -> String -> Command
@@ -147,5 +147,9 @@ parseProg untyped =
     getParser hParseUntypedProg
   else getParser hParseProg
 
-
+parseRawExpr :: Bool -> String -> RawExpr
+parseRawExpr untyped =
+    if untyped then
+      getParser hParseUntypedExpr
+    else getParser hParseExpr
 }

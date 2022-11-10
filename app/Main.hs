@@ -17,6 +17,7 @@ main :: IO ()
 main = do
   args <- getArgs
   let (flags, nonFlags) = spanComplete (isPrefixOf "--") args
+  -- could be just map read
   let flagSet = [Untyped | "--untyped" `elem` flags]
   case nonFlags of
     []      -> run (repl emptyContext) flagSet

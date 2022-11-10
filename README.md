@@ -3,12 +3,16 @@
 ### Infrastructure
   - [x] Lexer
   - [x] Parser
-  - [x] Tests
+  - [ ] Tests
+    - [ ] Parser
+    - [ ] Evaluator
+    - [ ] Type Checker
   - [ ] DAG instead of AST
 
 ### Features
   - [x] De Bruijn Indices
-  - [ ] Simple Types
+  - [x] Simple Types
+  - [ ] Type Inference
   - [ ] Extensions (TaPL ch 11)
   - [ ] Verify properties using Agda (Progress/Preservation)
 

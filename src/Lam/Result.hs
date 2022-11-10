@@ -17,5 +17,5 @@ type Result a =
                         ) => m a
 
 askUntyped :: Result Bool
-askUntyped = (Untyped `elem`) <$> ask
+askUntyped = elem Untyped <$> ask
 

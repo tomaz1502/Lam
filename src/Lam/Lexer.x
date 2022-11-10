@@ -6,7 +6,7 @@
 
 $digit = 0-9
 $alpha = [a-zA-Z]
-@id = $alpha[$alpha$digit]*
+@id = $alpha[$alpha$digit]*[']*
 
 tokens :-
 <0> $white+ ;
