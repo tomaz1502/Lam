@@ -45,27 +45,29 @@ instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) (App e11 e12) (App e21 e22) = e11 == e21 && e12 == e22
   (==) _ _ = False
 
-instance Show Expr where
-  show = prettyPrint
-
 -- print respecting Lam's syntax
-prettyPrint :: Expr -> String
+prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
-  where go :: LocalContext -> Expr -> String
-        go ctx (Var i) = ctx !! i
-        go ctx (Lam n ty e) =
+  where go :: LocalContext -> Bool -> Expr -> String
+        go ctx _ (Var i) = ctx !! i
+        go ctx untyped (Lam n ty e) =
             let freshName = pickFresh ctx n
-             in unwords [ "lam"
-                        , freshName
-                        , "::"
-                        , show ty
-                        , "->"
-                        , go (freshName : ctx) e
-                        ]
-        go ctx (App e1 e2) =
-          let f e@(Var _) = go ctx e
-              f e         = concat ["(", go ctx e, ")"]
+             in unwords $ [ "lam"
+                          , freshName
+                          ] ++
+                          -- show types depending on the parameter
+                          [":: " <> show ty | not untyped] ++
+                          [ "->"
+                          , go (freshName : ctx) untyped e
+                          ]
+        go ctx untyped (App e1 e2) =
+          let f e@(Var _) = go ctx untyped e
+              f e         = concat ["(", go ctx untyped e, ")"]
            in unwords [f e1, ".", f e2]
+
+untypedPrettyPrint, typedPrettyPrint :: Expr -> String
+untypedPrettyPrint = prettyPrint True
+typedPrettyPrint   = prettyPrint False
 
 eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []

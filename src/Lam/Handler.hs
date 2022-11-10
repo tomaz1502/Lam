@@ -51,11 +51,12 @@ handleCommand (EvalC re) gctx = do
     e <- liftEither (eraseNames gctx re)
     untyped <- askUntyped
     if untyped then
-      liftIO (print (eval e))
+      liftIO (putStrLn (untypedPrettyPrint (eval e)))
     else
       case typeCheck e of
         Nothing -> liftIO (putStrLn "typing error")
-        Just t  -> liftIO (putStrLn (show (eval e) <> " :: " <> show t))
+        Just t  -> liftIO $
+          putStrLn (untypedPrettyPrint (eval e) <> " :: " <> show t)
     return gctx
 handleCommand (LoadC path) gctx = do
     gctx' <- loadFile path

@@ -1,6 +1,7 @@
 #+TITLE: Todos (LAM)
 #+AUTHOR: Tomaz
 
+* TODO git actions (stack test)
 * TODO separate church tests in other file
 
 Can we embbed the type system in the type system of haskell?
