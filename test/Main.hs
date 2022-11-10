@@ -48,6 +48,20 @@ checkParsing e =
     Right e' -> e == e'
     Left _   -> False
 
+checkChurchMul :: Int -> Int -> Bool
+checkChurchMul n m =
+    let n' = abs n `mod` 1000
+        m' = abs m `mod` 1000
+     in encodeChurchE (n' * m') ==
+            eval (mulChurch (encodeChurchE n') (encodeChurchE m'))
+
+checkChurchAdd :: Int -> Int -> Bool
+checkChurchAdd n m =
+    let n' = abs n `mod` 1000
+        m' = abs m `mod` 1000
+     in encodeChurchE (n' + m') ==
+            eval (addChurch (encodeChurchE n') (encodeChurchE m'))
+
 parserTest :: SourceCode -> Expr -> TestTree
 parserTest prog e = testCase "parser test" $
   case parseUntypedExpr prog of
@@ -84,5 +98,7 @@ main = defaultMain $ testGroup "tests"
              , [testMulChurch i j | i <- [0 .. 5] , j <- [0 .. 5]]
              ]
   , testProperty "random parsing tests" $ withMaxSuccess 1000 checkParsing
+  , testProperty "random test church add" $ withMaxSuccess 1000 checkChurchAdd
+  , testProperty "random test church mul" $ withMaxSuccess 1000 checkChurchMul
   ]
 
