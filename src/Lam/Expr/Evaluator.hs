@@ -1,6 +1,6 @@
-module Lam.Evaluator (eval, evalWithGas) where
+module Lam.Expr.Evaluator (eval, evalWithGas) where
 
-import Lam.Expr ( Expr(..) )
+import Lam.Expr.Data ( Expr(..) )
 
 shift' :: Int -> Int -> Expr -> Expr
 shift' c d (Var k)     = if k < c then Var k else Var $ k + d

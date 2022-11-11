@@ -1,8 +1,8 @@
-module Lam.TypeChecker (typeCheck) where
+module Lam.Expr.TypeChecker (typeCheck) where
 
 import Data.Map qualified as M
 
-import Lam.Expr ( Expr(..), Type(..) )
+import Lam.Expr.Data ( Expr(..), Type(..) )
 
 type TypingContext = M.Map Int Type
 

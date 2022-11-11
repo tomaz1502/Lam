@@ -1,6 +1,15 @@
-module Lam.RawExpr where
+module Lam.Expr.Data where
 
 type Id = String
+
+data Type = U | Arrow Type Type
+  deriving Eq
+
+-- | Representation of lambda terms with DeBruijn indices
+data Expr =
+    Var Int
+  | Lam Id Type Expr
+  | App Expr Expr
 
 data RawType =
     RawU

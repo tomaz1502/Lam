@@ -13,11 +13,10 @@ import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
 import System.IO          (hFlush, stdout)
 
-import Lam.Evaluator ( eval )
+import Lam.Command
+import Lam.Context
 import Lam.Expr
-import Lam.Lexer ( runAlex, Alex )
 import Lam.Parser
-import Lam.TypeChecker
 import Lam.Result
 
 -- TODO: report cyclic dependencies

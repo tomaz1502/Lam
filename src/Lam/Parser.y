@@ -9,7 +9,8 @@ import Control.Monad.State
 import Data.List (elemIndex)
 import Data.Map qualified as M
 
-import Lam.RawExpr (RawExpr(..), RawType(..), Id)
+import Lam.Command
+import Lam.Expr.Data (RawExpr(..), RawType(..), Id)
 import Lam.Lexer qualified as L
 }
 
@@ -126,12 +127,6 @@ lexer = (=<< L.alexMonadScan)
 
 parseError :: L.Token -> a
 parseError t = error $ "error while parsing " ++ (show t)
-
-data Command =
-    TypedefC (Id, RawType)
-  | DefineC (Id, RawExpr)
-  | EvalC RawExpr
-  | LoadC String
 
 getParser :: L.Alex a -> String -> a
 getParser f s =
