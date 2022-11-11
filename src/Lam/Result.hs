@@ -4,7 +4,9 @@
 
 module Lam.Result where
 
-import Control.Monad.RWS (MonadIO, MonadReader, ask)
+import Lam.Context (GlobalContext)
+
+import Control.Monad.RWS (MonadIO, MonadReader, MonadState, ask)
 import Control.Monad.Except (MonadError)
 
 data Flag = Untyped
@@ -14,6 +16,7 @@ type Result a =
   forall (m :: * -> *). ( MonadIO m
                         , MonadError String m
                         , MonadReader [Flag] m
+                        , MonadState GlobalContext m
                         ) => m a
 
 askUntyped :: Result Bool

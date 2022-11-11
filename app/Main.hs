@@ -4,12 +4,14 @@
 module Main (main) where
 
 import Control.Monad.Except ( runExceptT )
-import Control.Monad.Reader (runReaderT)
-import Data.List (isPrefixOf)
+import Control.Monad.Reader ( runReaderT )
+import Control.Monad.State  ( runStateT )
+import Data.List            ( isPrefixOf )
 import System.Environment   ( getArgs )
 import System.Exit          ( exitFailure )
 
-import Lam.Handler ( emptyContext, repl, handleFile )
+import Lam.Context ( emptyContext )
+import Lam.Handler ( repl, handleFile )
 import Lam.Result
 
 main :: IO ()
@@ -19,7 +21,7 @@ main = do
   -- could be just map read
   let flagSet = [Untyped | "--untyped" `elem` flags]
   case nonFlags of
-    []      -> run (repl emptyContext) flagSet
+    []      -> run repl flagSet
     [fName] -> run (handleFile fName) flagSet
     _       -> error wrongUsageMsg
   where
@@ -30,7 +32,7 @@ main = do
               ]
     run :: Result a -> [Flag] -> IO ()
     run f flags =
-        do result <- runExceptT (runReaderT f flags)
+        do result <- runExceptT (runStateT (runReaderT f flags) emptyContext)
            case result of
              Right _  -> return ()
              Left err -> putStrLn err

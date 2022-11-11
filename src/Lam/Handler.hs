@@ -7,7 +7,7 @@ module Lam.Handler ( repl
                    , emptyContext
                    ) where
 
-import Control.Monad.RWS (MonadReader)
+import Control.Monad.RWS ( get, put )
 import Control.Monad.Except ( liftEither, MonadIO(liftIO), MonadError )
 import Data.Map qualified as M
 import System.Exit        (exitSuccess, exitFailure)
@@ -20,62 +20,76 @@ import Lam.Parser
 import Lam.Result
 
 -- TODO: report cyclic dependencies
-loadFile :: String -> Result GlobalContext
+loadFile :: String -> Result ()
 loadFile fName = do
-    untyped <- askUntyped
-    sc <- liftIO (readFile fName)
-    f (parseProg untyped sc) emptyContext
-    where
-      f :: [Command] -> GlobalContext -> Result GlobalContext
-      f [] ctx = return ctx
-      f ((EvalC _):cs) gctx = f cs gctx -- load just mean the macros
-      f (c:cs) gctx =
-          handleCommand c gctx >>= \gctx' -> f cs gctx'
-
-handleCommand :: Command -> GlobalContext -> Result GlobalContext
-handleCommand (TypedefC (s, rt)) gctx = do
-    untyped <- askUntyped
-    if untyped then
-      liftEither (Left "trying to define a type in an untyped context!")
-    else do
-      t <- liftEither (expandType gctx rt)
-      let boundTypes' = M.insert s t (boundTypes gctx)
-       in return $ gctx {boundTypes = boundTypes'}
-handleCommand (DefineC (s, re)) gctx = do
-    e <- liftEither (eraseNames gctx re)
-    let boundExprs' = M.insert s e (boundExprs gctx)
-     in return $ gctx {boundExprs = boundExprs'}
-handleCommand (EvalC re) gctx = do
-    e <- liftEither (eraseNames gctx re)
-    untyped <- askUntyped
-    if untyped then
-      liftIO (putStrLn (untypedPrettyPrint (eval e)))
-    else
-      case typeCheck e of
-        Nothing -> liftIO (putStrLn "typing error")
-        Just t  -> liftIO $
-          putStrLn (untypedPrettyPrint (eval e) <> " :: " <> show t)
-    return gctx
-handleCommand (LoadC path) gctx = do
-    gctx' <- loadFile path
-    return (ctxUnion gctx' gctx)
-
-repl :: GlobalContext -> Result ()
-repl ctx = do
-  cmd <- liftIO readRepl
   untyped <- askUntyped
-  ctx' <- handleCommand (parseCommand untyped cmd) ctx
-  repl ctx'
-  where readRepl :: IO String
-        readRepl = putStr "> " >> hFlush stdout >> getLine
+  sc      <- liftIO (readFile fName)
+  f (parseProg untyped sc)
+  where
+    f :: [Command] -> Result ()
+    f []             = return ()
+    f ((EvalC _):cs) = f cs -- load just mean the macros
+    f (c:cs)         = handleCommand c >> f cs
+
+handleTypedef :: Id -> RawType -> Result ()
+handleTypedef macroName macroType = do
+  untyped <- askUntyped
+  gctx    <- get
+  if untyped then
+    liftEither (Left "trying to define a type in an untyped context!")
+  else do
+    t <- liftEither (expandType gctx macroType)
+    let boundTypes' = M.insert macroName t (boundTypes gctx)
+     in put gctx {boundTypes = boundTypes'}
+
+handleDefine :: Id -> RawExpr -> Result ()
+handleDefine macroName macroExpr = do
+  gctx <- get
+  e    <- liftEither $ eraseNames gctx macroExpr
+  let boundExprs' = M.insert macroName e (boundExprs gctx)
+   in put gctx {boundExprs = boundExprs'}
+
+handleEval :: RawExpr -> Result ()
+handleEval rExpr = do
+  gctx    <- get
+  expr       <- liftEither (eraseNames gctx rExpr)
+  untyped <- askUntyped
+  if untyped then
+    liftIO (putStrLn (untypedPrettyPrint (eval expr)))
+  else
+    case typeCheck expr of
+      Nothing -> liftEither (Left "typing error")
+      Just t  -> liftIO $
+        putStrLn (untypedPrettyPrint (eval expr) <> " :: " <> show t)
+
+handleCommand :: Command -> Result ()
+handleCommand c =
+  case c of
+    TypedefC (macroName, macroType) -> handleTypedef macroName macroType
+    DefineC  (macroName, macroExpr) -> handleDefine macroName macroExpr
+    EvalC rExpr                     -> handleEval rExpr
+    LoadC path                      -> loadFile path
+
+repl :: Result ()
+repl = do
+  cmd     <- liftIO readRepl
+  untyped <- askUntyped
+  ctx     <- get
+  ctx'    <- handleCommand (parseCommand untyped cmd)
+  repl
+  where
+    readRepl :: IO String
+    readRepl = putStr "> " >> hFlush stdout >> getLine
 
 handleFile :: String -> Result ()
 handleFile fName = do
   untyped <- askUntyped
-  sc <- liftIO $ readFile fName
-  f (parseProg untyped sc) emptyContext
+  sc      <- liftIO $ readFile fName
+  f (parseProg untyped sc)
   where
-    f :: [Command] -> GlobalContext -> Result ()
-    f [] _       = return ()
-    f (c:cs) gctx = handleCommand c gctx >>= f cs
-
+    f :: [Command] -> Result ()
+    f []     = return ()
+    f (c:cs) = do
+      gctx <- get
+      handleCommand c
+      f cs
