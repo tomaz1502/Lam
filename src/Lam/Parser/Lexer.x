@@ -1,5 +1,5 @@
 {
-  module Lam.Lexer (Token(..), alexMonadScan, runAlex, Alex) where
+  module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex) where
 }
 
 %wrapper "monad"

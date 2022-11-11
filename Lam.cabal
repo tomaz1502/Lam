@@ -33,8 +33,10 @@ library
     Lam.Expr.TypeChecker
     Lam.Expr
     Lam.Handler
-    Lam.Lexer
     Lam.Parser
+    Lam.Parser.Base
+    Lam.Parser.Lexer
+    Lam.Parser.Parser
     Lam.Result
   hs-source-dirs:      src
   default-language:    Haskell2010

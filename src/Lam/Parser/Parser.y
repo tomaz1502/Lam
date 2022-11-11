@@ -1,9 +1,5 @@
 {
-module Lam.Parser ( parseProg
-                  , parseCommand
-                  , parseRawExpr
-                  , Command(..)
-                  ) where
+module Lam.Parser.Parser where
 
 import Control.Monad.State
 import Data.List (elemIndex)
@@ -11,7 +7,7 @@ import Data.Map qualified as M
 
 import Lam.Command
 import Lam.Expr.Data (RawExpr(..), RawType(..), Id)
-import Lam.Lexer qualified as L
+import Lam.Parser.Lexer qualified as L
 }
 
 %name hParseUntypedProg UntypedProgram
@@ -133,24 +129,6 @@ getParser f s =
   case L.runAlex s f of
     Left err -> error ("parsing error for:" <> s)
     Right p  -> p
-
-parseCommand :: Bool -> String -> Command
-parseCommand untyped =
-  if untyped then
-    getParser hParseUntypedCommand
-  else getParser hParseCommand
-
-parseProg :: Bool -> String -> [Command]
-parseProg untyped =
-  if untyped then
-    getParser hParseUntypedProg
-  else getParser hParseProg
-
-parseRawExpr :: Bool -> String -> RawExpr
-parseRawExpr untyped =
-  if untyped then
-    getParser hParseUntypedExpr
-  else getParser hParseExpr
 
 joinLams :: [Id] -> RawType -> RawExpr -> RawExpr
 joinLams names ty body =

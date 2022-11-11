@@ -1,6 +1,8 @@
 #+TITLE: Todos (LAM)
 #+AUTHOR: Tomaz
 
+* TODO (cold) Restrict exports in Lam.Expr
+
 * TODO git actions (stack test)
 * TODO separate church tests in other file
 
@@ -15,21 +17,8 @@ data Expr a
 #+END_SRC
 where `a` would be the corresponding type of expr in haskell...?
 
-* DONE Add flag for parsing with or without types
-* DONE Monad Reader for flags
-
-* TODO Accept multiple bindings with one `lam`
-- Currently:
-  lam x -> lam y -> ...
-- Would like to be:
-  lam x, y -> ...
-* TODO Fix tests
-- Use quickcheck to generate random exprs
-- How to test the evaluator? Church numbers + ?
-- How to test the type checker? Type inference + generation of random well typed exprs
-- How to test the parser? Pretty printer
 * TODO See if it is possible to add State GlobalContext to Result Monad
-* TODO Add more intrinsics (chapter 11 of TaPL)
+* TODO (HOT) Add more intrinsics (chapter 11 of TaPL)
 ** TODO Let expressions
 ** TODO Ascription
 ** TODO Sequencing (;)
