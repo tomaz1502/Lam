@@ -1,5 +1,3 @@
-{-# LANGUAGE ImportQualifiedPost #-}
-
 module Lam.TypeChecker (typeCheck) where
 
 import Data.Map qualified as M

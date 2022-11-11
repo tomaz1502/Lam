@@ -1,6 +1,4 @@
 {
-{-# LANGUAGE ImportQualifiedPost #-}
-
 module Lam.Parser ( parseProg
                   , parseCommand
                   , parseRawExpr

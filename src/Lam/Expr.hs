@@ -1,5 +1,4 @@
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 
 module Lam.Expr where
 
