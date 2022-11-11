@@ -6,7 +6,11 @@ module Main where
 
 import Lam.Handler ( emptyContext )
 import Lam.Evaluator (eval)
-import Lam.Expr ( Expr(..), Type(..), parseUntypedExpr, parseTypedExpr )
+import Lam.Expr ( Expr(..)
+                , Type(..)
+                , parseUntypedExpr
+                , parseTypedExpr
+                , typedPrettyPrint)
 
 import Fixtures.ChurchNum ( encodeChurchE
                           , encodeChurchP
@@ -17,7 +21,7 @@ import Fixtures.Misc
     ( miscTestCases, MiscTest(TC, eOut, eInp, prog) )
 
 import Test.Tasty ( defaultMain, testGroup, TestTree )
-import Test.Tasty.HUnit ( testCase, (@?=), assertFailure )
+import Test.Tasty.HUnit ( testCase, (@=?), assertFailure )
 import Test.QuickCheck
 import Test.Tasty.QuickCheck
 
@@ -44,14 +48,14 @@ instance Arbitrary Expr where
 
 checkParsing :: Expr -> Bool
 checkParsing e =
-  case parseTypedExpr (show e) of
+  case parseTypedExpr (typedPrettyPrint e) of
     Right e' -> e == e'
     Left _   -> False
 
 checkChurchMul :: Int -> Int -> Bool
 checkChurchMul n m =
-    let n' = abs n `mod` 1000
-        m' = abs m `mod` 1000
+    let n' = abs n `mod` 100
+        m' = abs m `mod` 100
      in encodeChurchE (n' * m') ==
             eval (mulChurch (encodeChurchE n') (encodeChurchE m'))
 
@@ -65,27 +69,27 @@ checkChurchAdd n m =
 parserTest :: SourceCode -> Expr -> TestTree
 parserTest prog e = testCase "parser test" $
   case parseUntypedExpr prog of
-    Right e' -> e' @?= e
-    Left  _ -> assertFailure $ "error on parsing" <> prog
+    Right e' -> e @=? e'
+    Left  _  -> assertFailure $ "error on parsing" <> prog
 
 evalTest :: Expr -> Expr -> TestTree
 evalTest inp out = testCase "eval test" $
-  eval inp @?= out
+  out @=? eval inp
 
 testParseChurch :: Int -> TestTree
 testParseChurch n = testCase ("parse church " <> show n) $
   case parseUntypedExpr (encodeChurchP n) of
-    Right e' -> e' @?= encodeChurchE n
-    Left  _ -> assertFailure $ "error on parsing" <> encodeChurchP n
+    Right e' -> encodeChurchE n @=? e'
+    Left  _  -> assertFailure $ "error on parsing" <> encodeChurchP n
 
 testSumChurch :: Int -> Int -> TestTree
 testSumChurch n m = testCase (unwords ["sum church", show n, show m]) $
-    encodeChurchE (n + m) @?=
+    encodeChurchE (n + m) @=?
         eval (addChurch (encodeChurchE n) (encodeChurchE m))
 
 testMulChurch :: Int -> Int -> TestTree
 testMulChurch n m = testCase (unwords ["mul church", show n, show m]) $
-    encodeChurchE (n * m) @?=
+    encodeChurchE (n * m) @=?
         eval (mulChurch (encodeChurchE n) (encodeChurchE m))
 
 main :: IO ()

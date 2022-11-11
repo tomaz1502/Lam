@@ -45,6 +45,9 @@ instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) (App e11 e12) (App e21 e22) = e11 == e21 && e12 == e22
   (==) _ _ = False
 
+instance Show Expr where
+    show = typedPrettyPrint
+
 -- print respecting Lam's syntax
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []

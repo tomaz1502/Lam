@@ -15,6 +15,7 @@ tokens :-
 <0> "=>"      { tok TypeArrow }
 <0> "U"       { tok BaseType  }
 <0> "."       { tok Dot       }
+<0> ","       { tok Comma }
 <0> "lam"     { tok Lam       }
 <0> "EVAL"    { tok Eval      }
 <0> "TYPEDEF" { tok Typedef   }
@@ -35,6 +36,7 @@ data Token =
   | TypeArrow
   | BaseType
   | Dot
+  | Comma
   | Lam
   | Eval   
   | Typedef

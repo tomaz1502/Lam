@@ -44,6 +44,7 @@ import Lam.Lexer qualified as L
   "=>"      { L.TypeArrow }
   "U"       { L.BaseType  }
   "."       { L.Dot       }
+  ","       { L.Comma     }
   "("       { L.LPar      }
   ")"       { L.RPar      }
 %%
@@ -94,8 +95,8 @@ LoadCommand :: { String }
 
 UntypedRawExpr :: { RawExpr }
   : UntypedRawExpr "." UntypedRawExpr { RawApp $1 $3  }
-  | "lam" var "->" UntypedRawExpr %shift
-    { RawLam $2 RawU $4 }
+  | "lam" CommaSeparatedIdents "->" UntypedRawExpr %shift
+    { joinLams $2 RawU $4 }
   | var { RawVar $1 }
   | UntypedParExpr { $1 }
 
@@ -103,8 +104,8 @@ UntypedParExpr : "(" UntypedRawExpr ")" { $2 }
 
 RawExpr :: { RawExpr }
   : RawExpr "." RawExpr { RawApp $1 $3  }
-  | "lam" var "::" RawType "->" RawExpr %shift
-    { RawLam $2 $4 $6 }
+  | "lam" CommaSeparatedIdents "::" RawType "->" RawExpr %shift
+    { joinLams $2 $4 $6 }
   | var { RawVar $1 }
   | ParExpr { $1 }
 
@@ -118,6 +119,9 @@ RawType :: { RawType }
 
 ParType : "(" RawType ")" { $2 }
 
+CommaSeparatedIdents :: { [Id] }
+  : var "," CommaSeparatedIdents { $1 : $3 }
+  | var { [$1] }
 {
 lexer :: (L.Token -> L.Alex a) -> L.Alex a
 lexer = (=<< L.alexMonadScan)
@@ -133,9 +137,9 @@ data Command =
 
 getParser :: L.Alex a -> String -> a
 getParser f s =
-    case L.runAlex s f of
-      Left err -> error ("parsing error for:" <> s)
-      Right p  -> p
+  case L.runAlex s f of
+    Left err -> error ("parsing error for:" <> s)
+    Right p  -> p
 
 parseCommand :: Bool -> String -> Command
 parseCommand untyped =
@@ -151,7 +155,11 @@ parseProg untyped =
 
 parseRawExpr :: Bool -> String -> RawExpr
 parseRawExpr untyped =
-    if untyped then
-      getParser hParseUntypedExpr
-    else getParser hParseExpr
+  if untyped then
+    getParser hParseUntypedExpr
+  else getParser hParseExpr
+
+joinLams :: [Id] -> RawType -> RawExpr -> RawExpr
+joinLams names ty body =
+  foldr (`RawLam` ty) body names
 }
