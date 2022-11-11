@@ -2,7 +2,6 @@
 #+AUTHOR: Tomaz
 
 * TODO (cold) Restrict exports in Lam.Expr
-
 * TODO git actions (stack test)
 * TODO separate church tests in other file
 
@@ -17,7 +16,6 @@ data Expr a
 #+END_SRC
 where `a` would be the corresponding type of expr in haskell...?
 
-* TODO See if it is possible to add State GlobalContext to Result Monad
 * TODO (HOT) Add more intrinsics (chapter 11 of TaPL)
 ** TODO Let expressions
 ** TODO Ascription

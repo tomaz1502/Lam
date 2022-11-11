@@ -5,12 +5,12 @@
 module Main where
 
 import Lam.Handler ( emptyContext )
-import Lam.Evaluator (eval)
 import Lam.Expr ( Expr(..)
                 , Type(..)
                 , parseUntypedExpr
                 , parseTypedExpr
-                , typedPrettyPrint)
+                , typedPrettyPrint
+                , eval)
 
 import Fixtures.ChurchNum ( encodeChurchE
                           , encodeChurchP

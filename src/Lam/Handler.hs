@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Lam.Handler ( repl
                    , handleFile
@@ -24,12 +25,8 @@ loadFile :: String -> Result ()
 loadFile fName = do
   untyped <- askUntyped
   sc      <- liftIO (readFile fName)
-  f (parseProg untyped sc)
-  where
-    f :: [Command] -> Result ()
-    f []             = return ()
-    f ((EvalC _):cs) = f cs -- load just mean the macros
-    f (c:cs)         = handleCommand c >> f cs
+  let prog = parseProg untyped sc
+  mapM_ (\case {EvalC _ -> pure (); c -> handleCommand c}) prog
 
 handleTypedef :: Id -> RawType -> Result ()
 handleTypedef macroName macroType = do
@@ -52,7 +49,7 @@ handleDefine macroName macroExpr = do
 handleEval :: RawExpr -> Result ()
 handleEval rExpr = do
   gctx    <- get
-  expr       <- liftEither (eraseNames gctx rExpr)
+  expr    <- liftEither (eraseNames gctx rExpr)
   untyped <- askUntyped
   if untyped then
     liftIO (putStrLn (untypedPrettyPrint (eval expr)))
@@ -74,7 +71,6 @@ repl :: Result ()
 repl = do
   cmd     <- liftIO readRepl
   untyped <- askUntyped
-  ctx     <- get
   ctx'    <- handleCommand (parseCommand untyped cmd)
   repl
   where
@@ -85,11 +81,5 @@ handleFile :: String -> Result ()
 handleFile fName = do
   untyped <- askUntyped
   sc      <- liftIO $ readFile fName
-  f (parseProg untyped sc)
-  where
-    f :: [Command] -> Result ()
-    f []     = return ()
-    f (c:cs) = do
-      gctx <- get
-      handleCommand c
-      f cs
+  let prog = parseProg untyped sc
+  mapM_ handleCommand prog
