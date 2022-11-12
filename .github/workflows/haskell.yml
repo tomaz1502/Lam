@@ -1,0 +1,33 @@
+name: Haskell CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-haskell@v1
+      with:
+        ghc-version: '8.10.3'
+        stack-version: '2.7.3'
+
+    - name: Cache
+      uses: actions/cache@v3
+
+    - name: Install dependencies
+      run: |
+        stack update
+    - name: Build
+      run: stack build
+    - name: Run tests
+      run: stack test
