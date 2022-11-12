@@ -21,9 +21,6 @@ jobs:
         ghc-version: '8.10.3'
         stack-version: '2.7.3'
 
-    - name: Cache
-      uses: actions/cache@v3
-
     - name: Install dependencies
       run: |
         stack update
