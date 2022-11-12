@@ -36,7 +36,6 @@ main = do
            case result of
              Right _  -> return ()
              Left err -> putStrLn err
-    -- Dont assume f to be monotonic
     spanComplete :: (a -> Bool) -> [a] -> ([a], [a])
     spanComplete _ [] = ([], [])
     spanComplete f (a:as) =
