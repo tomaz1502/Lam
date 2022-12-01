@@ -71,7 +71,7 @@ repl :: Result ()
 repl = do
   cmd     <- liftIO readRepl
   untyped <- askUntyped
-  ctx'    <- handleCommand (parseCommand untyped cmd)
+  handleCommand (parseCommand untyped cmd)
   repl
   where
     readRepl :: IO String
