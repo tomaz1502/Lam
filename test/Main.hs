@@ -4,7 +4,7 @@
 
 module Main where
 
-import Lam.Handler ( emptyContext )
+import Lam.Handler
 import Lam.Expr ( Expr(..)
                 , Type(..)
                 , parseUntypedExpr
