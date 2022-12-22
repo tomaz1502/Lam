@@ -4,8 +4,6 @@
 
 module Lam.Handler ( repl
                    , handleFile
-                   , GlobalContext
-                   , emptyContext
                    ) where
 
 import Control.Monad.RWS ( get, put )
