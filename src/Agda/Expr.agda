@@ -91,17 +91,14 @@ lookup≡ : {A : Set} {i : ℕ} {l : List A} → (h : i < length l) → (lookup?
 lookup≡ {A} {zero}  {x ∷ l} h = _≡_.refl
 lookup≡ {A} {suc i} {x ∷ l} h = lookup≡ (Data.Nat.≤-pred h)
 
-typeCheck' : ℕ → TypingContext → Expr → Maybe Type
-typeCheck' d ctx (Var i)      = lookup? i ctx
-typeCheck' d ctx (Lam _ t e) =
-  typeCheck' (d + 1) (t ∷ ctx) e >>= λ t' -> just (t ⇒ t')
-typeCheck' d ctx (App e₁ e₂) with typeCheck' d ctx e₁
-... | just (t₁₁ ⇒ t₁₂) =
-  typeCheck' d ctx e₂ >>= λ t₂ -> if t₁₁ ==ᵗ t₂ then just t₁₂ else nothing
-... | _ = nothing
-
 typeCheck : TypingContext → Expr → Maybe Type
-typeCheck = typeCheck' zero
+typeCheck ctx (Var i)      = lookup? i ctx
+typeCheck ctx (Lam _ t e) =
+  typeCheck (t ∷ ctx) e >>= λ t' -> just (t ⇒ t')
+typeCheck ctx (App e₁ e₂) with typeCheck ctx e₁
+... | just (t₁₁ ⇒ t₁₂) =
+  typeCheck ctx e₂ >>= λ t₂ -> if t₁₁ ==ᵗ t₂ then just t₁₂ else nothing
+... | _ = nothing
 
 data _⊢_∶_ : TypingContext → Expr → Type → Set where
   ⊢v : ∀ {Γ : TypingContext} {i : ℕ} {h : i < length Γ}
