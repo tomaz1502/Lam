@@ -3,20 +3,22 @@ module Expr where
 open import Data.Bool using (if_then_else_; Bool; true; false; _∧_)
 open import Data.List
 open import Data.Maybe
-open import Data.Nat using (ℕ; zero; suc; _<ᵇ_; _+_; _∸_; _≡ᵇ_)
+open import Data.Nat using (ℕ; zero; suc; _<ᵇ_; _<_; _+_; _∸_; _≡ᵇ_)
 open import Data.String using (String)
 open import Data.Empty
+open import Data.Fin.Base using (Fin; toℕ; fromℕ<)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 
 Id : Set
 Id = String
 
 data Type : Set where
   U : Type
-  _=>_ : Type → Type → Type
+  _⇒_ : Type → Type → Type
 
 _==ᵗ_ : Type → Type → Bool
 _==ᵗ_ U            U            = true
-_==ᵗ_ (t₁₁ => t₁₂) (t₂₁ => t₂₂) = t₁₁ ==ᵗ t₂₁ ∧ t₁₂ ==ᵗ t₂₂
+_==ᵗ_ (t₁₁ ⇒ t₁₂) (t₂₁ ⇒ t₂₂) = t₁₁ ==ᵗ t₂₁ ∧ t₁₂ ==ᵗ t₂₂
 _==ᵗ_ _            _            = false
 
 data Expr : Set where
@@ -85,15 +87,36 @@ lookup? zero (a ∷ _)     = just a
 lookup? (suc i) (_ ∷ as) = lookup? i as
 lookup? _ []             = nothing
 
+lookup≡ : {A : Set} {i : ℕ} {l : List A} → (h : i < length l) → (lookup? i l) ≡ just (lookup l (fromℕ< h))
+lookup≡ {A} {zero}  {x ∷ l} h = _≡_.refl
+lookup≡ {A} {suc i} {x ∷ l} h = lookup≡ (Data.Nat.≤-pred h)
+
 typeCheck' : ℕ → TypingContext → Expr → Maybe Type
 typeCheck' d ctx (Var i)      = lookup? i ctx
 typeCheck' d ctx (Lam _ t e) =
-  typeCheck' (d + 1) (t ∷ ctx) e >>= λ t' -> just (t => t')
+  typeCheck' (d + 1) (t ∷ ctx) e >>= λ t' -> just (t ⇒ t')
 typeCheck' d ctx (App e₁ e₂) with typeCheck' d ctx e₁
-... | just (t₁₁ => t₁₂) =
+... | just (t₁₁ ⇒ t₁₂) =
   typeCheck' d ctx e₂ >>= λ t₂ -> if t₁₁ ==ᵗ t₂ then just t₁₂ else nothing
 ... | _ = nothing
 
+typeCheck : TypingContext → Expr → Maybe Type
+typeCheck = typeCheck' zero
 
-typeCheck : Expr → Maybe Type
-typeCheck = typeCheck' zero emptyTypingContext
+data _⊢_∶_ : TypingContext → Expr → Type → Set where
+  ⊢v : ∀ {Γ : TypingContext} {i : ℕ} {h : i < length Γ}
+    → Γ ⊢ Var i ∶ (lookup Γ (fromℕ< h))
+
+  ⊢l : ∀ {Γ : TypingContext} {name : Id} {body : Expr} {dom codom : Type}
+    → (dom ∷ Γ) ⊢ body ∶ codom
+    → Γ ⊢ (Lam name dom body) ∶ (dom ⇒ codom)
+
+  ⊢a : ∀ {Γ : TypingContext} {f x : Expr} {dom codom : Type}
+    → Γ ⊢ f ∶ (dom ⇒ codom)
+    → Γ ⊢ x ∶ dom
+    → Γ ⊢ App f x ∶ codom
+
+to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck Γ e ≡ just t
+to {Γ} {Var i} {_} (⊢v {_} {_} {h}) = lookup≡ h
+to (⊢l wt) = {!!}
+to (⊢a wt wt₁) = {!!}
