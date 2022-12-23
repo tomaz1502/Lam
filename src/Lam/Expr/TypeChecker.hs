@@ -1,7 +1,5 @@
 module Lam.Expr.TypeChecker (typeCheck) where
 
-import Data.Map qualified as M
-
 import Lam.Expr.Data ( Expr(..), Type(..) )
 
 type TypingContext = [Type]
