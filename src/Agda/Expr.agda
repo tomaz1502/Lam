@@ -7,7 +7,9 @@ open import Data.Nat using (ℕ; zero; suc; _<ᵇ_; _<_; _+_; _∸_; _≡ᵇ_)
 open import Data.String using (String)
 open import Data.Empty
 open import Data.Fin.Base using (Fin; toℕ; fromℕ<)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_)
+open Eq.≡-Reasoning
 
 Id : Set
 Id = String
@@ -92,12 +94,12 @@ lookup≡ {A} {zero}  {x ∷ l} h = _≡_.refl
 lookup≡ {A} {suc i} {x ∷ l} h = lookup≡ (Data.Nat.≤-pred h)
 
 typeCheck : TypingContext → Expr → Maybe Type
-typeCheck ctx (Var i)      = lookup? i ctx
-typeCheck ctx (Lam _ t e) =
-  typeCheck (t ∷ ctx) e >>= λ t' -> just (t ⇒ t')
-typeCheck ctx (App e₁ e₂) with typeCheck ctx e₁
+typeCheck Γ (Var i)      = lookup? i Γ
+typeCheck Γ (Lam _ t e) =
+  typeCheck (t ∷ Γ) e >>= λ t' -> just (t ⇒ t')
+typeCheck Γ (App e₁ e₂) with typeCheck Γ e₁
 ... | just (t₁₁ ⇒ t₁₂) =
-  typeCheck ctx e₂ >>= λ t₂ -> if t₁₁ ==ᵗ t₂ then just t₁₂ else nothing
+  typeCheck Γ e₂ >>= λ t₂ -> if t₁₁ ==ᵗ t₂ then just t₁₂ else nothing
 ... | _ = nothing
 
 data _⊢_∶_ : TypingContext → Expr → Type → Set where
@@ -113,7 +115,33 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ x ∶ dom
     → Γ ⊢ App f x ∶ codom
 
+==ᵗ-refl : (t : Type) → t ==ᵗ t ≡ true
+==ᵗ-refl U = Eq.refl
+==ᵗ-refl (dom ⇒ codom) = begin
+    (dom ⇒ codom) ==ᵗ (dom ⇒ codom)
+  ≡⟨⟩
+    dom ==ᵗ dom ∧ codom ==ᵗ codom
+  ≡⟨ Eq.cong (λ x → x ∧ codom ==ᵗ codom) (==ᵗ-refl dom) ⟩
+    true ∧ codom ==ᵗ codom
+  ≡⟨ Eq.cong (λ x → true ∧ x) (==ᵗ-refl codom) ⟩
+    true ∧ true
+  ≡⟨⟩
+    true
+  ∎
+
 to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck Γ e ≡ just t
-to {Γ} {Var i} {_} (⊢v {_} {_} {h}) = lookup≡ h
-to (⊢l wt) = {!!}
-to (⊢a wt wt₁) = {!!}
+to (⊢v {_} {_} {h}) = lookup≡ h
+-- to {Γ} {Lam name codom body} {dom ⇒ codom₁}  (⊢l {Γ} {name} {body} {dom} {codom₁} wt)
+--   rewrite (to {codom ∷ Γ} {body} {codom₁} wt) = _≡_.refl
+to {Γ} {Lam name dom body} {dom ⇒ codom}  (⊢l {Γ} {name} {body} {dom} {codom} wt) = begin
+    typeCheck Γ (Lam name dom body)
+  ≡⟨⟩
+    (typeCheck (dom ∷ Γ) body >>= (λ t' → just (dom ⇒ t')))
+  ≡⟨ Eq.cong (λ x → x >>= (λ t' → just (dom ⇒ t'))) (to {dom ∷ Γ} {body} {codom} wt) ⟩
+    ((just codom >>= (λ t' → just (dom ⇒ t'))))
+  ≡⟨⟩
+    just (dom ⇒ codom)
+  ∎
+
+to {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
+  rewrite to {Γ} {f} {dom ⇒ codom} wt₁ | to {Γ} {x} {dom} wt₂ | ==ᵗ-refl dom = Eq.refl
