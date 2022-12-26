@@ -88,13 +88,13 @@ emptyTypingContext : TypingContext
 emptyTypingContext = []
 
 lookup? : {A : Set} → ℕ → List A → Maybe A
+lookup? _ []             = nothing
 lookup? zero (a ∷ _)     = just a
 lookup? (suc i) (_ ∷ as) = lookup? i as
-lookup? _ []             = nothing
 
 lookup≡ : {A : Set} {i : ℕ} {l : List A} → (h : i < length l) → (lookup? i l) ≡ just (lookup l (fromℕ< h))
 lookup≡ {A} {zero}  {x ∷ l} h = _≡_.refl
-lookup≡ {A} {suc i} {x ∷ l} h = lookup≡ (Data.Nat.≤-pred h)
+lookup≡ {A} {suc i} {x ∷ l} h = lookup≡ {A} {i} {l} (Data.Nat.≤-pred h)
 
 typeCheck : TypingContext → Expr → Maybe Type
 typeCheck Γ (Var i)      = lookup? i Γ
@@ -133,7 +133,7 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
   ∎
 
 to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck Γ e ≡ just t
-to (⊢v {_} {_} {h}) = lookup≡ h
+to (⊢v {Γ} {i} {h}) = lookup≡ {Type} {i} {Γ}  h
 to {Γ} {Lam name dom body} {dom ⇒ codom}  (⊢l {Γ} {name} {body} {dom} {codom} wt) = begin
     typeCheck Γ (Lam name dom body)
   ≡⟨⟩
@@ -146,20 +146,16 @@ to {Γ} {Lam name dom body} {dom ⇒ codom}  (⊢l {Γ} {name} {body} {dom} {cod
 to {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
   rewrite to {Γ} {f} {dom ⇒ codom} wt₁ | to {Γ} {x} {dom} wt₂ | ==ᵗ-refl dom = refl
 
-duh2 : {A : Set} {i : ℕ} → lookup? {A} i [] ≡ nothing
-duh2 {_} {zero} = refl
-duh2 {_} {suc i} = refl
-
-duh : ∀ {A : Set} {a : A} → ¬ (nothing ≡ just a)
-duh = λ ()
-
 lookup?< : {A : Set} {l : List A} {i : ℕ} {a : A} → lookup? i l ≡ just a → i < length l
-lookup?< {A} {[]} {i} {a} eq    = ⊥-elim (duh (Eq.trans (Eq.sym (duh2 {A} {i})) eq))
+lookup?< {A} {[]} {i} {a} eq    =
+ let f : ¬ (nothing ≡ just a)
+     f = λ ()
+  in ⊥-elim (f eq)
 lookup?< {A} {x ∷ l} {zero} eq  = Data.Nat.s≤s Data.Nat.z≤n
-lookup?< {A} {x ∷ l} {suc i} eq = Data.Nat.s≤s (lookup?< eq)
+lookup?< {A} {x ∷ l} {suc i} eq = Data.Nat.s≤s (lookup?< {A} {l} {i} eq)
 
 from : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → typeCheck Γ e ≡ just t → Γ ⊢ e ∶ t
 from {Γ} {App e e₁} {t} eq   = {!!}
 from {Γ} {Lam x x₁ e} {t} eq = {!!}
 from {Γ} {Var x} {t} eq
-  rewrite just-injective (trans (sym eq) (lookup≡ {Type} {x} {Γ} (lookup?< eq))) = ⊢v
+  rewrite just-injective (trans (sym eq) (lookup≡ {Type} {x} {Γ} (lookup?< {Type} {Γ} {x} eq))) = ⊢v
