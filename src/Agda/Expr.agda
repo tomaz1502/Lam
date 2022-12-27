@@ -70,7 +70,7 @@ smallStep (App e₁ e₂) =
    in if e₁' == e₁ then App e₁ (smallStep e₂)
       else App e₁' e₂
 
-{-# TERMINATING #-}
+{-# NON_TERMINATING #-}
 eval : Expr → Expr
 eval e =
   let e' = smallStep e
@@ -180,6 +180,8 @@ from {Γ} {App e₁ e₂} {t} eq with typeCheck Γ e₁ in te₁
              k = subst id w (from te₁)
              l = subst id p (from te₂)
           in ⊢a k l
-from {Γ} {Lam x x₁ e} {t} eq = {!!}
+from {Γ} {Lam x t' e₁} {t} eq with typeCheck (t' ∷ Γ) e₁ in te
+... | just t'' rewrite (sym (just-injective eq)) = ⊢l (from {t' ∷ Γ} {e₁} {t''} te)
+... | nothing = ⊥-elim (injection-maybe eq)
 from {Γ} {Var x} {t} eq
   rewrite just-injective (trans (sym eq) (lookup≡ {Type} {x} {Γ} (lookup?< {Type} {Γ} {x} eq))) = ⊢v
