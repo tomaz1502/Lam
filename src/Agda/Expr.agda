@@ -8,11 +8,12 @@ open import Data.String using (String)
 open import Data.Empty
 open import Data.Fin.Base using (Fin; toℕ; fromℕ<)
 import Relation.Binary.PropositionalEquality as Eq
-open Eq using (_≡_; sym; trans; refl)
+open Eq using (_≡_; sym; trans; refl; cong; cong₂; subst)
 open Eq.≡-Reasoning
 open import Data.Maybe.Properties using (just-injective)
-
 open import Relation.Nullary using (¬_)
+open import Data.Product using (_×_; proj₁; proj₂) renaming (_,_ to ⟨_,_⟩)
+open import Function.Base using (id)
 
 Id : Set
 Id = String
@@ -124,9 +125,9 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     (dom ⇒ codom) ==ᵗ (dom ⇒ codom)
   ≡⟨⟩
     dom ==ᵗ dom ∧ codom ==ᵗ codom
-  ≡⟨ Eq.cong (λ x → x ∧ codom ==ᵗ codom) (==ᵗ-refl dom) ⟩
+  ≡⟨ cong (λ x → x ∧ codom ==ᵗ codom) (==ᵗ-refl dom) ⟩
     true ∧ codom ==ᵗ codom
-  ≡⟨ Eq.cong (λ x → true ∧ x) (==ᵗ-refl codom) ⟩
+  ≡⟨ cong (λ x → true ∧ x) (==ᵗ-refl codom) ⟩
     true ∧ true
   ≡⟨⟩
     true
@@ -146,16 +147,39 @@ to {Γ} {Lam name dom body} {dom ⇒ codom}  (⊢l {Γ} {name} {body} {dom} {cod
 to {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
   rewrite to {Γ} {f} {dom ⇒ codom} wt₁ | to {Γ} {x} {dom} wt₂ | ==ᵗ-refl dom = refl
 
+injection-maybe : ∀ {A : Set} {a : A} → ¬ (nothing ≡ just a)
+injection-maybe = λ ()
+
 lookup?< : {A : Set} {l : List A} {i : ℕ} {a : A} → lookup? i l ≡ just a → i < length l
-lookup?< {A} {[]} {i} {a} eq    =
- let f : ¬ (nothing ≡ just a)
-     f = λ ()
-  in ⊥-elim (f eq)
+lookup?< {_} {[]} {_} {_} eq    = ⊥-elim (injection-maybe eq)
 lookup?< {A} {x ∷ l} {zero} eq  = Data.Nat.s≤s Data.Nat.z≤n
 lookup?< {A} {x ∷ l} {suc i} eq = Data.Nat.s≤s (lookup?< {A} {l} {i} eq)
 
+
+iteAbs : {A : Set} {x y z : A} {b : Bool} →
+        ¬ y ≡ z → (if b then x else y) ≡ z → b ≡ true × x ≡ z
+iteAbs {A} {x} {y} {z} {false} h₁ h₂ = ⊥-elim (h₁ h₂)
+iteAbs {A} {x} {y} {z} {true} h₁ h₂ = ⟨ refl , h₂ ⟩
+
+∧to× : {a b : Bool} → a ∧ b ≡ true → a ≡ true × b ≡ true
+∧to× {true} {true} h = ⟨ refl , refl ⟩
+
+==ᵗto≡ : {t₁ t₂ : Type} → t₁ ==ᵗ t₂ ≡ true → t₁ ≡ t₂
+==ᵗto≡ {U} {U} h = refl
+==ᵗto≡ {t ⇒ t₁} {t' ⇒ t''} h with ∧to× h
+... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ (_⇒_) (==ᵗto≡ t==t') (==ᵗto≡ t₁==t'')
+
 from : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → typeCheck Γ e ≡ just t → Γ ⊢ e ∶ t
-from {Γ} {App e e₁} {t} eq   = {!!}
+from {Γ} {App e₁ e₂} {t} eq with typeCheck Γ e₁ in te₁
+... | just U = ⊥-elim (injection-maybe eq)
+... | just (t₁ ⇒ t₂) with typeCheck Γ e₂ in te₂
+... | just t₃ with iteAbs (λ()) eq
+...   | ⟨ p1 , p2 ⟩ =
+         let w = cong (λ x -> Γ ⊢ e₁ ∶ (t₁ ⇒ x)) (just-injective p2)
+             p = cong (λ x -> Γ ⊢ e₂ ∶ x) (sym (==ᵗto≡ p1))
+             k = subst id w (from te₁)
+             l = subst id p (from te₂)
+          in ⊢a k l
 from {Γ} {Lam x x₁ e} {t} eq = {!!}
 from {Γ} {Var x} {t} eq
   rewrite just-injective (trans (sym eq) (lookup≡ {Type} {x} {Γ} (lookup?< {Type} {Γ} {x} eq))) = ⊢v
