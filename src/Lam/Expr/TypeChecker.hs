@@ -1,6 +1,7 @@
 module Lam.Expr.TypeChecker (typeCheck) where
 
-import Lam.Expr.Data ( Expr(..), Type(..) )
+-- import Lam.Expr.Data ( Expr(..), Type(..) )
+import MAlonzo.Code.Defs ( Expr(..), Type(..) )
 
 type TypingContext = [Type]
 
@@ -21,3 +22,6 @@ typeCheck' ctx (App e1 e2)  =
 
 typeCheck :: Expr -> Maybe Type
 typeCheck = typeCheck' emptyTypingContext
+
+-- -- verifiedTypeCheck :: Expr -> Maybe Type
+-- verifiedTypeCheck = d_typeCheck_6
