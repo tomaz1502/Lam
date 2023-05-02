@@ -10,11 +10,23 @@ type Id = Data.Text.Text
 data Type = U | Arrow Type Type
   deriving Eq
 
+-- TODO: how to compile Agda naturals to "Int" instead of "Integer"?
 data Expr =
     Var Integer
   | Lam Id Type Expr
   | App Expr Expr
-  deriving Eq
+
+data RawType =
+    RawU
+  | RawArrow RawType RawType
+  | FreeType Id
+  deriving Show
+
+data RawExpr =
+    RawVar Id
+  | RawApp RawExpr RawExpr
+  | RawLam Id RawType RawExpr
+  deriving Show
 
 #-}
 

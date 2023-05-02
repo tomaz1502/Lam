@@ -1,10 +1,10 @@
 module Lam.Command where
 
-import Lam.Expr.Data
+import Lam.Expr
 
 data Command =
     TypedefC (Id, RawType)
   | DefineC (Id, RawExpr)
   | EvalC RawExpr
-  | LoadC String
+  | LoadC Id
 

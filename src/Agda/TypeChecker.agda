@@ -21,3 +21,4 @@ typeCheck Γ (App e₁ e₂) with typeCheck Γ e₁
 ... | just (t₁₁ ⇒ t₁₂) =
   typeCheck Γ e₂ >>= λ t₂ -> if t₁₁ ==ᵗ t₂ then just t₁₂ else nothing
 ... | _ = nothing
+

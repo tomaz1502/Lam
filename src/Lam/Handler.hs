@@ -1,28 +1,31 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Lam.Handler ( repl
                    , handleFile
                    ) where
 
-import Control.Monad.RWS ( get, put )
-import Control.Monad.Except ( liftEither, MonadIO(liftIO), MonadError )
+import Control.Monad.RWS        ( get, put )
+import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError )
 import Data.Map qualified as M
-import System.Exit        (exitSuccess, exitFailure)
-import System.IO          (hFlush, stdout)
+import Data.Text qualified as T
+import System.Exit              (exitSuccess, exitFailure)
+import System.IO                (hFlush, stdout)
 
 import Lam.Command
 import Lam.Context
 import Lam.Expr
 import Lam.Parser
 import Lam.Result
+import Lam.Utils
 
 -- TODO: report cyclic dependencies
-loadFile :: String -> Result ()
+loadFile :: T.Text -> Result ()
 loadFile fName = do
   untyped <- askUntyped
-  sc      <- liftIO (readFile fName)
+  sc      <- liftIO (readFile (T.unpack fName))
   let prog = parseProg untyped sc
   mapM_ (\case {EvalC _ -> pure (); c -> handleCommand c}) prog
 

@@ -1,12 +1,15 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Lam.Context where
 
-import Lam.Expr.Data
+import Lam.Expr
 
 import Data.Map qualified as M
+import Data.Text qualified as T
 
 data GlobalContext = GlobalContext
-    { boundTypes :: M.Map String Type
-    , boundExprs :: M.Map String Expr
+    { boundTypes :: M.Map T.Text Type
+    , boundExprs :: M.Map T.Text Expr
     }
 
 emptyContext :: GlobalContext
@@ -24,6 +27,6 @@ type LocalContext = [Id]
 
 pickFresh :: LocalContext -> Id -> Id
 pickFresh ctx nm
- | nm `elem` ctx = pickFresh ctx (nm <> "'")
+ | nm `elem` ctx = pickFresh ctx (T.append nm "'")
  | otherwise     = nm
 

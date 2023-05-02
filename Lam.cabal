@@ -27,10 +27,6 @@ library
   exposed-modules:
     Lam.Command
     Lam.Context
-    Lam.Expr.Data
-    Lam.Expr.Evaluator
-    Lam.Expr.Funs
-    Lam.Expr.TypeChecker
     Lam.Expr
     Lam.Handler
     Lam.Parser
@@ -38,8 +34,10 @@ library
     Lam.Parser.Lexer
     Lam.Parser.Parser
     Lam.Result
+    Lam.Utils
   other-modules:
     MAlonzo.Code.TypeChecker
+    MAlonzo.Code.Evaluator
     MAlonzo.Code.Agda.Builtin.Bool
     MAlonzo.Code.Agda.Builtin.Equality
     MAlonzo.Code.Agda.Builtin.List

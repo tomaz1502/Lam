@@ -1,5 +1,7 @@
 {
-  module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex) where
+{-# LANGUAGE OverloadedStrings #-}
+module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex) where
+import qualified Data.Text as T
 }
 
 %wrapper "monad"
@@ -15,12 +17,12 @@ tokens :-
 <0> "=>"      { tok TypeArrow }
 <0> "U"       { tok BaseType  }
 <0> "."       { tok Dot       }
-<0> ","       { tok Comma }
+<0> ","       { tok Comma     }
 <0> "lam"     { tok Lam       }
 <0> "EVAL"    { tok Eval      }
 <0> "TYPEDEF" { tok Typedef   }
 <0> "DEFINE"  { tok Define    }
-<0> "LOAD"    { tok Load }
+<0> "LOAD"    { tok Load      }
 <0> ":"       { tok Colon     }
 <0> "::"      { tok TypeColon }
 <0> ":="      { tok ColonEq   }
@@ -46,7 +48,7 @@ data Token =
   | TypeColon
   | Semicolon
   | ColonEq
-  | Var String
+  | Var T.Text
   | LPar
   | RPar
   | EOF
@@ -58,7 +60,7 @@ alexEOF = return EOF
 tok :: Token -> AlexInput -> Int -> Alex Token
 tok t (_,_,_,s) len = pure $
   case t of 
-      Var _ -> Var (take len s)
+      Var _ -> Var (T.take len (T.pack s))
       _     -> t
 
 }
