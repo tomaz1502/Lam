@@ -1,7 +1,7 @@
 module Lam.Parser.Base where
 
 import Lam.Command
-import Lam.Expr (RawExpr(..), RawType(..), Id)
+import Lam.Data (RawExpr(..), RawType(..), Id)
 import Lam.Parser.Parser
 
 parseCommand :: Bool -> String -> Command

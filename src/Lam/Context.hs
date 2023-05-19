@@ -2,14 +2,13 @@
 
 module Lam.Context where
 
-import Lam.Expr
+import Lam.Data
 
 import Data.Map qualified as M
-import Data.Text qualified as T
 
 data GlobalContext = GlobalContext
-    { boundTypes :: M.Map T.Text Type
-    , boundExprs :: M.Map T.Text Expr
+    { boundTypes :: M.Map String Type
+    , boundExprs :: M.Map String Expr
     }
 
 emptyContext :: GlobalContext
@@ -27,6 +26,6 @@ type LocalContext = [Id]
 
 pickFresh :: LocalContext -> Id -> Id
 pickFresh ctx nm
- | nm `elem` ctx = pickFresh ctx (T.append nm "'")
+ | nm `elem` ctx = pickFresh ctx (nm ++ "'")
  | otherwise     = nm
 

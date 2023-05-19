@@ -1,6 +1,6 @@
 module Lam.Command where
 
-import Lam.Expr
+import Lam.Data
 
 data Command =
     TypedefC (Id, RawType)

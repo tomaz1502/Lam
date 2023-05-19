@@ -4,10 +4,9 @@ module Lam.Parser.Parser where
 import Control.Monad.State
 import Data.List (elemIndex)
 import Data.Map qualified as M
-import Data.Text qualified as T
 
 import Lam.Command
-import Lam.Expr -- (RawExpr(..), RawType(..), Id)
+import Lam.Data
 import Lam.Parser.Lexer qualified as L
 }
 
@@ -85,7 +84,7 @@ DefineCommand :: { (Id, RawExpr) }
 EvalCommand :: { RawExpr }
   : "EVAL" ":" RawExpr ";" { $3 }
 
-LoadCommand :: { T.Text }
+LoadCommand :: { String }
   : "LOAD" ":" var ";" { $3 }
   -- yes i will change that later to FilePath thank you
 

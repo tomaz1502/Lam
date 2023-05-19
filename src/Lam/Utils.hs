@@ -4,12 +4,21 @@
 module Lam.Utils where
 
 import Lam.Context
-import Lam.Expr
+import Lam.Data
 import Lam.Parser (parseRawExpr)
+import Lam.UtilsAgda
 
 import Data.List (elemIndex)
 import Data.Map qualified as M
-import Data.Text qualified as T
+import Data.Maybe (fromJust)
+
+-- this must be here since we don't have access to Int in Agda
+toNat :: Int -> Nat
+toNat i =
+  case compare i 0 of
+    GT -> S (toNat (i - 1))
+    EQ -> Z
+    LT -> error "[toNat]: negative input"
 
 instance Show Type where
     show U = "U"
@@ -20,7 +29,7 @@ instance Show Type where
                                 , show t2
                                 ]
 
-expandType :: GlobalContext -> RawType -> Either T.Text Type
+expandType :: GlobalContext -> RawType -> Either String Type
 expandType _ RawU = Right U
 expandType gctx (RawArrow t1 t2) =
     expandType gctx t1 >>= \t1' ->
@@ -29,7 +38,7 @@ expandType gctx (RawArrow t1 t2) =
 expandType gctx (FreeType s) =
     case M.lookup s (boundTypes gctx) of
       Just t  -> Right t
-      Nothing -> Left $ T.append "free type: " s
+      Nothing -> Left $ "free type: " <> s
 
 instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) :: Expr -> Expr -> Bool
@@ -39,38 +48,38 @@ instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) _ _ = False
 
 instance Show Expr where
-    show = T.unpack . typedPrettyPrint
+    show = typedPrettyPrint
 
 -- print respecting Lam's syntax
-prettyPrint :: Bool -> Expr -> T.Text
+prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
-  where go :: LocalContext -> Bool -> Expr -> T.Text
-        go ctx _ (Var i) = ctx !! (fromInteger i)
+  where go :: LocalContext -> Bool -> Expr -> String
+        go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx untyped (Lam n ty e) =
             let freshName = pickFresh ctx n
-             in T.unwords $ [ "lam"
-                            , freshName
-                            ] ++
-                            -- show types depending on the parameter
-                            [T.append ":: " (T.pack (show ty)) | not untyped] ++
-                            [ "->"
-                            , go (freshName : ctx) untyped e
-                            ]
+             in unwords $ [ "lam"
+                          , freshName
+                          ] ++
+                          -- show types depending on the parameter
+                          [":: " <> show ty | not untyped] ++
+                          [ "->"
+                          , go (freshName : ctx) untyped e
+                          ]
         go ctx untyped (App e1 e2) =
           let f e@(Var _) = go ctx untyped e
-              f e         = T.concat ["(", go ctx untyped e, ")"]
-           in T.unwords [f e1, ".", f e2]
+              f e         = concat ["(", go ctx untyped e, ")"]
+           in unwords [f e1, ".", f e2]
 
-untypedPrettyPrint, typedPrettyPrint :: Expr -> T.Text
+untypedPrettyPrint, typedPrettyPrint :: Expr -> String
 untypedPrettyPrint = prettyPrint True
 typedPrettyPrint   = prettyPrint False
 
-eraseNames :: GlobalContext -> RawExpr -> Either T.Text Expr
+eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
   where
     go lctx gctx (RawVar s) =
       case elemIndex s lctx of
-        Just i  -> Right $ Var (toInteger i)
+        Just i  -> Right $ Var (toNat i)
         Nothing -> case M.lookup s (boundExprs gctx) of
                      Just e  -> Right e
                      Nothing -> Left $ "free variable: " <> s
@@ -83,8 +92,8 @@ eraseNames = go []
         expandType gctx ty >>= \ty' ->
         Right $ Lam s ty' e'
 
-parseUntypedExpr :: String -> Either T.Text Expr
+parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr = eraseNames emptyContext . parseRawExpr True
 
-parseTypedExpr :: String -> Either T.Text Expr
+parseTypedExpr :: String -> Either String Expr
 parseTypedExpr = eraseNames emptyContext . parseRawExpr False

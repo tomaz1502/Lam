@@ -10,22 +10,23 @@ module Lam.Handler ( repl
 import Control.Monad.RWS        ( get, put )
 import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError )
 import Data.Map qualified as M
-import Data.Text qualified as T
 import System.Exit              (exitSuccess, exitFailure)
 import System.IO                (hFlush, stdout)
 
 import Lam.Command
 import Lam.Context
-import Lam.Expr
+import Lam.Data
+import Lam.Evaluator
 import Lam.Parser
 import Lam.Result
+import Lam.TypeChecker
 import Lam.Utils
 
 -- TODO: report cyclic dependencies
-loadFile :: T.Text -> Result ()
+loadFile :: String -> Result ()
 loadFile fName = do
   untyped <- askUntyped
-  sc      <- liftIO (readFile (T.unpack fName))
+  sc      <- liftIO (readFile fName)
   let prog = parseProg untyped sc
   mapM_ (\case {EvalC _ -> pure (); c -> handleCommand c}) prog
 
