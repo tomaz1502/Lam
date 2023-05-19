@@ -1,5 +1,6 @@
 {
-  module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex) where
+{-# LANGUAGE OverloadedStrings #-}
+module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex) where
 }
 
 %wrapper "monad"
@@ -15,12 +16,12 @@ tokens :-
 <0> "=>"      { tok TypeArrow }
 <0> "U"       { tok BaseType  }
 <0> "."       { tok Dot       }
-<0> ","       { tok Comma }
+<0> ","       { tok Comma     }
 <0> "lam"     { tok Lam       }
 <0> "EVAL"    { tok Eval      }
 <0> "TYPEDEF" { tok Typedef   }
 <0> "DEFINE"  { tok Define    }
-<0> "LOAD"    { tok Load }
+<0> "LOAD"    { tok Load      }
 <0> ":"       { tok Colon     }
 <0> "::"      { tok TypeColon }
 <0> ":="      { tok ColonEq   }

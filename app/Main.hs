@@ -8,7 +8,6 @@ import Control.Monad.Reader ( runReaderT )
 import Control.Monad.State  ( runStateT )
 import Data.List            ( isPrefixOf )
 import System.Environment   ( getArgs )
-import System.Exit          ( exitFailure )
 
 import Lam.Context ( emptyContext )
 import Lam.Handler ( repl, handleFile )
@@ -30,7 +29,7 @@ main = do
       unlines [ "[Error]: Incorrect number of arguments."
               , "Usage: Lam <filename>?"
               ]
-    run :: Result a -> [Flag] -> IO ()
+    run :: Result () -> [Flag] -> IO ()
     run f flags =
         do result <- runExceptT (runStateT (runReaderT f flags) emptyContext)
            case result of

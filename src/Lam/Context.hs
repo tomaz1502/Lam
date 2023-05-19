@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Lam.Context where
 
-import Lam.Expr.Data
+import Lam.Data
 
 import Data.Map qualified as M
 
@@ -24,6 +26,6 @@ type LocalContext = [Id]
 
 pickFresh :: LocalContext -> Id -> Id
 pickFresh ctx nm
- | nm `elem` ctx = pickFresh ctx (nm <> "'")
+ | nm `elem` ctx = pickFresh ctx (nm ++ "'")
  | otherwise     = nm
 

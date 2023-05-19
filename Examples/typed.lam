@@ -14,6 +14,6 @@ DEFINE: three := succ . two;
 DEFINE: four  := succ . three;
 DEFINE: five  := succ . four;
 DEFINE: six   := succ . five;
-DEFINE: program := mul . three . two;
+DEFINE: program := mul . two . three;
 EVAL: program;
 

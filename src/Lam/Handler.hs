@@ -1,22 +1,26 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Lam.Handler ( repl
                    , handleFile
                    ) where
 
-import Control.Monad.RWS ( get, put )
-import Control.Monad.Except ( liftEither, MonadIO(liftIO), MonadError )
+import Control.Monad.RWS        ( get, put )
+import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError )
 import Data.Map qualified as M
-import System.Exit        (exitSuccess, exitFailure)
-import System.IO          (hFlush, stdout)
+import System.Exit              (exitSuccess, exitFailure)
+import System.IO                (hFlush, stdout)
 
 import Lam.Command
 import Lam.Context
-import Lam.Expr
+import Lam.Data
+import Lam.Evaluator
 import Lam.Parser
 import Lam.Result
+import Lam.TypeChecker
+import Lam.Utils
 
 -- TODO: report cyclic dependencies
 loadFile :: String -> Result ()

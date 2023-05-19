@@ -6,7 +6,7 @@ import Data.List (elemIndex)
 import Data.Map qualified as M
 
 import Lam.Command
-import Lam.Expr.Data (RawExpr(..), RawType(..), Id)
+import Lam.Data
 import Lam.Parser.Lexer qualified as L
 }
 

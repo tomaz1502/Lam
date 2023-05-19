@@ -1,13 +1,24 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Lam.Expr.Funs where
+module Lam.Utils where
 
 import Lam.Context
-import Lam.Expr.Data
+import Lam.Data
 import Lam.Parser (parseRawExpr)
+import Lam.UtilsAgda
 
 import Data.List (elemIndex)
 import Data.Map qualified as M
+import Data.Maybe (fromJust)
+
+-- this must be here since we don't have access to Int in Agda
+toNat :: Int -> Nat
+toNat i =
+  case compare i 0 of
+    GT -> S (toNat (i - 1))
+    EQ -> Z
+    LT -> error "[toNat]: negative input"
 
 instance Show Type where
     show U = "U"
@@ -43,7 +54,7 @@ instance Show Expr where
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
-        go ctx _ (Var i) = ctx !! i
+        go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx untyped (Lam n ty e) =
             let freshName = pickFresh ctx n
              in unwords $ [ "lam"
@@ -68,7 +79,7 @@ eraseNames = go []
   where
     go lctx gctx (RawVar s) =
       case elemIndex s lctx of
-        Just i  -> Right $ Var i
+        Just i  -> Right $ Var (toNat i)
         Nothing -> case M.lookup s (boundExprs gctx) of
                      Just e  -> Right e
                      Nothing -> Left $ "free variable: " <> s
@@ -86,4 +97,3 @@ parseUntypedExpr = eraseNames emptyContext . parseRawExpr True
 
 parseTypedExpr :: String -> Either String Expr
 parseTypedExpr = eraseNames emptyContext . parseRawExpr False
-
