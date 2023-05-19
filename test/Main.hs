@@ -5,12 +5,9 @@
 module Main where
 
 import Lam.Handler
-import Lam.Expr ( Expr(..)
-                , Type(..)
-                , parseUntypedExpr
-                , parseTypedExpr
-                , typedPrettyPrint
-                , eval)
+import Lam.Data ( Expr(..) , Type(..) )
+import Lam.Utils ( parseUntypedExpr, parseTypedExpr, typedPrettyPrint, toNat )
+import Lam.Evaluator ( eval )
 
 import Fixtures.ChurchNum ( encodeChurchE
                           , encodeChurchP
@@ -40,8 +37,9 @@ instance Arbitrary Type where
 -- here we use frequency to avoid very long expressions
 instance Arbitrary Expr where
   arbitrary = go 0
-    where go i = frequency $
-           [ (5, (\j -> Var (j `mod` i)) <$> arbitrary) | i > 0 ] ++
+    where go :: Int -> Gen Expr
+          go i = frequency $
+           [ (5, (\j -> Var (toNat (j `mod` i))) <$> arbitrary) | i > 0 ] ++
            [ (1, App <$> arbitrary <*> arbitrary)
            , (3, Lam <$> genIdentifier <*> arbitrary <*> go (i + 1))
            ]

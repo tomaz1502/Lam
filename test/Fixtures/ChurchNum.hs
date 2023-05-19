@@ -1,6 +1,6 @@
 module Fixtures.ChurchNum where
 
-import Lam.Expr ( Expr(..), Type(..) )
+import Lam.Data ( Expr(..), Type(..), Nat(..) )
 
 import Fixtures.Common ( SourceCode )
 
@@ -23,20 +23,20 @@ encodeChurchE :: Int -> Expr
 encodeChurchE n
   | n >= 0    = Lam "s" (Arrow U U) $
                   Lam "z" U $
-                    applyN n (App (Var 1)) (Var 0)
+                    applyN n (App (Var (S Z))) (Var Z)
   | otherwise = error "negative church (expr)"
 
 mulChurch :: Expr -> Expr -> Expr
 mulChurch n m =
   Lam "f" (Arrow U U) $
     Lam "x" U $
-      App (App n (App m (Var 1))) (Var 0)
+      App (App n (App m (Var (S Z)))) (Var Z)
 
 addChurch :: Expr -> Expr -> Expr
 addChurch n m =
   Lam "f" (Arrow U U) $
     Lam "x" U $
-      App (App n (Var 1)) (App (App m (Var 1)) (Var 0))
+      App (App n (Var (S Z))) (App (App m (Var (S Z))) (Var Z))
 
 -- notice:
 -- 1. forall n, encodeChurchE n = parse (encodeChurchP n)

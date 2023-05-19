@@ -1,6 +1,6 @@
 module Fixtures.Misc where
 
-import Lam.Expr ( Expr(..), Type(..) )
+import Lam.Data ( Expr(..), Type(..), Nat(..) )
 
 import Fixtures.Common ( SourceCode )
 
@@ -20,10 +20,10 @@ tc1 =
                 (Lam "x" U
                   (Lam "y" U
                     (App
-                      (Var 0)
-                      (Var 0))))
-                (Lam "x" U (Var 0))
-    , eOut  = Lam "y" U (App (Var 0) (Var 0))
+                      (Var Z)
+                      (Var Z))))
+                (Lam "x" U (Var Z))
+    , eOut  = Lam "y" U (App (Var Z) (Var Z))
     }
 tc2 =
   TC
@@ -33,15 +33,15 @@ tc2 =
                (App
                  (Lam "x" U
                    (App
-                     (Var 0)
-                     (Var 0)))
+                     (Var Z)
+                     (Var Z)))
                  (App
                    (Lam "f" U
                      (App
-                       (Var 0)
+                       (Var Z)
                        (App
-                         (Var 0)
-                         (Var 1))))
-                   (Lam "x" U (Var 0))))
-    , eOut = Lam "y" U (App (Var 0) (Var 0))
+                         (Var Z)
+                         (Var (S Z)))))
+                   (Lam "x" U (Var Z))))
+    , eOut = Lam "y" U (App (Var Z) (Var Z))
     }
