@@ -1,4 +1,6 @@
 # Lam
+A formally verified interpreter for Lambda Calculus.
+
 ## Roadmap
 ### Infrastructure
   - [x] Lexer
