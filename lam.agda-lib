@@ -1,0 +1,4 @@
+name: lam
+include: ./src/Lam/Agda/
+depend: agda2hs, standard-library
+flags: --erasure

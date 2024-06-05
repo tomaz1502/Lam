@@ -1,9 +1,8 @@
 #!/bin/sh
 
-set -x
+set -xe
 
-cd src/Lam/Agda
-agda2hs Lam/Export.agda
-cp Lam/*.hs ..
-rm ../Export.hs
+agda2hs ./src/Lam/Agda/Lam/Export.agda
+cp ./src/Lam/Agda/Lam/*.hs ./src/Lam
+rm ./src/Lam/Export.hs
 stack build
