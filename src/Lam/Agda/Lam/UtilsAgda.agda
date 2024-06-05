@@ -59,7 +59,7 @@ eqType _            _           = false
 eqExpr : Expr → Expr → Bool
 eqExpr (Var i)       (Var j)       = eqNat i j
 eqExpr (Lam _ _ e1)  (Lam _ _ e2)  = eqExpr e1 e2
-eqExpr (App e11 e12) (App e21 e22) = (eqExpr e11 e12) && (eqExpr e21 e22)
+eqExpr (App e11 e12) (App e21 e22) = (eqExpr e11 e21) && (eqExpr e12 e22)
 eqExpr _             _             = false
 
 {-# COMPILE AGDA2HS eqExpr #-}

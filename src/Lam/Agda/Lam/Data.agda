@@ -11,7 +11,7 @@ data Nat : Set where
   Z : Nat
   S : Nat → Nat
 
-{-# COMPILE AGDA2HS Nat deriving Eq #-}
+{-# COMPILE AGDA2HS Nat deriving (Eq, Show) #-}
 
 data RawType : Set where
   RawU     : RawType
