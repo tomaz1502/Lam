@@ -1,6 +1,8 @@
 # Lam
 A formally verified interpreter for Lambda Calculus.
 
+Dependencies: agda2hs version 1.2.
+
 ## Roadmap
 ### Infrastructure
   - [x] Lexer
