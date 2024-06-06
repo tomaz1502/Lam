@@ -1,3 +1,5 @@
+-- NOTE: Consider the type of subst as: {A : Set} {x y : A} (P : A -> Set) : x ≡ y → P x → P y
+
 module Lam.Formalization where
 
 open import Data.Empty            using (⊥-elim)
@@ -11,7 +13,8 @@ open import Relation.Binary.PropositionalEquality using
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import Haskell.Prelude using
-  (Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; injective; maybe)
+  (Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe)
+open import Haskell.Law.Maybe using (Just-injective)
 
 open import Lam.Data
 open import Lam.TypeChecker
@@ -30,12 +33,13 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ x ∶ dom
     → Γ ⊢ App f x ∶ codom
 
-to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck Γ e ≡ Just t
-to (⊢v {Γ} {i} {h}) = lookup≡ {Type} {i} {Γ}  h
-to {Γ} {Lam name dom body} {Arrow dom codom}  (⊢l {Γ} {name} {body} {dom} {codom} wt) = begin
-    typeCheck Γ (Lam name dom body)
+to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
+to (⊢v {Γ} {i} {h}) = lookup≡ {Type} {Γ} {i} h
+to {Γ} {Lam name dom body} {Arrow dom codom} (⊢l {Γ} {name} {body} {dom} {codom} wt) =
+  begin
+    typeCheck' Γ (Lam name dom body)
   ≡⟨⟩
-    (typeCheck (dom ∷ Γ) body >>= (λ t' → Just (Arrow dom t')))
+    (typeCheck' (dom ∷ Γ) body >>= (λ t' → Just (Arrow dom t')))
   ≡⟨ cong (λ x → x >>= (λ t' → Just (Arrow dom t'))) (to {dom ∷ Γ} {body} {codom} wt) ⟩
     ((Just codom >>= (λ t' → Just (Arrow dom t'))))
   ≡⟨⟩
@@ -44,19 +48,21 @@ to {Γ} {Lam name dom body} {Arrow dom codom}  (⊢l {Γ} {name} {body} {dom} {c
 to {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
   rewrite to {Γ} {f} {Arrow dom codom} wt₁ | to {Γ} {x} {dom} wt₂ | eqType-refl dom = refl
 
-from : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → typeCheck Γ e ≡ Just t → Γ ⊢ e ∶ t
-from {Γ} {App e₁ e₂} {t} eq with typeCheck Γ e₁ in te₁
+from : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
+from {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
 ... | Just U = ⊥-elim (injection-maybe eq)
-... | Just (Arrow t₁ t₂) with typeCheck Γ e₂ in te₂
+... | Just (Arrow t₁ t₂) with typeCheck' Γ e₂ in e₂Type
 ... | Just t₃ with iteAbs (λ()) eq
-...   | ⟨ p1 , p2 ⟩ =
-         let w = cong (λ x -> Γ ⊢ e₁ ∶ (Arrow t₁ x)) (injective p2)
-             p = cong (λ x -> Γ ⊢ e₂ ∶ x) (sym (==ᵗto≡ p1))
-             k = subst id w (from te₁)
-             l = subst id p (from te₂)
-          in ⊢a k l
-from {Γ} {Lam x t' e₁} {t} eq with typeCheck (t' ∷ Γ) e₁ in te
-... | Just t'' rewrite (sym (injective eq)) = ⊢l (from {t' ∷ Γ} {e₁} {t''} te)
+...   | ⟨ t₁Eqt₃ , tEqt₂ ⟩ =
+            let e₁Typet₁Tot = subst (λ x -> Γ ⊢ e₁ ∶ (Arrow t₁ x)) (Just-injective tEqt₂) (from e₁Type)
+                e₂Typet₁ = subst (λ x -> Γ ⊢ e₂ ∶ x) (sym (==ᵗto≡ t₁Eqt₃)) (from e₂Type)
+            in ⊢a e₁Typet₁Tot e₂Typet₁
+from {Γ} {Lam x t' e₁} {t} eq with typeCheck' (t' ∷ Γ) e₁ in te
+... | Just t'' rewrite (sym (Just-injective eq)) = ⊢l (from {t' ∷ Γ} {e₁} {t''} te)
 ... | Nothing = ⊥-elim (injection-maybe eq)
-from {Γ} {Var x} {t} eq
-  rewrite injective (trans (sym eq) (lookup≡ {Type} {x} {Γ} (lookup?< {Type} {Γ} {x} eq))) = ⊢v
+from {Γ} {Var x} {t} eq =
+  let x<lenΓ = lookup?< {Type} {Γ} {x} eq in
+  let lookupMaybeEqLookup = lookup≡ {Type} {Γ} {x} x<lenΓ in
+  let justTEqJustLookup = trans (sym eq) lookupMaybeEqLookup in
+  let tEqLookup = Just-injective justTEqJustLookup in
+  subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})

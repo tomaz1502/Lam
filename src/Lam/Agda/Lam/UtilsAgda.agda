@@ -71,9 +71,9 @@ lookupMaybe (S i) (_ ∷ t) = lookupMaybe i t
 
 {-# COMPILE AGDA2HS lookupMaybe #-}
 
-lookup≡ : {t : Set} {i : Nat} {l : List t} → (h : (natToℕ i) < length l) → (lookupMaybe i l) ≡ Just (lookup l (fromℕ< h))
-lookup≡ {t} {Z}  {x ∷ l} h  = _≡_.refl
-lookup≡ {t} {S i} {x ∷ l} h = lookup≡ {t} {i} {l} (Data.Nat.≤-pred h)
+lookup≡ : {t : Set} {l : List t} {i : Nat} → (h : (natToℕ i) < length l) → (lookupMaybe i l) ≡ Just (lookup l (fromℕ< h))
+lookup≡ {t} {x ∷ l} {Z} h  = _≡_.refl
+lookup≡ {t} {x ∷ l} {S i} h = lookup≡ {t} {l} {i} (Data.Nat.≤-pred h)
 
 eqType-refl : (t : Type) → eqType t t ≡ true
 eqType-refl U = refl
