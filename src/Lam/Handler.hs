@@ -24,16 +24,16 @@ import Lam.Utils
 -- TODO: report cyclic dependencies
 loadFile :: String -> Result ()
 loadFile fName = do
-  untyped <- askUntyped
-  sc      <- liftIO (readFile fName)
-  prog    <- liftEither (parseProg untyped sc)
+  isUntyped <- askUntyped
+  sc        <- liftIO (readFile fName)
+  prog      <- liftEither (parseProg isUntyped sc)
   mapM_ (\case {EvalC _ -> pure (); c -> handleCommand c}) prog
 
 handleTypedef :: Id -> RawType -> Result ()
 handleTypedef macroName macroType = do
-  untyped <- askUntyped
+  isUntyped <- askUntyped
   gctx    <- get
-  if untyped then
+  if isUntyped then
      throwError "Trying to define a type in an untyped context."
   else do
     t <- liftEither (expandType gctx macroType)
@@ -51,8 +51,8 @@ handleEval :: RawExpr -> Result ()
 handleEval rExpr = do
   gctx    <- get
   expr    <- liftEither (eraseNames gctx rExpr)
-  untyped <- askUntyped
-  if untyped then
+  isUntyped <- askUntyped
+  if isUntyped then
     liftIO (putStrLnFlush (untypedPrettyPrint (eval expr)))
   else
     case typeCheck expr of
@@ -73,8 +73,8 @@ handleCommand c =
 readCommand :: Result Command
 readCommand = do
   cmd <- liftIO readRepl
-  untyped <- askUntyped
-  case parseCommand untyped cmd of
+  isUntyped <- askUntyped
+  case parseCommand isUntyped cmd of
     Left err ->
       liftIO (putStrLnFlush err) >>
       readCommand
@@ -91,7 +91,7 @@ repl = do
 
 handleFile :: String -> Result ()
 handleFile fName = do
-  untyped <- askUntyped
+  isUntyped <- askUntyped
   sc      <- liftIO $ readFile fName
-  prog    <- liftEither (parseProg untyped sc)
+  prog    <- liftEither (parseProg isUntyped sc)
   mapM_ handleCommand prog

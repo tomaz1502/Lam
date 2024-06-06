@@ -57,19 +57,19 @@ prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
-        go ctx untyped (Lam n ty e) =
+        go ctx isUntyped (Lam n ty e) =
             let freshName = pickFresh ctx n
              in unwords $ [ "lam"
                           , freshName
                           ] ++
                           -- show types depending on the parameter
-                          [":: " <> show ty | not untyped] ++
+                          [":: " <> show ty | not isUntyped] ++
                           [ "->"
-                          , go (freshName : ctx) untyped e
+                          , go (freshName : ctx) isUntyped e
                           ]
-        go ctx untyped (App e1 e2) =
-          let f e@(Var _) = go ctx untyped e
-              f e         = concat ["(", go ctx untyped e, ")"]
+        go ctx isUntyped (App e1 e2) =
+          let f e@(Var _) = go ctx isUntyped e
+              f e         = concat ["(", go ctx isUntyped e, ")"]
            in unwords [f e1, ".", f e2]
 
 untypedPrettyPrint, typedPrettyPrint :: Expr -> String
