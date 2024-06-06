@@ -58,7 +58,7 @@ UntypedCommand :: { Command }
   | TypedefCommand       { TypedefC $1 }
 
 UntypedDefineCommand :: { (Id, RawExpr) }
-  : "DEFINE" ":" var ":=" UntypedRawExpr ";" { ($3, $5) }
+  : "DEFINE" var ":=" UntypedRawExpr ";" { ($2, $4) }
 
 UntypedEvalCommand :: { RawExpr }
   : "EVAL" ":" UntypedRawExpr ";" { $3 }
@@ -74,12 +74,12 @@ Command :: { Command }
   | LoadCommand    { LoadC $1 }
 
 TypedefCommand :: { (Id, RawType) }
-  : "TYPEDEF" ":" var ":=" RawType ";"
-    { ($3, $5) }
+  : "TYPEDEF" var ":=" RawType ";"
+    { ($2, $4) }
 
 -- we allow name shadowing
 DefineCommand :: { (Id, RawExpr) }
-  : "DEFINE" ":" var ":=" RawExpr ";" { ($3, $5) }
+  : "DEFINE" var ":=" RawExpr ";" { ($2, $4) }
 
 EvalCommand :: { RawExpr }
   : "EVAL" ":" RawExpr ";" { $3 }
@@ -121,14 +121,11 @@ CommaSeparatedIdents :: { [Id] }
 lexer :: (L.Token -> L.Alex a) -> L.Alex a
 lexer = (=<< L.alexMonadScan)
 
-parseError :: L.Token -> a
-parseError t = error $ "error while parsing " ++ (show t)
+parseError :: L.Token -> L.Alex a
+parseError t = L.alexMonad (\_ -> Left ("Error reading the token: " <> (show t)))
 
-getParser :: L.Alex a -> String -> a
-getParser f s =
-  case L.runAlex s f of
-    Left err -> error ("parsing error for:" <> s)
-    Right p  -> p
+getParser :: L.Alex a -> String -> Either String a
+getParser f s = L.runAlex s f
 
 joinLams :: [Id] -> RawType -> RawExpr -> RawExpr
 joinLams names ty body =

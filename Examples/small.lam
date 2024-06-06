@@ -1,1 +1,1 @@
-DEFINE: id := lam x :: U -> x;
+DEFINE id := lam x :: U -> x;
