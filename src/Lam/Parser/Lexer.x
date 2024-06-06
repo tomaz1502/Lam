@@ -8,6 +8,7 @@ module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex, unAlex, alexMo
 $digit = 0-9
 $alpha = [a-zA-Z]
 @id = $alpha[$alpha$digit]*[']*
+@path = \"(((\.)?\/)?(@id\/)*)@id(\.@id)?\"
 
 tokens :-
 <0> $white+ ;
@@ -29,6 +30,7 @@ tokens :-
 <0> "("       { tok LPar      }
 <0> ")"       { tok RPar      }
 <0> @id       { tok (Var "")  }
+<0> @path     { tok (Path "") }
 
 {
 
@@ -50,6 +52,7 @@ data Token =
   | Var String
   | LPar
   | RPar
+  | Path String
   | EOF
   deriving Show
 
@@ -59,8 +62,9 @@ alexEOF = return EOF
 tok :: Token -> AlexInput -> Int -> Alex Token
 tok t (_,_,_,s) len = pure $
   case t of
-      Var _ -> Var (take len s)
-      _     -> t
+     Var _ -> Var (take len s)
+     Path _ -> Path (take len s)
+     _ -> t
 
 alexMonad f = Alex f
 }

@@ -42,6 +42,7 @@ import Lam.Parser.Lexer qualified as L
   ","       { L.Comma     }
   "("       { L.LPar      }
   ")"       { L.RPar      }
+  path      { L.Path $$   }
 %%
 
 
@@ -85,7 +86,7 @@ EvalCommand :: { RawExpr }
   : "EVAL" ":" RawExpr ";" { $3 }
 
 LoadCommand :: { String }
-  : "LOAD" ":" var ";" { $3 }
+  : "LOAD" ":" path ";" { init (tail $3) {- Removes quotes -} }
   -- yes i will change that later to FilePath thank you
 
 UntypedRawExpr :: { RawExpr }
