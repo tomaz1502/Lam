@@ -12,6 +12,8 @@ import Data.List (elemIndex)
 import Data.Map qualified as M
 import Data.Maybe (fromJust)
 
+import System.IO (hFlush, stdout)
+
 -- this must be here since we don't have access to Int in Agda
 toNat :: Int -> Nat
 toNat i =
@@ -82,7 +84,7 @@ eraseNames = go []
         Just i  -> Right $ Var (toNat i)
         Nothing -> case M.lookup s (boundExprs gctx) of
                      Just e  -> Right e
-                     Nothing -> Left $ "free variable: " <> s
+                     Nothing -> Left $ "Free variable: " <> s <> "."
     go lctx gctx (RawApp e1 e2) =
         go lctx gctx e1 >>= \e1' ->
         go lctx gctx e2 >>= \e2' ->
@@ -93,7 +95,17 @@ eraseNames = go []
         Right $ Lam s ty' e'
 
 parseUntypedExpr :: String -> Either String Expr
-parseUntypedExpr = eraseNames emptyContext . parseRawExpr True
+parseUntypedExpr str =
+    parseRawExpr True str >>= eraseNames emptyContext
 
 parseTypedExpr :: String -> Either String Expr
-parseTypedExpr = eraseNames emptyContext . parseRawExpr False
+parseTypedExpr str =
+    parseRawExpr False str >>= eraseNames emptyContext
+
+putStrLnFlush :: String -> IO ()
+putStrLnFlush str =
+    putStrLn str >> hFlush stdout
+
+putStrFlush :: String -> IO ()
+putStrFlush str =
+    putStr str >> hFlush stdout

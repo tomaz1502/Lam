@@ -1,6 +1,6 @@
 {
 {-# LANGUAGE OverloadedStrings #-}
-module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex) where
+module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex, unAlex, alexMonad) where
 }
 
 %wrapper "monad"
@@ -39,7 +39,7 @@ data Token =
   | Dot
   | Comma
   | Lam
-  | Eval   
+  | Eval
   | Typedef
   | Load
   | Define
@@ -58,8 +58,9 @@ alexEOF = return EOF
 
 tok :: Token -> AlexInput -> Int -> Alex Token
 tok t (_,_,_,s) len = pure $
-  case t of 
+  case t of
       Var _ -> Var (take len s)
       _     -> t
 
+alexMonad f = Alex f
 }

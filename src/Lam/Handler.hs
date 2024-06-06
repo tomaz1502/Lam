@@ -8,10 +8,9 @@ module Lam.Handler ( repl
                    ) where
 
 import Control.Monad.RWS        ( get, put )
-import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError )
+import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError (..) )
 import Data.Map qualified as M
 import System.Exit              (exitSuccess, exitFailure)
-import System.IO                (hFlush, stdout)
 
 import Lam.Command
 import Lam.Context
@@ -27,7 +26,7 @@ loadFile :: String -> Result ()
 loadFile fName = do
   untyped <- askUntyped
   sc      <- liftIO (readFile fName)
-  let prog = parseProg untyped sc
+  prog    <- liftEither (parseProg untyped sc)
   mapM_ (\case {EvalC _ -> pure (); c -> handleCommand c}) prog
 
 handleTypedef :: Id -> RawType -> Result ()
@@ -35,7 +34,7 @@ handleTypedef macroName macroType = do
   untyped <- askUntyped
   gctx    <- get
   if untyped then
-    liftEither (Left "trying to define a type in an untyped context!")
+     throwError "Trying to define a type in an untyped context."
   else do
     t <- liftEither (expandType gctx macroType)
     let boundTypes' = M.insert macroName t (boundTypes gctx)
@@ -44,7 +43,7 @@ handleTypedef macroName macroType = do
 handleDefine :: Id -> RawExpr -> Result ()
 handleDefine macroName macroExpr = do
   gctx <- get
-  e    <- liftEither $ eraseNames gctx macroExpr
+  e    <- liftEither (eraseNames gctx macroExpr)
   let boundExprs' = M.insert macroName e (boundExprs gctx)
    in put gctx {boundExprs = boundExprs'}
 
@@ -54,12 +53,14 @@ handleEval rExpr = do
   expr    <- liftEither (eraseNames gctx rExpr)
   untyped <- askUntyped
   if untyped then
-    liftIO (putStrLn (untypedPrettyPrint (eval expr)))
+    liftIO (putStrLnFlush (untypedPrettyPrint (eval expr)))
   else
     case typeCheck expr of
-      Nothing -> liftEither (Left "typing error")
-      Just t  -> liftIO $
-        putStrLn (untypedPrettyPrint (eval expr) <> " :: " <> show t)
+      Nothing -> throwError "Typing error."
+      Just t  ->
+        let normalizedExpr = eval expr in
+        let msg = untypedPrettyPrint normalizedExpr <> " :: " <> show t in
+        liftIO (putStrLnFlush msg)
 
 handleCommand :: Command -> Result ()
 handleCommand c =
@@ -69,19 +70,28 @@ handleCommand c =
     EvalC rExpr                     -> handleEval rExpr
     LoadC path                      -> loadFile path
 
-repl :: Result ()
-repl = do
-  cmd     <- liftIO readRepl
+readCommand :: Result Command
+readCommand = do
+  cmd <- liftIO readRepl
   untyped <- askUntyped
-  handleCommand (parseCommand untyped cmd)
-  repl
+  case parseCommand untyped cmd of
+    Left err ->
+      liftIO (putStrLnFlush err) >>
+      readCommand
+    Right command -> pure command
   where
     readRepl :: IO String
-    readRepl = putStr "> " >> hFlush stdout >> getLine
+    readRepl = putStrFlush "> " >> getLine
+
+repl :: Result ()
+repl = do
+  command <- readCommand
+  catchError (handleCommand command) (liftIO . putStrLnFlush)
+  repl
 
 handleFile :: String -> Result ()
 handleFile fName = do
   untyped <- askUntyped
   sc      <- liftIO $ readFile fName
-  let prog = parseProg untyped sc
+  prog    <- liftEither (parseProg untyped sc)
   mapM_ handleCommand prog
