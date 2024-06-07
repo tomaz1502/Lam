@@ -1,1 +1,0 @@
-EVAL: (lam x :: (U => U) -> x) . (lam x :: U -> x);
