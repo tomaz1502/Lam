@@ -43,22 +43,22 @@ smallStep (Var x) = Var x
 smallStep (Lam n t e) = Lam n t (smallStep e)
 smallStep (App (Lam _ _ e) e₂) = shiftDown (substitute Z (shiftUp e₂) e)
 smallStep (App e1 e2) =
-  let e1' = smallStep e1
-   in if eqExpr e1' e1 then App e1 (smallStep e2)
-      else App e1' e2
+  if eqExpr e1' e1 then App e1 (smallStep e2)
+  else App e1' e2
+  where e1' = smallStep e1
 
 {-# COMPILE AGDA2HS smallStep #-}
 
 {-# NON_TERMINATING #-}
 eval : Expr → Expr
 eval e =
-  let e' = smallStep e
-   in if eqExpr e' e then e' else eval e'
+   if eqExpr e' e then e' else eval e'
+   where e' = smallStep e
 
 {-# COMPILE AGDA2HS eval #-}
 
 evalWithGas : Nat → Expr → Expr
 evalWithGas Z e = e
 evalWithGas (S gas) e =
-  let e' = smallStep e
-   in if eqExpr e' e then e' else evalWithGas gas e'
+   if eqExpr e' e then e' else evalWithGas gas e'
+   where e' = smallStep e

@@ -6,3 +6,4 @@ EVAL: factorial . one;
 EVAL: factorial . two;
 EVAL: factorial . three;
 EVAL: factorial . four;
+EVAL: factorial . five;
