@@ -1,0 +1,8 @@
+LOAD: "stdlib.lam";
+DEFINE factorial_aux := lam f, n -> ite . (equals . n . zero) . one . (mul . n . (f . (prd . n)));
+DEFINE factorial := Y . factorial_aux;
+EVAL: factorial . zero;
+EVAL: factorial . one;
+EVAL: factorial . two;
+EVAL: factorial . three;
+EVAL: factorial . four;
