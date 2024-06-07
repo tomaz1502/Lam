@@ -4,6 +4,7 @@ DEFINE fls   := lam x, y -> y;
 DEFINE tru   := lam x, y -> x;
 DEFINE and   := lam b1, b2 -> b1 . b2 . fls;
 DEFINE or    := lam b1, b2 -> b1 . tru . b2;
+DEFINE not   := lam b -> b . fls . tru;
 DEFINE ite   := lam b, x, y -> b . x . y;
 
 DEFINE pair  := lam x, y, b -> b . x . y;
@@ -29,5 +30,7 @@ DEFINE sub := lam n, m -> m . prd . n;
 
 DEFINE iszero := lam n -> n . (lam b -> fls) . tru;
 DEFINE equals := lam n, m -> and . (iszero . (sub . n . m)) . (iszero . (sub . m . n));
+
+DEFINE lt := lam n, m -> and . (iszero . (sub . n . m)) . (not . (iszero . (sub . m . n)));
 
 DEFINE Y := lam f -> (lam x -> f . (lam y -> x . x . y)) . (lam x -> f . (lam y -> x . x . y));

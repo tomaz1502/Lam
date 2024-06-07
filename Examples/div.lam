@@ -1,0 +1,13 @@
+LOAD: "stdlib.lam";
+
+DEFINE div_aux := lam f, n, m -> ite . (lt . n . m) . zero . (succ . (f . (sub . n . m) . m));
+DEFINE div := Y . div_aux;
+
+DEFINE twenty_seven := pow . three . three;
+
+EVAL: div . twenty_seven . two;
+
+DEFINE rem_aux := lam f, n, m -> ite . (lt . n . m) . n . (f . (sub . n . m) . m);
+DEFINE rem := Y . rem_aux;
+
+EVAL: rem . twenty_seven . five;
