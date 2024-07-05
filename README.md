@@ -19,8 +19,12 @@ Build with the `build.sh` script.
 
 ### Features
   - [x] Simple Types
-  - [ ] Fix point operator in a typed context
   - [ ] Extensions (TaPL ch 11)
+    + [x] Uninterpreted (opaque) Types
+    + [ ] Numbers, booleans and strings
+    + [ ] Pairs
+    + [ ] Sums
+    + [ ] General recursion
   - [ ] Polymorphism
   - [ ] Verify properties using Agda (Progress/Preservation)
   - [ ] Richer library
