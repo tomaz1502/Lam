@@ -1,8 +1,7 @@
 module Lam.TypeChecker where
 
 open import Data.List
-open import Haskell.Prelude using (case_of_; Maybe; Just; Nothing; _>>=_;
-                                   if_then_else_; maybe)
+open import Haskell.Prelude using (Maybe; Just; Nothing; _>>=_; if_then_else_; maybe)
 
 open import Lam.Data
 open import Lam.UtilsAgda

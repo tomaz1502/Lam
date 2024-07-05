@@ -21,6 +21,7 @@ data RawType : Set where
 {-# COMPILE AGDA2HS RawType deriving Show #-}
 
 data Type : Set where
+-- U is an opaque type
   U     : Type
   Arrow : Type → Type → Type
 
