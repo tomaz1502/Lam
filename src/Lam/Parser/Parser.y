@@ -38,11 +38,13 @@ import Lam.Parser.Lexer qualified as L
   "->"      { L.Arrow     }
   "=>"      { L.TypeArrow }
   "U"       { L.BaseType  }
+  "Nat"     { L.NatType   }
   "."       { L.Dot       }
   ","       { L.Comma     }
   "("       { L.LPar      }
   ")"       { L.RPar      }
   path      { L.Path $$   }
+  number    { L.Number $$ }
 %%
 
 
@@ -103,6 +105,7 @@ RawExpr :: { RawExpr }
   | "lam" CommaSeparatedIdents "::" RawType "->" RawExpr %shift
     { joinLams $2 $4 $6 }
   | var { RawVar $1 }
+  | number { RawNumber $1 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }
@@ -110,6 +113,7 @@ ParExpr : "(" RawExpr ")" { $2 }
 RawType :: { RawType }
   : RawType "=>" RawType { RawArrow $1 $3 }
   | "U" { RawU }
+  | "Nat" { RawNatT }
   | var { FreeType $1 }
   | ParType { $1 }
 
