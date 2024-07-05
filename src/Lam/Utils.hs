@@ -23,6 +23,7 @@ toNat i =
     LT -> error "[toNat]: negative input"
 
 instance Show Type where
+    show NatT = "Nat"
     show U = "U"
     show (Arrow t1 t2) = concat [ "("
                                 , show t1
@@ -32,6 +33,7 @@ instance Show Type where
                                 ]
 
 expandType :: GlobalContext -> RawType -> Either String Type
+expandType _ RawNatT = Right NatT
 expandType _ RawU = Right U
 expandType gctx (RawArrow t1 t2) =
     expandType gctx t1 >>= \t1' ->
@@ -56,6 +58,7 @@ instance Show Expr where
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
+        go ctx _ (Number z) = show z
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx isUntyped (Lam n ty e) =
             let freshName = pickFresh ctx n
@@ -79,6 +82,7 @@ typedPrettyPrint   = prettyPrint False
 eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
   where
+    go lctx gctx (RawNumber z) = Right (Number z)
     go lctx gctx (RawVar s) =
       case elemIndex s lctx of
         Just i  -> Right $ Var (toNat i)
