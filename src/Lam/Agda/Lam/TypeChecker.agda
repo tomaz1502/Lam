@@ -1,7 +1,8 @@
 module Lam.TypeChecker where
 
-open import Data.List
-open import Haskell.Prelude using (Maybe; Just; Nothing; _>>=_; if_then_else_; maybe)
+open import Data.List using (List)
+
+open import Haskell.Prelude
 
 open import Lam.Data
 open import Lam.UtilsAgda
@@ -23,6 +24,8 @@ myCaseOf x f = f x
 {-# COMPILE AGDA2HS myCaseOf #-}
 
 typeCheck' : TypingContext → Expr → Maybe Type
+typeCheck' gam (Prim p) =
+  if p == ('+' ∷ []) then Just (Arrow NatT (Arrow NatT NatT)) else Nothing
 typeCheck' gam (Number i)  = Just NatT
 typeCheck' gam (Var i)     = lookupMaybe i gam
 typeCheck' gam (Lam _ t e) =

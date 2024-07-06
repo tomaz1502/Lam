@@ -1,6 +1,6 @@
 module Lam.UtilsAgda where
 
-import Lam.Data (Expr(App, Lam, Number, Var), Nat(S, Z), Type(Arrow, NatT, U))
+import Lam.Data (Expr(App, Lam, Number, Prim, Var), Nat(S, Z), Type(Arrow, NatT, U))
 
 eqNat :: Nat -> Nat -> Bool
 eqNat Z Z = True
@@ -27,6 +27,7 @@ eqType (Arrow t11 t12) (Arrow t21 t22)
 eqType _ _ = False
 
 eqExpr :: Expr -> Expr -> Bool
+eqExpr (Prim s1) (Prim s2) = s1 == s2
 eqExpr (Number z1) (Number z2) = z1 == z2
 eqExpr (Var i) (Var j) = eqNat i j
 eqExpr (Lam _ _ e1) (Lam _ _ e2) = eqExpr e1 e2

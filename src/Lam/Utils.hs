@@ -58,6 +58,7 @@ instance Show Expr where
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
+        go ctx _ (Prim s) = s
         go ctx _ (Number z) = show z
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx isUntyped (Lam n ty e) =
@@ -82,6 +83,7 @@ typedPrettyPrint   = prettyPrint False
 eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
   where
+    go lctx gctx (RawPrim s) = Right (Prim s)
     go lctx gctx (RawNumber z) = Right (Number z)
     go lctx gctx (RawVar s) =
       case elemIndex s lctx of
@@ -97,6 +99,13 @@ eraseNames = go []
         go (s : lctx) gctx e >>= \e' ->
         expandType gctx ty >>= \ty' ->
         Right $ Lam s ty' e'
+
+printAST :: Expr -> String
+printAST (App e1 e2) = "App (" ++ printAST e1 ++ ") (" ++ printAST e2 ++ ")"
+printAST (Lam s t e) = "Lam " ++ s ++ "(" ++ printAST e ++ ")"
+printAST (Var i)     = "Var " ++ show i
+printAST (Number n)  = "Number " ++ show n
+printAST (Prim s)    = "Prim " ++ s
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =

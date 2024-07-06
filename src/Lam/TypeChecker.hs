@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Lam.TypeChecker where
 
-import Lam.Data (Expr(App, Lam, Number, Var), Type(Arrow, NatT))
+import Lam.Data (Expr(App, Lam, Number, Prim, Var), Type(Arrow, NatT))
 import Lam.UtilsAgda (eqType, lookupMaybe)
 
 type TypingContext = [Type]
@@ -13,6 +13,9 @@ myCaseOf :: a -> (a -> b) -> b
 myCaseOf x f = f x
 
 typeCheck' :: TypingContext -> Expr -> Maybe Type
+typeCheck' gam (Prim p)
+  = if p == ['+'] then Just (Arrow NatT (Arrow NatT NatT)) else
+      Nothing
 typeCheck' gam (Number i) = Just NatT
 typeCheck' gam (Var i) = lookupMaybe i gam
 typeCheck' gam (Lam _ t e)

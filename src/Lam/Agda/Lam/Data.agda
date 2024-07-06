@@ -1,7 +1,6 @@
 module Lam.Data where
 
-open import Data.String using (String)
-open import Haskell.Prelude using (Int)
+open import Haskell.Prelude using (Int; String)
 
 Id : Set
 Id = String
@@ -35,6 +34,7 @@ data RawExpr : Set where
   RawLam    : Id → RawType → RawExpr → RawExpr
   RawApp    : RawExpr → RawExpr → RawExpr
   RawNumber : Int → RawExpr
+  RawPrim  : Id → RawExpr
 
 {-# COMPILE AGDA2HS RawExpr deriving Show #-}
 
@@ -43,6 +43,7 @@ data Expr : Set where
   Lam    : Id → Type → Expr → Expr
   App    : Expr → Expr → Expr
   Number : Int → Expr
+  Prim  : Id → Expr
 
 {-# COMPILE AGDA2HS Expr #-}
 

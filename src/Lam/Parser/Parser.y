@@ -45,6 +45,7 @@ import Lam.Parser.Lexer qualified as L
   ")"       { L.RPar      }
   path      { L.Path $$   }
   number    { L.Number $$ }
+  "+"       { L.Plus      }
 %%
 
 
@@ -106,6 +107,7 @@ RawExpr :: { RawExpr }
     { joinLams $2 $4 $6 }
   | var { RawVar $1 }
   | number { RawNumber $1 }
+  | RawExpr "+" RawExpr { RawApp (RawApp (RawPrim "+") $1) $3 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }
