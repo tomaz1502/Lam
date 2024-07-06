@@ -12,8 +12,9 @@ open import Relation.Binary.PropositionalEquality using
   (_≡_; refl; sym; trans; cong; subst)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
+open import Data.Char using (Char)
 open import Haskell.Prelude using
-  (Int; Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe)
+  (Int; Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe; _==_)
 open import Haskell.Law.Maybe using (Just-injective)
 
 open import Lam.Data
@@ -21,8 +22,13 @@ open import Lam.TypeChecker
 open import Lam.UtilsAgda
 
 data _⊢_∶_ : TypingContext → Expr → Type → Set where
+
   ⊢n : ∀ {Γ : TypingContext} {z : Int}
     → Γ ⊢ Number z ∶ NatT
+
+  ⊢+ : ∀ {Γ : TypingContext}
+    → Γ ⊢ Prim ('+' ∷ []) ∶ Arrow NatT (Arrow NatT NatT)
+
   ⊢v : ∀ {Γ : TypingContext} {i : Nat} {h : (natToℕ i) < length Γ}
     → Γ ⊢ Var i ∶ (lookup Γ (fromℕ< h))
 
@@ -36,7 +42,8 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ App f x ∶ codom
 
 to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
-to (⊢n) = refl
+to ⊢n = refl
+to ⊢+ = refl
 to (⊢v {Γ} {i} {h}) = lookup≡ {Type} {Γ} {i} h
 to {Γ} {Lam name dom body} {Arrow dom codom} (⊢l {Γ} {name} {body} {dom} {codom} wt) =
   begin
@@ -70,3 +77,8 @@ from {Γ} {Var x} {t} eq =
   let tEqLookup = Just-injective justTEqJustLookup in
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
 from {Γ} {Number z} {t} eq rewrite sym (Just-injective eq) = ⊢n
+from {Γ} {Prim s} {t} eq =
+  let ⟨ sEq+ , justTEq ⟩ = iteAbs {b = s == ('+' ∷ [])} injection-maybe eq in
+  let k = Just-injective justTEq in
+  let z = liftEqCharList {s} {'+' ∷ []} sEq+ in
+  subst (λ t' -> Γ ⊢ Prim s ∶ t') k (subst (λ s' -> Γ ⊢ Prim s' ∶ Arrow NatT (Arrow NatT NatT)) (sym z) ⊢+)

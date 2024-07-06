@@ -1,5 +1,8 @@
 module Lam.UtilsAgda where
 
+import Agda.Builtin.Nat
+open import Agda.Builtin.Char using (primCharToNat)
+open import Agda.Builtin.Char.Properties using (primCharToNatInjective)
 open import Data.Empty       using (⊥-elim)
 open import Data.Fin.Base    using (fromℕ<)
 open import Data.Integer     using (ℤ)
@@ -112,3 +115,13 @@ iteAbs {t} {x} {y} {z} {True} h₁ h₂ = ⟨ refl , h₂ ⟩
 ==ᵗto≡ {U} {U} _ = refl
 ==ᵗto≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h
 ... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Arrow (==ᵗto≡ t==t') (==ᵗto≡ t₁==t'')
+
+liftEqNat : {n1 n2 : ℕ} → Agda.Builtin.Nat._==_ n1 n2 ≡ Bool.true → n1 ≡ n2
+liftEqNat {zero} {zero} h = refl
+liftEqNat {suc n1} {suc n2} h = cong suc (liftEqNat {n1} {n2} h)
+
+liftEqCharList :  {l₁ l₂ : List Char} → (l₁ == l₂) ≡ Bool.true → l₁ ≡ l₂
+liftEqCharList {[]} {[]} _ = refl
+liftEqCharList {x1 ∷ l1} {x2 ∷ l2} eq with &&to× {eqChar x1 x2} {l1 == l2} eq
+... | ⟨ a , b ⟩ rewrite primCharToNatInjective x1 x2 (liftEqNat {primCharToNat x1} {primCharToNat x2} a) =
+  cong (λ z -> x2 ∷ z) (liftEqCharList b)
