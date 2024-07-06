@@ -27,7 +27,7 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ Number z ∶ NatT
 
   ⊢+ : ∀ {Γ : TypingContext}
-    → Γ ⊢ Prim ('+' ∷ []) ∶ Arrow NatT (Arrow NatT NatT)
+    → Γ ⊢ Prim Z ∶ Arrow NatT (Arrow NatT NatT)
 
   ⊢v : ∀ {Γ : TypingContext} {i : Nat} {h : (natToℕ i) < length Γ}
     → Γ ⊢ Var i ∶ (lookup Γ (fromℕ< h))
@@ -77,8 +77,4 @@ from {Γ} {Var x} {t} eq =
   let tEqLookup = Just-injective justTEqJustLookup in
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
 from {Γ} {Number z} {t} eq rewrite sym (Just-injective eq) = ⊢n
-from {Γ} {Prim s} {t} eq =
-  let ⟨ sEq+ , justTEq ⟩ = iteAbs {b = s == ('+' ∷ [])} injection-maybe eq in
-  let k = Just-injective justTEq in
-  let z = liftEqCharList {s} {'+' ∷ []} sEq+ in
-  subst (λ t' -> Γ ⊢ Prim s ∶ t') k (subst (λ s' -> Γ ⊢ Prim s' ∶ Arrow NatT (Arrow NatT NatT)) (sym z) ⊢+)
+from {Γ} {Prim Z} {t} eq rewrite sym (Just-injective eq) = ⊢+

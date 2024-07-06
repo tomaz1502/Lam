@@ -58,7 +58,8 @@ instance Show Expr where
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
-        go ctx _ (Prim s) = s
+        go ctx _ (Prim Z) = "Plus"
+        go ctx _ (Prim _) = error "[prettyPrint]: Primitive not implemented"
         go ctx _ (Number z) = show z
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx isUntyped (Lam n ty e) =
@@ -105,7 +106,7 @@ printAST (App e1 e2) = "App (" ++ printAST e1 ++ ") (" ++ printAST e2 ++ ")"
 printAST (Lam s t e) = "Lam " ++ s ++ "(" ++ printAST e ++ ")"
 printAST (Var i)     = "Var " ++ show i
 printAST (Number n)  = "Number " ++ show n
-printAST (Prim s)    = "Prim " ++ s
+printAST (Prim p)    = "Prim " ++ show p
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =

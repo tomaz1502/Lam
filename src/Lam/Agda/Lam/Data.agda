@@ -34,7 +34,7 @@ data RawExpr : Set where
   RawLam    : Id → RawType → RawExpr → RawExpr
   RawApp    : RawExpr → RawExpr → RawExpr
   RawNumber : Int → RawExpr
-  RawPrim  : Id → RawExpr
+  RawPrim  : Nat → RawExpr
 
 {-# COMPILE AGDA2HS RawExpr deriving Show #-}
 
@@ -43,7 +43,7 @@ data Expr : Set where
   Lam    : Id → Type → Expr → Expr
   App    : Expr → Expr → Expr
   Number : Int → Expr
-  Prim  : Id → Expr
+  Prim  : Nat → Expr
 
 {-# COMPILE AGDA2HS Expr #-}
 

@@ -20,12 +20,12 @@ data RawExpr = RawVar Id
              | RawLam Id RawType RawExpr
              | RawApp RawExpr RawExpr
              | RawNumber Int
-             | RawPrim Id
+             | RawPrim Nat
                  deriving Show
 
 data Expr = Var Nat
           | Lam Id Type Expr
           | App Expr Expr
           | Number Int
-          | Prim Id
+          | Prim Nat
 

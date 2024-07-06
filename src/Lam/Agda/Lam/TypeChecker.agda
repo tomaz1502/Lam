@@ -24,8 +24,8 @@ myCaseOf x f = f x
 {-# COMPILE AGDA2HS myCaseOf #-}
 
 typeCheck' : TypingContext → Expr → Maybe Type
-typeCheck' gam (Prim p) =
-  if p == ('+' ∷ []) then Just (Arrow NatT (Arrow NatT NatT)) else Nothing
+typeCheck' gam (Prim Z) = Just (Arrow NatT (Arrow NatT NatT))
+typeCheck' gam (Prim _) = Nothing
 typeCheck' gam (Number i)  = Just NatT
 typeCheck' gam (Var i)     = lookupMaybe i gam
 typeCheck' gam (Lam _ t e) =

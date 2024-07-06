@@ -27,7 +27,7 @@ eqType (Arrow t11 t12) (Arrow t21 t22)
 eqType _ _ = False
 
 eqExpr :: Expr -> Expr -> Bool
-eqExpr (Prim s1) (Prim s2) = s1 == s2
+eqExpr (Prim p1) (Prim p2) = eqNat p1 p2
 eqExpr (Number z1) (Number z2) = z1 == z2
 eqExpr (Var i) (Var j) = eqNat i j
 eqExpr (Lam _ _ e1) (Lam _ _ e2) = eqExpr e1 e2
