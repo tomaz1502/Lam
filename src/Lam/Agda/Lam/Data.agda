@@ -47,3 +47,6 @@ data Expr : Set where
 
 {-# COMPILE AGDA2HS Expr #-}
 
+pattern plusPrim = Prim Z
+pattern minusPrim = Prim (S Z)
+pattern multPrim = Prim (S (S Z))

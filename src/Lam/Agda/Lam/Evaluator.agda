@@ -2,7 +2,7 @@ module Lam.Evaluator where
 
 open import Data.Nat using (zero)
 
-open import Haskell.Prelude using (if_then_else_; Int; _+_; _==_; _∷_; [])
+open import Haskell.Prelude using (if_then_else_; Int; _+_; _-_; _*_; _==_; _∷_; [])
 open import Data.Char hiding (_==_)
 
 open import Lam.Data
@@ -50,7 +50,9 @@ substitute _ _ (Prim p) = Prim p
 smallStep : Expr → Expr
 smallStep (Var x) = Var x
 smallStep (Lam n t e) = Lam n t (smallStep e)
-smallStep (App (App (Prim Z) (Number n1)) (Number n2)) = Number (n1 + n2)
+smallStep (App (App plusPrim (Number n1)) (Number n2)) = Number (n1 + n2)
+smallStep (App (App minusPrim (Number n1)) (Number n2)) = Number (n1 - n2)
+smallStep (App (App multPrim (Number n1)) (Number n2)) = Number (n1 * n2)
 smallStep (App (Lam _ _ e) e₂) = shiftDown (substitute Z (shiftUp e₂) e)
 smallStep (App e1 e2) =
   if eqExpr e1' e1 then App e1 (smallStep e2)

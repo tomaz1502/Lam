@@ -32,6 +32,8 @@ tokens :-
 <0> "("       { tok LPar       }
 <0> ")"       { tok RPar       }
 <0> "+"       { tok Plus       }
+<0> "-"       { tok Minus      }
+<0> "*"       { tok Mult       }
 <0> @id       { tok (Var "")   }
 <0> @path     { tok (Path "")  }
 <0> @digits   { tok (Number 0) }
@@ -60,6 +62,8 @@ data Token =
   | Path String
   | Number Int
   | Plus
+  | Minus
+  | Mult
   | EOF
   deriving Show
 

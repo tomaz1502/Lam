@@ -27,7 +27,13 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ Number z ∶ NatT
 
   ⊢+ : ∀ {Γ : TypingContext}
-    → Γ ⊢ Prim Z ∶ Arrow NatT (Arrow NatT NatT)
+    → Γ ⊢ plusPrim ∶ Arrow NatT (Arrow NatT NatT)
+
+  ⊢- : ∀ {Γ : TypingContext}
+    → Γ ⊢ minusPrim ∶ Arrow NatT (Arrow NatT NatT)
+
+  ⊢* : ∀ {Γ : TypingContext}
+    → Γ ⊢ multPrim ∶ Arrow NatT (Arrow NatT NatT)
 
   ⊢v : ∀ {Γ : TypingContext} {i : Nat} {h : (natToℕ i) < length Γ}
     → Γ ⊢ Var i ∶ (lookup Γ (fromℕ< h))
@@ -44,6 +50,8 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
 to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
 to ⊢n = refl
 to ⊢+ = refl
+to ⊢- = refl
+to ⊢* = refl
 to (⊢v {Γ} {i} {h}) = lookup≡ {Type} {Γ} {i} h
 to {Γ} {Lam name dom body} {Arrow dom codom} (⊢l {Γ} {name} {body} {dom} {codom} wt) =
   begin
@@ -76,5 +84,7 @@ from {Γ} {Var x} {t} eq =
   let justTEqJustLookup = trans (sym eq) lookupMaybeEqLookup in
   let tEqLookup = Just-injective justTEqJustLookup in
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
-from {Γ} {Number z} {t} eq rewrite sym (Just-injective eq) = ⊢n
-from {Γ} {Prim Z} {t} eq rewrite sym (Just-injective eq) = ⊢+
+from {Γ} {Number z} {t} eq rewrite sym (Just-injective eq)  = ⊢n
+from {Γ} {plusPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢+
+from {Γ} {minusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢-
+from {Γ} {multPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢*

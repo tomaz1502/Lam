@@ -2,7 +2,7 @@ module Lam.Evaluator where
 
 import Lam.Data (Expr(App, Lam, Number, Prim, Var), Nat(S, Z))
 import Lam.UtilsAgda (dec, eqExpr, eqNat, inc, ltNat)
-import qualified Prelude ((+))
+import qualified Prelude ((*), (+), (-))
 
 shiftUp' :: Nat -> Expr -> Expr
 shiftUp' c (App e1 e2) = App (shiftUp' c e1) (shiftUp' c e2)
@@ -38,6 +38,10 @@ smallStep (Var x) = Var x
 smallStep (Lam n t e) = Lam n t (smallStep e)
 smallStep (App (App (Prim Z) (Number n1)) (Number n2))
   = Number ((Prelude.+) n1 n2)
+smallStep (App (App (Prim (S Z)) (Number n1)) (Number n2))
+  = Number ((Prelude.-) n1 n2)
+smallStep (App (App (Prim (S (S Z))) (Number n1)) (Number n2))
+  = Number ((Prelude.*) n1 n2)
 smallStep (App (Lam _ _ e) e₂)
   = shiftDown (substitute Z (shiftUp e₂) e)
 smallStep (App e1 e2)
