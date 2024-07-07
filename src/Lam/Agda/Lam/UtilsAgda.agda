@@ -58,7 +58,7 @@ eqType _            _           = False
 {-# COMPILE AGDA2HS eqType #-}
 
 eqExpr : Expr → Expr → Bool
-eqExpr (Prim p1)     (Prim p2)     = eqNat p1 p2
+eqExpr (PrimE p1)    (PrimE p2)    = eqPrim p1 p2
 eqExpr (BoolVal b1)  (BoolVal b2)  = b1 == b2
 eqExpr (NumVal z1)   (NumVal z2)   = z1 == z2
 eqExpr (Var i)       (Var j)       = eqNat i j

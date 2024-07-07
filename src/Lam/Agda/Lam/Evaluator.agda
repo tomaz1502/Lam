@@ -13,7 +13,7 @@ shiftUp' c (Var x)     =
   if ltNat x c then Var x else Var (inc x)
 shiftUp' _ (NumVal z) = NumVal z
 shiftUp' _ (BoolVal b) = BoolVal b
-shiftUp' _ (Prim p) = Prim p
+shiftUp' _ (PrimE p) = PrimE p
 
 {-# COMPILE AGDA2HS shiftUp' #-}
 
@@ -29,7 +29,7 @@ shiftDown' c (Var x)     =
   if ltNat x c then Var x else Var (dec x)
 shiftDown' _ (NumVal z) = NumVal z
 shiftDown' _ (BoolVal b) = BoolVal b
-shiftDown' _ (Prim p) = Prim p
+shiftDown' _ (PrimE p) = PrimE p
 
 {-# COMPILE AGDA2HS shiftDown' #-}
 
@@ -44,16 +44,16 @@ substitute i s (Lam n t e) = Lam n t (substitute (S i) (shiftUp s) e)
 substitute i s (Var x)     = if eqNat i x then s else Var x
 substitute _ _ (NumVal z)  = NumVal z
 substitute _ _ (BoolVal b) = BoolVal b
-substitute _ _ (Prim p)    = Prim p
+substitute _ _ (PrimE p)    = PrimE p
 
 {-# COMPILE AGDA2HS substitute #-}
 
 smallStep : Expr → Expr
 smallStep (Var x) = Var x
 smallStep (Lam n t e) = Lam n t (smallStep e)
-smallStep (App (App plusPrim (NumVal n1)) (NumVal n2)) = NumVal (n1 + n2)
-smallStep (App (App minusPrim (NumVal n1)) (NumVal n2)) = NumVal (n1 - n2)
-smallStep (App (App multPrim (NumVal n1)) (NumVal n2)) = NumVal (n1 * n2)
+smallStep (App (App (PrimE PlusPrim) (NumVal n1)) (NumVal n2)) = NumVal (n1 + n2)
+smallStep (App (App (PrimE MinusPrim) (NumVal n1)) (NumVal n2)) = NumVal (n1 - n2)
+smallStep (App (App (PrimE MultPrim) (NumVal n1)) (NumVal n2)) = NumVal (n1 * n2)
 smallStep (App (Lam _ _ e) e₂) = shiftDown (substitute Z (shiftUp e₂) e)
 smallStep (App e1 e2) =
   if eqExpr e1' e1 then App e1 (smallStep e2)
@@ -61,7 +61,7 @@ smallStep (App e1 e2) =
   where e1' = smallStep e1
 smallStep (NumVal z) = NumVal z
 smallStep (BoolVal b) = BoolVal b
-smallStep (Prim p) = Prim p
+smallStep (PrimE p) = PrimE p
 
 {-# COMPILE AGDA2HS smallStep #-}
 

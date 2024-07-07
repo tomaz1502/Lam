@@ -24,14 +24,13 @@ myCaseOf x f = f x
 {-# COMPILE AGDA2HS myCaseOf #-}
 
 typeCheck' : TypingContext → Expr → Maybe Type
-typeCheck' gam plusPrim    = Just (Arrow IntT (Arrow IntT IntT))
-typeCheck' gam minusPrim   = Just (Arrow IntT (Arrow IntT IntT))
-typeCheck' gam multPrim    = Just (Arrow IntT (Arrow IntT IntT))
-typeCheck' gam (Prim _)    = Nothing
-typeCheck' gam (NumVal _)  = Just IntT
-typeCheck' gam (BoolVal _) = Just BoolT
-typeCheck' gam (Var i)     = lookupMaybe i gam
-typeCheck' gam (Lam _ t e) =
+typeCheck' gam (PrimE PlusPrim)  = Just (Arrow IntT (Arrow IntT IntT))
+typeCheck' gam (PrimE MinusPrim) = Just (Arrow IntT (Arrow IntT IntT))
+typeCheck' gam (PrimE MultPrim)  = Just (Arrow IntT (Arrow IntT IntT))
+typeCheck' gam (NumVal _)        = Just IntT
+typeCheck' gam (BoolVal _)       = Just BoolT
+typeCheck' gam (Var i)           = lookupMaybe i gam
+typeCheck' gam (Lam _ t e)       =
   typeCheck' (t ∷ gam) e >>= λ t' -> Just (Arrow t t')
 typeCheck' gam (App e1 e2) =
   myCaseOf (typeCheck' gam e1)

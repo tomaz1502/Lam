@@ -114,9 +114,9 @@ RawExpr :: { RawExpr }
   | var { RawVar $1 }
   | number { RawNumVal $1 }
   | boolean { RawBoolVal $1 }
-  | RawExpr "+" RawExpr { RawApp (RawApp (RawPrim Z) $1) $3 }
-  | RawExpr "-" RawExpr { RawApp (RawApp (RawPrim (S Z)) $1) $3 }
-  | RawExpr "*" RawExpr { RawApp (RawApp (RawPrim (S (S Z))) $1) $3 }
+  | RawExpr "+" RawExpr { RawApp (RawApp (RawPrimE PlusPrim) $1) $3 }
+  | RawExpr "-" RawExpr { RawApp (RawApp (RawPrimE MinusPrim) $1) $3 }
+  | RawExpr "*" RawExpr { RawApp (RawApp (RawPrimE MultPrim) $1) $3 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }

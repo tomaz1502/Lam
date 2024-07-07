@@ -1,5 +1,7 @@
 module Lam.Data where
 
+open import Data.Bool using (true; false)
+
 open import Haskell.Prelude using (Int; Bool; String)
 
 Id : Set
@@ -31,13 +33,28 @@ data Type : Set where
 
 {-# COMPILE AGDA2HS Type #-}
 
+data Prim : Set where
+  PlusPrim  : Prim
+  MinusPrim : Prim
+  MultPrim  : Prim
+
+{-# COMPILE AGDA2HS Prim deriving Show #-}
+
+eqPrim : Prim → Prim → Bool
+eqPrim PlusPrim  PlusPrim  = true
+eqPrim MinusPrim MinusPrim = true
+eqPrim MultPrim  MultPrim  = true
+eqPrim _ _                 = false
+
+{-# COMPILE AGDA2HS eqPrim #-}
+
 data RawExpr : Set where
   RawVar     : Id → RawExpr
   RawLam     : Id → RawType → RawExpr → RawExpr
   RawApp     : RawExpr → RawExpr → RawExpr
   RawNumVal  : Int → RawExpr
   RawBoolVal : Bool → RawExpr
-  RawPrim    : Nat → RawExpr
+  RawPrimE   : Prim → RawExpr
 
 {-# COMPILE AGDA2HS RawExpr deriving Show #-}
 
@@ -47,10 +64,6 @@ data Expr : Set where
   App     : Expr → Expr → Expr
   NumVal  : Int → Expr
   BoolVal : Bool → Expr
-  Prim    : Nat → Expr
+  PrimE   : Prim → Expr
 
 {-# COMPILE AGDA2HS Expr #-}
-
-pattern plusPrim = Prim Z
-pattern minusPrim = Prim (S Z)
-pattern multPrim = Prim (S (S Z))

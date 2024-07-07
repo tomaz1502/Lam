@@ -18,12 +18,23 @@ data Type = BoolT
           | U
           | Arrow Type Type
 
+data Prim = PlusPrim
+          | MinusPrim
+          | MultPrim
+              deriving Show
+
+eqPrim :: Prim -> Prim -> Bool
+eqPrim PlusPrim PlusPrim = True
+eqPrim MinusPrim MinusPrim = True
+eqPrim MultPrim MultPrim = True
+eqPrim _ _ = False
+
 data RawExpr = RawVar Id
              | RawLam Id RawType RawExpr
              | RawApp RawExpr RawExpr
              | RawNumVal Int
              | RawBoolVal Bool
-             | RawPrim Nat
+             | RawPrimE Prim
                  deriving Show
 
 data Expr = Var Nat
@@ -31,5 +42,5 @@ data Expr = Var Nat
           | App Expr Expr
           | NumVal Int
           | BoolVal Bool
-          | Prim Nat
+          | PrimE Prim
 

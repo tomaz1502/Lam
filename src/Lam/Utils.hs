@@ -60,13 +60,12 @@ instance Show Expr where
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
-        go ctx _ (Prim Z) = "Plus"
-        go ctx _ (Prim (S Z)) = "Minus"
-        go ctx _ (Prim (S (S Z))) = "Mult"
-        go ctx _ (Prim _) = error "[prettyPrint]: Primitive not implemented"
-        go ctx _ (NumVal z) = show z
-        go ctx _ (BoolVal True) = "true"
-        go ctx _ (BoolVal False) = "false"
+        go ctx _ (PrimE PlusPrim)  = "Plus"
+        go ctx _ (PrimE MinusPrim) = "Minus"
+        go ctx _ (PrimE MultPrim)  = "Mult"
+        go ctx _ (NumVal z)        = show z
+        go ctx _ (BoolVal True)    = "true"
+        go ctx _ (BoolVal False)   = "false"
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx isUntyped (Lam n ty e) =
             let freshName = pickFresh ctx n
@@ -90,7 +89,7 @@ typedPrettyPrint   = prettyPrint False
 eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
   where
-    go lctx gctx (RawPrim s) = Right (Prim s)
+    go lctx gctx (RawPrimE p) = Right (PrimE p)
     go lctx gctx (RawNumVal z) = Right (NumVal z)
     go lctx gctx (RawBoolVal b) = Right (BoolVal b)
     go lctx gctx (RawVar s) =
@@ -115,7 +114,7 @@ printAST (Var i)         = "Var " ++ show i
 printAST (NumVal n)      = "NumVal " ++ show n
 printAST (BoolVal True)  = "BoolVal true"
 printAST (BoolVal False) = "BoolVal false"
-printAST (Prim p)        = "Prim " ++ show p
+printAST (PrimE p)       = "PrimE " ++ show p
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =

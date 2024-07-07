@@ -30,13 +30,13 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ NumVal z ∶ IntT
 
   ⊢+ : ∀ {Γ : TypingContext}
-    → Γ ⊢ plusPrim ∶ Arrow IntT (Arrow IntT IntT)
+    → Γ ⊢ PrimE PlusPrim ∶ Arrow IntT (Arrow IntT IntT)
 
   ⊢- : ∀ {Γ : TypingContext}
-    → Γ ⊢ minusPrim ∶ Arrow IntT (Arrow IntT IntT)
+    → Γ ⊢ PrimE MinusPrim ∶ Arrow IntT (Arrow IntT IntT)
 
   ⊢* : ∀ {Γ : TypingContext}
-    → Γ ⊢ multPrim ∶ Arrow IntT (Arrow IntT IntT)
+    → Γ ⊢ PrimE MultPrim ∶ Arrow IntT (Arrow IntT IntT)
 
   ⊢v : ∀ {Γ : TypingContext} {i : Nat} {h : (natToℕ i) < length Γ}
     → Γ ⊢ Var i ∶ (lookup Γ (fromℕ< h))
@@ -90,6 +90,6 @@ from {Γ} {Var x} {t} eq =
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
 from {Γ} {BoolVal b} {t} eq rewrite sym (Just-injective eq) = ⊢b
 from {Γ} {NumVal z} {t} eq rewrite sym (Just-injective eq)  = ⊢n
-from {Γ} {plusPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢+
-from {Γ} {minusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢-
-from {Γ} {multPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢*
+from {Γ} {PrimE PlusPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢+
+from {Γ} {PrimE MinusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢-
+from {Γ} {PrimE MultPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢*
