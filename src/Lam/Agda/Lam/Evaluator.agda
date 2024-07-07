@@ -1,7 +1,5 @@
 module Lam.Evaluator where
 
-open import Data.Nat using (zero)
-
 open import Haskell.Prelude using (if_then_else_; Int; _+_; _-_; _*_; _==_; _∷_; [])
 open import Data.Char hiding (_==_)
 
