@@ -23,6 +23,7 @@ import Lam.Parser.Lexer qualified as L
 
 %left "."
 %right "=>"
+%left "&&" "||"
 %left "+" "-"
 %left "*"
 
@@ -52,6 +53,8 @@ import Lam.Parser.Lexer qualified as L
   "+"       { L.Plus       }
   "-"       { L.Minus      }
   "*"       { L.Mult       }
+  "&&"      { L.And        }
+  "||"      { L.Or         }
 %%
 
 
@@ -117,6 +120,8 @@ RawExpr :: { RawExpr }
   | RawExpr "+" RawExpr { RawApp (RawApp (RawPrimE PlusPrim) $1) $3 }
   | RawExpr "-" RawExpr { RawApp (RawApp (RawPrimE MinusPrim) $1) $3 }
   | RawExpr "*" RawExpr { RawApp (RawApp (RawPrimE MultPrim) $1) $3 }
+  | RawExpr "&&" RawExpr { RawApp (RawApp (RawPrimE AndPrim) $1) $3 }
+  | RawExpr "||" RawExpr { RawApp (RawApp (RawPrimE OrPrim) $1) $3 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }

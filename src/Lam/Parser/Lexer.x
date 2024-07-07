@@ -35,6 +35,8 @@ tokens :-
 <0> "+"       { tok Plus            }
 <0> "-"       { tok Minus           }
 <0> "*"       { tok Mult            }
+<0> "&&"      { tok And             }
+<0> "||"      { tok Or              }
 <0> "true"    { tok (BoolVal True)  }
 <0> "false"   { tok (BoolVal False) }
 <0> @id       { tok (Var "")        }
@@ -69,6 +71,8 @@ data Token =
   | Plus
   | Minus
   | Mult
+  | And
+  | Or
   | EOF
   deriving Show
 

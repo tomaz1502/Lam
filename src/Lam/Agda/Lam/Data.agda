@@ -37,6 +37,8 @@ data Prim : Set where
   PlusPrim  : Prim
   MinusPrim : Prim
   MultPrim  : Prim
+  AndPrim   : Prim
+  OrPrim    : Prim
 
 {-# COMPILE AGDA2HS Prim deriving Show #-}
 
@@ -44,6 +46,8 @@ eqPrim : Prim → Prim → Bool
 eqPrim PlusPrim  PlusPrim  = true
 eqPrim MinusPrim MinusPrim = true
 eqPrim MultPrim  MultPrim  = true
+eqPrim AndPrim   AndPrim   = true
+eqPrim OrPrim    OrPrim    = true
 eqPrim _ _                 = false
 
 {-# COMPILE AGDA2HS eqPrim #-}

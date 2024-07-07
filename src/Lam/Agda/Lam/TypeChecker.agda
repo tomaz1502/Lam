@@ -27,6 +27,8 @@ typeCheck' : TypingContext → Expr → Maybe Type
 typeCheck' gam (PrimE PlusPrim)  = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (PrimE MinusPrim) = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (PrimE MultPrim)  = Just (Arrow IntT (Arrow IntT IntT))
+typeCheck' gam (PrimE AndPrim)   = Just (Arrow BoolT (Arrow BoolT BoolT))
+typeCheck' gam (PrimE OrPrim)    = Just (Arrow BoolT (Arrow BoolT BoolT))
 typeCheck' gam (NumVal _)        = Just IntT
 typeCheck' gam (BoolVal _)       = Just BoolT
 typeCheck' gam (Var i)           = lookupMaybe i gam

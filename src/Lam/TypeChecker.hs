@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Lam.TypeChecker where
 
-import Lam.Data (Expr(App, BoolVal, Lam, NumVal, PrimE, Var), Prim(MinusPrim, MultPrim, PlusPrim), Type(Arrow, BoolT, IntT))
+import Lam.Data (Expr(App, BoolVal, Lam, NumVal, PrimE, Var), Prim(AndPrim, MinusPrim, MultPrim, OrPrim, PlusPrim), Type(Arrow, BoolT, IntT))
 import Lam.UtilsAgda (eqType, lookupMaybe)
 
 type TypingContext = [Type]
@@ -19,6 +19,10 @@ typeCheck' gam (PrimE MinusPrim)
   = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (PrimE MultPrim)
   = Just (Arrow IntT (Arrow IntT IntT))
+typeCheck' gam (PrimE AndPrim)
+  = Just (Arrow BoolT (Arrow BoolT BoolT))
+typeCheck' gam (PrimE OrPrim)
+  = Just (Arrow BoolT (Arrow BoolT BoolT))
 typeCheck' gam (NumVal _) = Just IntT
 typeCheck' gam (BoolVal _) = Just BoolT
 typeCheck' gam (Var i) = lookupMaybe i gam

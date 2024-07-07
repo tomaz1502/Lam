@@ -21,12 +21,16 @@ data Type = BoolT
 data Prim = PlusPrim
           | MinusPrim
           | MultPrim
+          | AndPrim
+          | OrPrim
               deriving Show
 
 eqPrim :: Prim -> Prim -> Bool
 eqPrim PlusPrim PlusPrim = True
 eqPrim MinusPrim MinusPrim = True
 eqPrim MultPrim MultPrim = True
+eqPrim AndPrim AndPrim = True
+eqPrim OrPrim OrPrim = True
 eqPrim _ _ = False
 
 data RawExpr = RawVar Id
