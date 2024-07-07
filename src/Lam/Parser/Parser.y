@@ -40,7 +40,7 @@ import Lam.Parser.Lexer qualified as L
   "->"      { L.Arrow      }
   "=>"      { L.TypeArrow  }
   "U"       { L.BaseType   }
-  "Nat"     { L.NatType    }
+  "Int"     { L.IntType    }
   "Bool"    { L.BoolType   }
   "."       { L.Dot        }
   ","       { L.Comma      }
@@ -124,7 +124,7 @@ ParExpr : "(" RawExpr ")" { $2 }
 RawType :: { RawType }
   : RawType "=>" RawType { RawArrow $1 $3 }
   | "U" { RawU }
-  | "Nat" { RawNatT }
+  | "Int" { RawIntT }
   | "Bool" { RawBoolT }
   | var { FreeType $1 }
   | ParType { $1 }

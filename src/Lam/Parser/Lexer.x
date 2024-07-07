@@ -6,7 +6,7 @@ module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex, unAlex, alexMo
 %wrapper "monad"
 
 $digit = 0-9
-@digits = [1-9]$digit*
+@digits = \-?[1-9]$digit*
 $alpha = [a-zA-Z_]
 @id = $alpha[$alpha$digit]*[']*
 @path = \"(((\.)?\/)?(@id\/)*)@id(\.@id)?\"
@@ -17,7 +17,7 @@ tokens :-
 <0> "->"      { tok Arrow           }
 <0> "=>"      { tok TypeArrow       }
 <0> "U"       { tok BaseType        }
-<0> "Nat"     { tok NatType         }
+<0> "Int"     { tok IntType         }
 <0> "Bool"    { tok BoolType        }
 <0> "."       { tok Dot             }
 <0> ","       { tok Comma           }
@@ -47,7 +47,7 @@ data Token =
     Arrow
   | TypeArrow
   | BaseType
-  | NatType
+  | IntType
   | BoolType
   | Dot
   | Comma

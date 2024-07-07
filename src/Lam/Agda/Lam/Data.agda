@@ -15,7 +15,7 @@ data Nat : Set where
 
 data RawType : Set where
   RawBoolT : RawType
-  RawNatT  : RawType
+  RawIntT  : RawType
   RawU     : RawType
   RawArrow : RawType → RawType → RawType
   FreeType : Id → RawType
@@ -24,7 +24,7 @@ data RawType : Set where
 
 data Type : Set where
   BoolT : Type
-  NatT  : Type
+  IntT  : Type
 -- U is an opaque type
   U     : Type
   Arrow : Type → Type → Type

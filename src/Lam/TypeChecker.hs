@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Lam.TypeChecker where
 
-import Lam.Data (Expr(App, BoolVal, Lam, NumVal, Prim, Var), Type(Arrow, BoolT, NatT))
+import Lam.Data (Expr(App, BoolVal, Lam, NumVal, Prim, Var), Type(Arrow, BoolT, IntT))
 import qualified Lam.Data (Nat(S, Z))
 import Lam.UtilsAgda (eqType, lookupMaybe)
 
@@ -15,13 +15,13 @@ myCaseOf x f = f x
 
 typeCheck' :: TypingContext -> Expr -> Maybe Type
 typeCheck' gam (Prim Lam.Data.Z)
-  = Just (Arrow NatT (Arrow NatT NatT))
+  = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (Prim (Lam.Data.S Lam.Data.Z))
-  = Just (Arrow NatT (Arrow NatT NatT))
+  = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (Prim (Lam.Data.S (Lam.Data.S Lam.Data.Z)))
-  = Just (Arrow NatT (Arrow NatT NatT))
+  = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (Prim _) = Nothing
-typeCheck' gam (NumVal _) = Just NatT
+typeCheck' gam (NumVal _) = Just IntT
 typeCheck' gam (BoolVal _) = Just BoolT
 typeCheck' gam (Var i) = lookupMaybe i gam
 typeCheck' gam (Lam _ t e)

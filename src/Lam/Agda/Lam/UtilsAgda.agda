@@ -13,8 +13,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 open import Relation.Nullary using (¬_)
 
--- open import Haskell.Prelude using (Bool; True; False; Maybe; Nothing; Just; _&&_; if_then_else_; Int; _==_)
-
 open import Haskell.Prelude hiding (_<_; length; lookup; _×_; Nat)
 
 open import Lam.Data
@@ -52,7 +50,7 @@ dec (S x) = x
 
 eqType : Type → Type → Bool
 eqType BoolT        BoolT       = True
-eqType NatT         NatT        = True
+eqType IntT         IntT        = True
 eqType U            U           = True
 eqType (Arrow t11 t12)  (Arrow t21 t22) = (eqType t11 t21) && (eqType t12 t22)
 eqType _            _           = False
@@ -83,7 +81,7 @@ lookup≡ {t} {x ∷ l} {S i} h = lookup≡ {t} {l} {i} (Data.Nat.≤-pred h)
 
 eqType-refl : (t : Type) → eqType t t ≡ True
 eqType-refl BoolT = refl
-eqType-refl NatT = refl
+eqType-refl IntT = refl
 eqType-refl U = refl
 eqType-refl (Arrow dom codom) = begin
     eqType (Arrow dom codom) (Arrow dom codom)
@@ -115,7 +113,7 @@ iteAbs {t} {x} {y} {z} {True} h₁ h₂ = ⟨ refl , h₂ ⟩
 
 ==ᵗto≡ : {t₁ t₂ : Type} → eqType t₁ t₂ ≡ True → t₁ ≡ t₂
 ==ᵗto≡ {BoolT} {BoolT} _ = refl
-==ᵗto≡ {NatT} {NatT} _ = refl
+==ᵗto≡ {IntT} {IntT} _ = refl
 ==ᵗto≡ {U} {U} _ = refl
 ==ᵗto≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h
 ... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Arrow (==ᵗto≡ t==t') (==ᵗto≡ t₁==t'')

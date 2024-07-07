@@ -7,14 +7,14 @@ data Nat = Z
              deriving (Eq, Show)
 
 data RawType = RawBoolT
-             | RawNatT
+             | RawIntT
              | RawU
              | RawArrow RawType RawType
              | FreeType Id
                  deriving Show
 
 data Type = BoolT
-          | NatT
+          | IntT
           | U
           | Arrow Type Type
 

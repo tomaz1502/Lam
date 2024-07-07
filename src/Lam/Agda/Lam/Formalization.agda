@@ -27,16 +27,16 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ BoolVal b ∶ BoolT
 
   ⊢n : ∀ {Γ : TypingContext} {z : Int}
-    → Γ ⊢ NumVal z ∶ NatT
+    → Γ ⊢ NumVal z ∶ IntT
 
   ⊢+ : ∀ {Γ : TypingContext}
-    → Γ ⊢ plusPrim ∶ Arrow NatT (Arrow NatT NatT)
+    → Γ ⊢ plusPrim ∶ Arrow IntT (Arrow IntT IntT)
 
   ⊢- : ∀ {Γ : TypingContext}
-    → Γ ⊢ minusPrim ∶ Arrow NatT (Arrow NatT NatT)
+    → Γ ⊢ minusPrim ∶ Arrow IntT (Arrow IntT IntT)
 
   ⊢* : ∀ {Γ : TypingContext}
-    → Γ ⊢ multPrim ∶ Arrow NatT (Arrow NatT NatT)
+    → Γ ⊢ multPrim ∶ Arrow IntT (Arrow IntT IntT)
 
   ⊢v : ∀ {Γ : TypingContext} {i : Nat} {h : (natToℕ i) < length Γ}
     → Γ ⊢ Var i ∶ (lookup Γ (fromℕ< h))

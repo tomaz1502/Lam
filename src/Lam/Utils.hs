@@ -24,7 +24,7 @@ toNat i =
 
 instance Show Type where
     show BoolT = "Bool"
-    show NatT = "Nat"
+    show IntT = "Int"
     show U = "U"
     show (Arrow t1 t2) = concat [ "("
                                 , show t1
@@ -35,7 +35,7 @@ instance Show Type where
 
 expandType :: GlobalContext -> RawType -> Either String Type
 expandType _ RawBoolT = Right BoolT
-expandType _ RawNatT = Right NatT
+expandType _ RawIntT = Right IntT
 expandType _ RawU = Right U
 expandType gctx (RawArrow t1 t2) =
     expandType gctx t1 >>= \t1' ->
