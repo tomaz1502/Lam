@@ -23,6 +23,8 @@ import Lam.Parser.Lexer qualified as L
 
 %left "."
 %right "=>"
+%left "+" "-"
+%left "*"
 
 %token
   "lam"     { L.Lam       }
