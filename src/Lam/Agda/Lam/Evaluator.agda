@@ -11,7 +11,8 @@ shiftUp' c (App e1 e2) = App (shiftUp' c e1) (shiftUp' c e2)
 shiftUp' c (Lam n t e)   = Lam n t (shiftUp' (S c) e)
 shiftUp' c (Var x)     =
   if ltNat x c then Var x else Var (inc x)
-shiftUp' _ (Number z) = Number z
+shiftUp' _ (NumVal z) = NumVal z
+shiftUp' _ (BoolVal b) = BoolVal b
 shiftUp' _ (Prim p) = Prim p
 
 {-# COMPILE AGDA2HS shiftUp' #-}
@@ -26,7 +27,8 @@ shiftDown' c (App e1 e2) = App (shiftDown' c e1) (shiftDown' c e2)
 shiftDown' c (Lam n t e)   = Lam n t (shiftDown' (S c) e)
 shiftDown' c (Var x)     =
   if ltNat x c then Var x else Var (dec x)
-shiftDown' _ (Number z) = Number z
+shiftDown' _ (NumVal z) = NumVal z
+shiftDown' _ (BoolVal b) = BoolVal b
 shiftDown' _ (Prim p) = Prim p
 
 {-# COMPILE AGDA2HS shiftDown' #-}
@@ -39,24 +41,26 @@ shiftDown = shiftDown' Z
 substitute : Nat → Expr → Expr → Expr
 substitute i s (App e1 e2) = App (substitute i s e1) (substitute i s e2)
 substitute i s (Lam n t e) = Lam n t (substitute (S i) (shiftUp s) e)
-substitute i s (Var x) = if eqNat i x then s else Var x
-substitute _ _ (Number z) = Number z
-substitute _ _ (Prim p) = Prim p
+substitute i s (Var x)     = if eqNat i x then s else Var x
+substitute _ _ (NumVal z)  = NumVal z
+substitute _ _ (BoolVal b) = BoolVal b
+substitute _ _ (Prim p)    = Prim p
 
 {-# COMPILE AGDA2HS substitute #-}
 
 smallStep : Expr → Expr
 smallStep (Var x) = Var x
 smallStep (Lam n t e) = Lam n t (smallStep e)
-smallStep (App (App plusPrim (Number n1)) (Number n2)) = Number (n1 + n2)
-smallStep (App (App minusPrim (Number n1)) (Number n2)) = Number (n1 - n2)
-smallStep (App (App multPrim (Number n1)) (Number n2)) = Number (n1 * n2)
+smallStep (App (App plusPrim (NumVal n1)) (NumVal n2)) = NumVal (n1 + n2)
+smallStep (App (App minusPrim (NumVal n1)) (NumVal n2)) = NumVal (n1 - n2)
+smallStep (App (App multPrim (NumVal n1)) (NumVal n2)) = NumVal (n1 * n2)
 smallStep (App (Lam _ _ e) e₂) = shiftDown (substitute Z (shiftUp e₂) e)
 smallStep (App e1 e2) =
   if eqExpr e1' e1 then App e1 (smallStep e2)
   else App e1' e2
   where e1' = smallStep e1
-smallStep (Number z) = Number z
+smallStep (NumVal z) = NumVal z
+smallStep (BoolVal b) = BoolVal b
 smallStep (Prim p) = Prim p
 
 {-# COMPILE AGDA2HS smallStep #-}

@@ -27,29 +27,31 @@ import Lam.Parser.Lexer qualified as L
 %left "*"
 
 %token
-  "lam"     { L.Lam       }
-  ":"       { L.Colon     }
-  "::"      { L.TypeColon }
-  ";"       { L.Semicolon }
-  ":="      { L.ColonEq   }
-  "DEFINE"  { L.Define    }
-  "EVAL"    { L.Eval      }
-  "TYPEDEF" { L.Typedef   }
-  "LOAD"    { L.Load      }
-  var       { L.Var $$    }
-  "->"      { L.Arrow     }
-  "=>"      { L.TypeArrow }
-  "U"       { L.BaseType  }
-  "Nat"     { L.NatType   }
-  "."       { L.Dot       }
-  ","       { L.Comma     }
-  "("       { L.LPar      }
-  ")"       { L.RPar      }
-  path      { L.Path $$   }
-  number    { L.Number $$ }
-  "+"       { L.Plus      }
-  "-"       { L.Minus     }
-  "*"       { L.Mult      }
+  "lam"     { L.Lam        }
+  ":"       { L.Colon      }
+  "::"      { L.TypeColon  }
+  ";"       { L.Semicolon  }
+  ":="      { L.ColonEq    }
+  "DEFINE"  { L.Define     }
+  "EVAL"    { L.Eval       }
+  "TYPEDEF" { L.Typedef    }
+  "LOAD"    { L.Load       }
+  var       { L.Var $$     }
+  "->"      { L.Arrow      }
+  "=>"      { L.TypeArrow  }
+  "U"       { L.BaseType   }
+  "Nat"     { L.NatType    }
+  "Bool"    { L.BoolType   }
+  "."       { L.Dot        }
+  ","       { L.Comma      }
+  "("       { L.LPar       }
+  ")"       { L.RPar       }
+  path      { L.Path $$    }
+  number    { L.NumVal $$  }
+  boolean   { L.BoolVal $$ }
+  "+"       { L.Plus       }
+  "-"       { L.Minus      }
+  "*"       { L.Mult       }
 %%
 
 
@@ -110,7 +112,8 @@ RawExpr :: { RawExpr }
   | "lam" CommaSeparatedIdents "::" RawType "->" RawExpr %shift
     { joinLams $2 $4 $6 }
   | var { RawVar $1 }
-  | number { RawNumber $1 }
+  | number { RawNumVal $1 }
+  | boolean { RawBoolVal $1 }
   | RawExpr "+" RawExpr { RawApp (RawApp (RawPrim Z) $1) $3 }
   | RawExpr "-" RawExpr { RawApp (RawApp (RawPrim (S Z)) $1) $3 }
   | RawExpr "*" RawExpr { RawApp (RawApp (RawPrim (S (S Z))) $1) $3 }
@@ -122,6 +125,7 @@ RawType :: { RawType }
   : RawType "=>" RawType { RawArrow $1 $3 }
   | "U" { RawU }
   | "Nat" { RawNatT }
+  | "Bool" { RawBoolT }
   | var { FreeType $1 }
   | ParType { $1 }
 

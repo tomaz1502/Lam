@@ -14,7 +14,7 @@ open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import Data.Char using (Char)
 open import Haskell.Prelude using
-  (Int; Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe; _==_)
+  (Bool; Int; Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe; _==_)
 open import Haskell.Law.Maybe using (Just-injective)
 
 open import Lam.Data
@@ -23,8 +23,11 @@ open import Lam.UtilsAgda
 
 data _⊢_∶_ : TypingContext → Expr → Type → Set where
 
+  ⊢b : ∀ {Γ : TypingContext} {b : Bool}
+    → Γ ⊢ BoolVal b ∶ BoolT
+
   ⊢n : ∀ {Γ : TypingContext} {z : Int}
-    → Γ ⊢ Number z ∶ NatT
+    → Γ ⊢ NumVal z ∶ NatT
 
   ⊢+ : ∀ {Γ : TypingContext}
     → Γ ⊢ plusPrim ∶ Arrow NatT (Arrow NatT NatT)
@@ -48,6 +51,7 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ App f x ∶ codom
 
 to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
+to ⊢b = refl
 to ⊢n = refl
 to ⊢+ = refl
 to ⊢- = refl
@@ -84,7 +88,8 @@ from {Γ} {Var x} {t} eq =
   let justTEqJustLookup = trans (sym eq) lookupMaybeEqLookup in
   let tEqLookup = Just-injective justTEqJustLookup in
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
-from {Γ} {Number z} {t} eq rewrite sym (Just-injective eq)  = ⊢n
+from {Γ} {BoolVal b} {t} eq rewrite sym (Just-injective eq) = ⊢b
+from {Γ} {NumVal z} {t} eq rewrite sym (Just-injective eq)  = ⊢n
 from {Γ} {plusPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢+
 from {Γ} {minusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢-
 from {Γ} {multPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢*

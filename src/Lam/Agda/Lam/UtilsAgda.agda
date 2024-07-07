@@ -51,6 +51,7 @@ dec (S x) = x
 {-# COMPILE AGDA2HS dec #-}
 
 eqType : Type → Type → Bool
+eqType BoolT        BoolT       = True
 eqType NatT         NatT        = True
 eqType U            U           = True
 eqType (Arrow t11 t12)  (Arrow t21 t22) = (eqType t11 t21) && (eqType t12 t22)
@@ -60,7 +61,8 @@ eqType _            _           = False
 
 eqExpr : Expr → Expr → Bool
 eqExpr (Prim p1)     (Prim p2)     = eqNat p1 p2
-eqExpr (Number z1)   (Number z2)   = z1 == z2
+eqExpr (BoolVal b1)  (BoolVal b2)  = b1 == b2
+eqExpr (NumVal z1)   (NumVal z2)   = z1 == z2
 eqExpr (Var i)       (Var j)       = eqNat i j
 eqExpr (Lam _ _ e1)  (Lam _ _ e2)  = eqExpr e1 e2
 eqExpr (App e11 e12) (App e21 e22) = (eqExpr e11 e21) && (eqExpr e12 e22)
@@ -80,6 +82,7 @@ lookup≡ {t} {x ∷ l} {Z} h  = _≡_.refl
 lookup≡ {t} {x ∷ l} {S i} h = lookup≡ {t} {l} {i} (Data.Nat.≤-pred h)
 
 eqType-refl : (t : Type) → eqType t t ≡ True
+eqType-refl BoolT = refl
 eqType-refl NatT = refl
 eqType-refl U = refl
 eqType-refl (Arrow dom codom) = begin
@@ -111,6 +114,7 @@ iteAbs {t} {x} {y} {z} {True} h₁ h₂ = ⟨ refl , h₂ ⟩
 &&to× {True} {True} h = ⟨ refl , refl ⟩
 
 ==ᵗto≡ : {t₁ t₂ : Type} → eqType t₁ t₂ ≡ True → t₁ ≡ t₂
+==ᵗto≡ {BoolT} {BoolT} _ = refl
 ==ᵗto≡ {NatT} {NatT} _ = refl
 ==ᵗto≡ {U} {U} _ = refl
 ==ᵗto≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h

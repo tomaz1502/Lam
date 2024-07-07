@@ -6,26 +6,30 @@ data Nat = Z
          | S Nat
              deriving (Eq, Show)
 
-data RawType = RawNatT
+data RawType = RawBoolT
+             | RawNatT
              | RawU
              | RawArrow RawType RawType
              | FreeType Id
                  deriving Show
 
-data Type = NatT
+data Type = BoolT
+          | NatT
           | U
           | Arrow Type Type
 
 data RawExpr = RawVar Id
              | RawLam Id RawType RawExpr
              | RawApp RawExpr RawExpr
-             | RawNumber Int
+             | RawNumVal Int
+             | RawBoolVal Bool
              | RawPrim Nat
                  deriving Show
 
 data Expr = Var Nat
           | Lam Id Type Expr
           | App Expr Expr
-          | Number Int
+          | NumVal Int
+          | BoolVal Bool
           | Prim Nat
 

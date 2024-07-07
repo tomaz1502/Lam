@@ -23,6 +23,7 @@ toNat i =
     LT -> error "[toNat]: negative input"
 
 instance Show Type where
+    show BoolT = "Bool"
     show NatT = "Nat"
     show U = "U"
     show (Arrow t1 t2) = concat [ "("
@@ -33,6 +34,7 @@ instance Show Type where
                                 ]
 
 expandType :: GlobalContext -> RawType -> Either String Type
+expandType _ RawBoolT = Right BoolT
 expandType _ RawNatT = Right NatT
 expandType _ RawU = Right U
 expandType gctx (RawArrow t1 t2) =
@@ -59,8 +61,12 @@ prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
         go ctx _ (Prim Z) = "Plus"
+        go ctx _ (Prim (S Z)) = "Minus"
+        go ctx _ (Prim (S (S Z))) = "Mult"
         go ctx _ (Prim _) = error "[prettyPrint]: Primitive not implemented"
-        go ctx _ (Number z) = show z
+        go ctx _ (NumVal z) = show z
+        go ctx _ (BoolVal True) = "true"
+        go ctx _ (BoolVal False) = "false"
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx isUntyped (Lam n ty e) =
             let freshName = pickFresh ctx n
@@ -85,7 +91,8 @@ eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
   where
     go lctx gctx (RawPrim s) = Right (Prim s)
-    go lctx gctx (RawNumber z) = Right (Number z)
+    go lctx gctx (RawNumVal z) = Right (NumVal z)
+    go lctx gctx (RawBoolVal b) = Right (BoolVal b)
     go lctx gctx (RawVar s) =
       case elemIndex s lctx of
         Just i  -> Right $ Var (toNat i)
@@ -102,11 +109,13 @@ eraseNames = go []
         Right $ Lam s ty' e'
 
 printAST :: Expr -> String
-printAST (App e1 e2) = "App (" ++ printAST e1 ++ ") (" ++ printAST e2 ++ ")"
-printAST (Lam s t e) = "Lam " ++ s ++ "(" ++ printAST e ++ ")"
-printAST (Var i)     = "Var " ++ show i
-printAST (Number n)  = "Number " ++ show n
-printAST (Prim p)    = "Prim " ++ show p
+printAST (App e1 e2)     = "App (" ++ printAST e1 ++ ") (" ++ printAST e2 ++ ")"
+printAST (Lam s t e)     = "Lam " ++ s ++ "(" ++ printAST e ++ ")"
+printAST (Var i)         = "Var " ++ show i
+printAST (NumVal n)      = "NumVal " ++ show n
+printAST (BoolVal True)  = "BoolVal true"
+printAST (BoolVal False) = "BoolVal false"
+printAST (Prim p)        = "Prim " ++ show p
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =

@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Lam.TypeChecker where
 
-import Lam.Data (Expr(App, Lam, Number, Prim, Var), Type(Arrow, NatT))
+import Lam.Data (Expr(App, BoolVal, Lam, NumVal, Prim, Var), Type(Arrow, BoolT, NatT))
 import qualified Lam.Data (Nat(S, Z))
 import Lam.UtilsAgda (eqType, lookupMaybe)
 
@@ -21,7 +21,8 @@ typeCheck' gam (Prim (Lam.Data.S Lam.Data.Z))
 typeCheck' gam (Prim (Lam.Data.S (Lam.Data.S Lam.Data.Z)))
   = Just (Arrow NatT (Arrow NatT NatT))
 typeCheck' gam (Prim _) = Nothing
-typeCheck' gam (Number i) = Just NatT
+typeCheck' gam (NumVal _) = Just NatT
+typeCheck' gam (BoolVal _) = Just BoolT
 typeCheck' gam (Var i) = lookupMaybe i gam
 typeCheck' gam (Lam _ t e)
   = do t' <- typeCheck' (t : gam) e

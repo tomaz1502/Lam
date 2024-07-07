@@ -14,29 +14,32 @@ $alpha = [a-zA-Z_]
 tokens :-
 <0> $white+ ;
 <0> \n ;
-<0> "->"      { tok Arrow      }
-<0> "=>"      { tok TypeArrow  }
-<0> "U"       { tok BaseType   }
-<0> "Nat"     { tok NatType    }
-<0> "."       { tok Dot        }
-<0> ","       { tok Comma      }
-<0> "lam"     { tok Lam        }
-<0> "EVAL"    { tok Eval       }
-<0> "TYPEDEF" { tok Typedef    }
-<0> "DEFINE"  { tok Define     }
-<0> "LOAD"    { tok Load       }
-<0> ":"       { tok Colon      }
-<0> "::"      { tok TypeColon  }
-<0> ":="      { tok ColonEq    }
-<0> ";"       { tok Semicolon  }
-<0> "("       { tok LPar       }
-<0> ")"       { tok RPar       }
-<0> "+"       { tok Plus       }
-<0> "-"       { tok Minus      }
-<0> "*"       { tok Mult       }
-<0> @id       { tok (Var "")   }
-<0> @path     { tok (Path "")  }
-<0> @digits   { tok (Number 0) }
+<0> "->"      { tok Arrow           }
+<0> "=>"      { tok TypeArrow       }
+<0> "U"       { tok BaseType        }
+<0> "Nat"     { tok NatType         }
+<0> "Bool"    { tok BoolType        }
+<0> "."       { tok Dot             }
+<0> ","       { tok Comma           }
+<0> "lam"     { tok Lam             }
+<0> "EVAL"    { tok Eval            }
+<0> "TYPEDEF" { tok Typedef         }
+<0> "DEFINE"  { tok Define          }
+<0> "LOAD"    { tok Load            }
+<0> ":"       { tok Colon           }
+<0> "::"      { tok TypeColon       }
+<0> ":="      { tok ColonEq         }
+<0> ";"       { tok Semicolon       }
+<0> "("       { tok LPar            }
+<0> ")"       { tok RPar            }
+<0> "+"       { tok Plus            }
+<0> "-"       { tok Minus           }
+<0> "*"       { tok Mult            }
+<0> "true"    { tok (BoolVal True)  }
+<0> "false"   { tok (BoolVal False) }
+<0> @id       { tok (Var "")        }
+<0> @path     { tok (Path "")       }
+<0> @digits   { tok (NumVal 0)      }
 
 {
 
@@ -45,6 +48,7 @@ data Token =
   | TypeArrow
   | BaseType
   | NatType
+  | BoolType
   | Dot
   | Comma
   | Lam
@@ -60,7 +64,8 @@ data Token =
   | LPar
   | RPar
   | Path String
-  | Number Int
+  | NumVal Int
+  | BoolVal Bool
   | Plus
   | Minus
   | Mult
@@ -75,7 +80,7 @@ tok t (_,_,_,s) len = pure $
   case t of
      Var _ -> Var (take len s)
      Path _ -> Path (take len s)
-     Number _ -> Number (read (take len s))
+     NumVal _ -> NumVal (read (take len s))
      _ -> t
 
 alexMonad f = Alex f
