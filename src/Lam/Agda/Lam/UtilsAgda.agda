@@ -13,7 +13,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 open import Relation.Nullary using (¬_)
 
-open import Haskell.Prelude hiding (_<_; length; lookup; _×_; Nat)
+open import Haskell.Prelude hiding (_<_; length; lookup; _×_; Nat; cong; cong₂)
 
 open import Lam.Data
 
@@ -83,17 +83,8 @@ eqType-refl : (t : Type) → eqType t t ≡ True
 eqType-refl BoolT = refl
 eqType-refl IntT = refl
 eqType-refl U = refl
-eqType-refl (Arrow dom codom) = begin
-    eqType (Arrow dom codom) (Arrow dom codom)
-  ≡⟨⟩
-    eqType dom dom && eqType codom codom
-  ≡⟨ cong (λ x → x && eqType codom codom) (eqType-refl dom) ⟩
-    True && eqType codom codom
-  ≡⟨ cong (λ x → True && x) (eqType-refl codom) ⟩
-    True && True
-  ≡⟨⟩
-    True
-  ∎
+eqType-refl (Arrow dom codom) =
+  trans (cong (λ x → x && eqType codom codom) (eqType-refl dom)) (cong (λ x → True && x) (eqType-refl codom))
 
 injection-maybe : ∀ {t : Set} {a : t} → ¬ (Nothing ≡ Just a)
 injection-maybe = λ ()
@@ -121,9 +112,3 @@ iteAbs {t} {x} {y} {z} {True} h₁ h₂ = ⟨ refl , h₂ ⟩
 liftEqNat : {n1 n2 : ℕ} → Agda.Builtin.Nat._==_ n1 n2 ≡ Bool.true → n1 ≡ n2
 liftEqNat {zero} {zero} h = refl
 liftEqNat {suc n1} {suc n2} h = cong suc (liftEqNat {n1} {n2} h)
-
-liftEqCharList :  {l₁ l₂ : List Char} → (l₁ == l₂) ≡ Bool.true → l₁ ≡ l₂
-liftEqCharList {[]} {[]} _ = refl
-liftEqCharList {x1 ∷ l1} {x2 ∷ l2} eq with &&to× {eqChar x1 x2} {l1 == l2} eq
-... | ⟨ a , b ⟩ rewrite primCharToNatInjective x1 x2 (liftEqNat {primCharToNat x1} {primCharToNat x2} a) =
-  cong (λ z -> x2 ∷ z) (liftEqCharList b)
