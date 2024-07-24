@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -28,19 +27,18 @@ jobs:
       run: |
         stack update
         stack install agda2hs
-        cd /home/runner
-        mkdir .agda
-        cd .agda
-        git clone https://github.com/agda/agda2hs
-        cd agda2hs
-        git checkout b269164
-        cd ..
+        mkdir /home/runner/.agda
+        cd /home/runner/.agda
+        wget https://github.com/agda/agda2hs/archive/refs/tags/v1.2.tar.gz
+        tar -xzvf v1.2.tar.gz
         wget -O agda-stdlib.tar https://github.com/agda/agda-stdlib/archive/v2.0.tar.gz
         tar -xzvf agda-stdlib.tar
         echo "standard-library" > defaults
         echo "/home/runner/.agda/agda-stdlib-2.0/standard-library.agda-lib" > libraries
-        echo "/home/runner/.agda/agda2hs/agda2hs.agda-lib" >> libraries
+        echo "/home/runner/.agda/agda2hs-1.2/agda2hs.agda-lib" >> libraries
+
     - name: Build
       run: ./build.sh
+
     - name: Run tests
       run: stack test
