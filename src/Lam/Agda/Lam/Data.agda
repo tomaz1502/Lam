@@ -39,6 +39,7 @@ data Prim : Set where
   MultPrim  : Prim
   AndPrim   : Prim
   OrPrim    : Prim
+  NotPrim   : Prim
 
 {-# COMPILE AGDA2HS Prim deriving Show #-}
 

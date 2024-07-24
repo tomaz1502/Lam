@@ -34,6 +34,9 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
   ⊢&& : ∀ {Γ : TypingContext}
     → Γ ⊢ PrimE AndPrim ∶ Arrow BoolT (Arrow BoolT BoolT)
 
+  ⊢! : ∀ {Γ : TypingContext}
+    → Γ ⊢ PrimE NotPrim ∶ Arrow BoolT BoolT
+
   ⊢+ : ∀ {Γ : TypingContext}
     → Γ ⊢ PrimE PlusPrim ∶ Arrow IntT (Arrow IntT IntT)
 
@@ -60,6 +63,7 @@ to ⊢b  = refl
 to ⊢n  = refl
 to ⊢&& = refl
 to ⊢|| = refl
+to ⊢!  = refl
 to ⊢+  = refl
 to ⊢-  = refl
 to ⊢*  = refl
@@ -102,3 +106,4 @@ from {Γ} {PrimE MinusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢-
 from {Γ} {PrimE MultPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢*
 from {Γ} {PrimE AndPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢&&
 from {Γ} {PrimE OrPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢||
+from {Γ} {PrimE NotPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢!

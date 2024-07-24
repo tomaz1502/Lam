@@ -56,6 +56,7 @@ smallStep (App (App (PrimE MinusPrim) (NumVal n1)) (NumVal n2)) = NumVal (n1 - n
 smallStep (App (App (PrimE MultPrim) (NumVal n1)) (NumVal n2)) = NumVal (n1 * n2)
 smallStep (App (App (PrimE AndPrim) (BoolVal b1)) (BoolVal b2)) = BoolVal (b1 && b2)
 smallStep (App (App (PrimE OrPrim) (BoolVal b1)) (BoolVal b2)) = BoolVal (b1 || b2)
+smallStep (App (PrimE NotPrim) (BoolVal b)) = BoolVal (not b)
 smallStep (App (Lam _ _ e) e₂) = shiftDown (substitute Z (shiftUp e₂) e)
 smallStep (App e1 e2) =
   if eqExpr e1' e1 then App e1 (smallStep e2)
