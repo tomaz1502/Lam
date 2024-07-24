@@ -15,7 +15,6 @@ open Relation.Binary.PropositionalEquality.≡-Reasoning
 open import Data.Char using (Char)
 open import Haskell.Prelude using
   (Bool; Int; Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe; _==_)
-open import Haskell.Law.Maybe using (Just-injective)
 
 open import Lam.Data
 open import Lam.TypeChecker

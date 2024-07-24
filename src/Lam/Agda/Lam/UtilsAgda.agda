@@ -112,3 +112,6 @@ iteAbs {t} {x} {y} {z} {True} h₁ h₂ = ⟨ refl , h₂ ⟩
 liftEqNat : {n1 n2 : ℕ} → Agda.Builtin.Nat._==_ n1 n2 ≡ Bool.true → n1 ≡ n2
 liftEqNat {zero} {zero} h = refl
 liftEqNat {suc n1} {suc n2} h = cong suc (liftEqNat {n1} {n2} h)
+
+Just-injective : ∀ {A : Set} {a b : A} → (Just a) ≡ (Just b) → _≡_ a b
+Just-injective refl = refl
