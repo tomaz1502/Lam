@@ -55,6 +55,7 @@ smallStep (Ite (BoolVal b) t e) =
         ; Nothing -> Just (if b then t else e)
         }
     }
+smallStep (Ite b t e) = smallStep b >>= λ b' -> Just (Ite b' t e)
 smallStep (App (App (PrimE PlusPrim) (NumVal n1)) (NumVal n2)) = Just (NumVal (n1 + n2))
 smallStep (App (App (PrimE MinusPrim) (NumVal n1)) (NumVal n2)) = Just (NumVal (n1 - n2))
 smallStep (App (App (PrimE MultPrim) (NumVal n1)) (NumVal n2)) = Just (NumVal (n1 * n2))
