@@ -1,16 +1,12 @@
 module Lam.UtilsAgda where
 
 import Agda.Builtin.Nat
-open import Agda.Builtin.Char using (primCharToNat)
-open import Agda.Builtin.Char.Properties using (primCharToNatInjective)
 open import Data.Empty       using (⊥-elim)
 open import Data.Fin.Base    using (fromℕ<)
-open import Data.Integer     using (ℤ)
 open import Data.List
 open import Data.Nat         using (ℕ; zero; suc; _<_)
 open import Data.Product     using (_×_) renaming (_,_ to ⟨_,_⟩)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
-open Relation.Binary.PropositionalEquality.≡-Reasoning
 open import Relation.Nullary using (¬_)
 
 open import Haskell.Prelude hiding (_<_; length; lookup; _×_; Nat; cong; cong₂)

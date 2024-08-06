@@ -1,7 +1,7 @@
 module Lam.Evaluator where
 
-open import Haskell.Prelude hiding (Nat)
-open import Data.Char hiding (_==_)
+open import Haskell.Prelude using
+  (if_then_else_; _+_; _-_; _*_; _&&_; _||_; not; _×_)
 
 open import Lam.Data
 open import Lam.UtilsAgda
