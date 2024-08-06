@@ -17,12 +17,6 @@ emptyTypingContext = []
 
 {-# COMPILE AGDA2HS emptyTypingContext #-}
 
--- removing the equality proof of case_of_
-myCaseOf : {a b : Set} → a → (a → b) → b
-myCaseOf x f = f x
-
-{-# COMPILE AGDA2HS myCaseOf #-}
-
 typeCheck' : TypingContext → Expr → Maybe Type
 typeCheck' gam (PrimE PlusPrim)  = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (PrimE MinusPrim) = Just (Arrow IntT (Arrow IntT IntT))

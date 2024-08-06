@@ -13,6 +13,12 @@ open import Haskell.Prelude hiding (_<_; length; lookup; _×_; Nat; cong; cong�
 
 open import Lam.Data
 
+-- removing the equality proof of case_of_
+myCaseOf : {a b : Set} → a → (a → b) → b
+myCaseOf x f = f x
+
+{-# COMPILE AGDA2HS myCaseOf #-}
+
 -- Operations defined over our naturals
 
 natToℕ : Nat → ℕ
@@ -52,17 +58,6 @@ eqType (Arrow t11 t12)  (Arrow t21 t22) = (eqType t11 t21) && (eqType t12 t22)
 eqType _            _           = False
 
 {-# COMPILE AGDA2HS eqType #-}
-
-eqExpr : Expr → Expr → Bool
-eqExpr (PrimE p1)    (PrimE p2)    = eqPrim p1 p2
-eqExpr (BoolVal b1)  (BoolVal b2)  = b1 == b2
-eqExpr (NumVal z1)   (NumVal z2)   = z1 == z2
-eqExpr (Var i)       (Var j)       = eqNat i j
-eqExpr (Lam _ _ e1)  (Lam _ _ e2)  = eqExpr e1 e2
-eqExpr (App e11 e12) (App e21 e22) = (eqExpr e11 e21) && (eqExpr e12 e22)
-eqExpr _             _             = False
-
-{-# COMPILE AGDA2HS eqExpr #-}
 
 lookupMaybe : {t : Set} → Nat → List t → Maybe t
 lookupMaybe _ []           = Nothing
