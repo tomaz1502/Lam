@@ -46,16 +46,25 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
   ⊢* : ∀ {Γ : TypingContext}
     → Γ ⊢ PrimE MultPrim ∶ Arrow IntT (Arrow IntT IntT)
 
+  ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : Type}
+    → Γ ⊢ b ∶ BoolT
+    → Γ ⊢ t ∶ A
+    → Γ ⊢ e ∶ A
+    --------------------
+    → Γ ⊢ Ite b t e ∶ A
+
   ⊢v : ∀ {Γ : TypingContext} {i : Nat} {h : (natToℕ i) < length Γ}
     → Γ ⊢ Var i ∶ (lookup Γ (fromℕ< h))
 
   ⊢l : ∀ {Γ : TypingContext} {name : Id} {body : Expr} {dom codom : Type}
     → (dom ∷ Γ) ⊢ body ∶ codom
+    ---------------------------------------------
     → Γ ⊢ (Lam name dom body) ∶ (Arrow dom codom)
 
   ⊢a : ∀ {Γ : TypingContext} {f x : Expr} {dom codom : Type}
     → Γ ⊢ f ∶ (Arrow dom codom)
     → Γ ⊢ x ∶ dom
+    ----------------------
     → Γ ⊢ App f x ∶ codom
 
 to : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
@@ -67,6 +76,7 @@ to ⊢!  = refl
 to ⊢+  = refl
 to ⊢-  = refl
 to ⊢*  = refl
+to (⊢ite a b c)  = {!!}
 to (⊢v {Γ} {i} {h}) = lookup≡ {Type} {Γ} {i} h
 to {Γ} {Lam name dom body} {Arrow dom codom} (⊢l {Γ} {name} {body} {dom} {codom} wt) =
   begin
@@ -107,3 +117,4 @@ from {Γ} {PrimE MultPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢*
 from {Γ} {PrimE AndPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢&&
 from {Γ} {PrimE OrPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢||
 from {Γ} {PrimE NotPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢!
+from {Γ} {Ite _ _ _} eq = {!!}

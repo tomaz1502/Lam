@@ -43,20 +43,11 @@ data Prim : Set where
 
 {-# COMPILE AGDA2HS Prim deriving Show #-}
 
-eqPrim : Prim → Prim → Bool
-eqPrim PlusPrim  PlusPrim  = true
-eqPrim MinusPrim MinusPrim = true
-eqPrim MultPrim  MultPrim  = true
-eqPrim AndPrim   AndPrim   = true
-eqPrim OrPrim    OrPrim    = true
-eqPrim _ _                 = false
-
-{-# COMPILE AGDA2HS eqPrim #-}
-
 data RawExpr : Set where
   RawVar     : Id → RawExpr
   RawLam     : Id → RawType → RawExpr → RawExpr
   RawApp     : RawExpr → RawExpr → RawExpr
+  RawIte     : RawExpr → RawExpr → RawExpr → RawExpr
   RawNumVal  : Int → RawExpr
   RawBoolVal : Bool → RawExpr
   RawPrimE   : Prim → RawExpr
@@ -67,6 +58,10 @@ data Expr : Set where
   Var     : Nat → Expr
   Lam     : Id → Type → Expr → Expr
   App     : Expr → Expr → Expr
+  -- NOTE: if we had polymorphism, we could make `Ite` a primitive,
+  -- and possibly the proofs would be easier as we would be able to
+  -- talk about it's type without being applied (Bool -> a -> a -> a)
+  Ite     : Expr → Expr → Expr → Expr
   NumVal  : Int → Expr
   BoolVal : Bool → Expr
   PrimE   : Prim → Expr

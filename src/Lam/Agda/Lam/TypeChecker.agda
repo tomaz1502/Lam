@@ -24,6 +24,14 @@ typeCheck' gam (PrimE MultPrim)  = Just (Arrow IntT (Arrow IntT IntT))
 typeCheck' gam (PrimE AndPrim)   = Just (Arrow BoolT (Arrow BoolT BoolT))
 typeCheck' gam (PrimE OrPrim)    = Just (Arrow BoolT (Arrow BoolT BoolT))
 typeCheck' gam (PrimE NotPrim)   = Just (Arrow BoolT BoolT)
+typeCheck' gam (Ite b t e)       =
+  typeCheck' gam b >>= λ
+    { BoolT ->
+        typeCheck' gam t >>= λ tt ->
+          typeCheck' gam e >>= λ te ->
+            if eqType tt te then (Just tt) else Nothing
+    ; _ -> Nothing
+    }
 typeCheck' gam (NumVal _)        = Just IntT
 typeCheck' gam (BoolVal _)       = Just BoolT
 typeCheck' gam (Var i)           = lookupMaybe i gam

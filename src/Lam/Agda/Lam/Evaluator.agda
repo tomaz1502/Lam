@@ -45,8 +45,15 @@ substitute _ _ e = e
 
 smallStep : Expr → Maybe Expr
 smallStep (Var x) = Nothing
-smallStep (Lam n t e) =
-  smallStep e >>= λ e' -> Just (Lam n t e')
+smallStep (Lam n t e) = smallStep e >>= λ e' -> Just (Lam n t e')
+smallStep (Ite b t e) =
+  myCaseOf (smallStep b) λ
+  { (Just b') -> Just (Ite b' t e)
+  ; Nothing -> myCaseOf (smallStep t) λ
+               { (Just t') -> Just (Ite b t' e)
+               ; Nothing -> smallStep e >>= λ e' -> Just (Ite b t e')
+               }
+  }
 smallStep (App (App (PrimE PlusPrim) (NumVal n1)) (NumVal n2)) = Just (NumVal (n1 + n2))
 smallStep (App (App (PrimE MinusPrim) (NumVal n1)) (NumVal n2)) = Just (NumVal (n1 - n2))
 smallStep (App (App (PrimE MultPrim) (NumVal n1)) (NumVal n2)) = Just (NumVal (n1 * n2))
