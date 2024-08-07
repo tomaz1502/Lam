@@ -2,7 +2,6 @@
 
 module Lam.Formalization where
 
-open import Data.Empty            using (⊥-elim)
 open import Data.Fin.Base         using (fromℕ<)
 open import Data.List
 open import Data.Nat              using (ℕ; _<_)
@@ -108,7 +107,6 @@ from {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
             in ⊢a e₁Typet₁Tot e₂Typet₁
 from {Γ} {Lam x t' e₁} {t} eq with typeCheck' (t' ∷ Γ) e₁ in te
 ... | Just t'' rewrite (sym (Just-injective eq)) = ⊢l (from {t' ∷ Γ} {e₁} {t''} te)
-... | Nothing = ⊥-elim (injection-maybe eq)
 from {Γ} {Var x} {t} eq =
   let x<lenΓ = lookup?< {Type} {Γ} {x} eq in
   let lookupMaybeEqLookup = lookup≡ {Type} {Γ} {x} x<lenΓ in
@@ -123,6 +121,12 @@ from {Γ} {PrimE MultPrim} {t} eq rewrite sym (Just-injective eq) = ⊢*
 from {Γ} {PrimE AndPrim} {t} eq rewrite sym (Just-injective eq) = ⊢&&
 from {Γ} {PrimE OrPrim} {t} eq rewrite sym (Just-injective eq) = ⊢||
 from {Γ} {PrimE NotPrim} {t} eq rewrite sym (Just-injective eq) = ⊢!
-from {Γ} {Ite b t e} {ty} eq with
-    typeCheck' Γ b in bPf
-... | Just BoolT = {!!}
+-- Weirdly, doing parallel with clauses doesn't work here, we have to nest them
+from {Γ} {Ite b t e} {ty} eq with typeCheck' Γ b in bPf
+... | Just BoolT with typeCheck' Γ t in tPf
+...   | Just tt with typeCheck' Γ e in ePf
+...     | Just te with iteAbs {b = eqType tt te} (λ()) eq
+...       | ⟨ eqTypeTtTe , justTyEqTt ⟩
+            rewrite
+              sym (Just-injective justTyEqTt)
+            | eqType->≡ {tt} {te} eqTypeTtTe = ⊢ite (from bPf) (from tPf) (from ePf)
