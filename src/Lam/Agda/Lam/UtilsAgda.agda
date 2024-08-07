@@ -70,6 +70,16 @@ lookup≡ : {t : Set} {l : List t} {i : Nat} → (h : (natToℕ i) < length l) �
 lookup≡ {t} {x ∷ l} {Z} h  = _≡_.refl
 lookup≡ {t} {x ∷ l} {S i} h = lookup≡ {t} {l} {i} (Data.Nat.≤-pred h)
 
+&&to× : {a b : Bool} → (a && b) ≡ True → a ≡ True × b ≡ True
+&&to× {True} {True} h = ⟨ refl , refl ⟩
+
+eqType->≡ : {t₁ t₂ : Type} → eqType t₁ t₂ ≡ True → t₁ ≡ t₂
+eqType->≡ {BoolT} {BoolT} _ = refl
+eqType->≡ {IntT} {IntT} _ = refl
+eqType->≡ {U} {U} _ = refl
+eqType->≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h
+... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Arrow (eqType->≡ t==t') (eqType->≡ t₁==t'')
+
 eqType-refl : (t : Type) → eqType t t ≡ True
 eqType-refl BoolT = refl
 eqType-refl IntT = refl
@@ -89,16 +99,6 @@ iteAbs : {t : Set} {x y z : t} {b : Bool} →
         ¬ y ≡ z → (if b then x else y) ≡ z → b ≡ True × x ≡ z
 iteAbs {t} {x} {y} {z} {False} h₁ h₂ = ⊥-elim (h₁ h₂)
 iteAbs {t} {x} {y} {z} {True} h₁ h₂ = ⟨ refl , h₂ ⟩
-
-&&to× : {a b : Bool} → (a && b) ≡ True → a ≡ True × b ≡ True
-&&to× {True} {True} h = ⟨ refl , refl ⟩
-
-==ᵗto≡ : {t₁ t₂ : Type} → eqType t₁ t₂ ≡ True → t₁ ≡ t₂
-==ᵗto≡ {BoolT} {BoolT} _ = refl
-==ᵗto≡ {IntT} {IntT} _ = refl
-==ᵗto≡ {U} {U} _ = refl
-==ᵗto≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h
-... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Arrow (==ᵗto≡ t==t') (==ᵗto≡ t₁==t'')
 
 liftEqNat : {n1 n2 : ℕ} → Agda.Builtin.Nat._==_ n1 n2 ≡ Bool.true → n1 ≡ n2
 liftEqNat {zero} {zero} h = refl

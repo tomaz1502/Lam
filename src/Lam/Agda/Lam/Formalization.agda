@@ -78,12 +78,12 @@ to ⊢!  = refl
 to ⊢+  = refl
 to ⊢-  = refl
 to ⊢*  = refl
-to {Γ} {Ite b t e} {t₁} (⊢ite tb tt te)
+to {Γ} {Ite b t e} {ty} (⊢ite tb tt te)
   rewrite
     to {Γ} {b} {BoolT} tb
-  | to {Γ} {t} {t₁} tt
-  | to {Γ} {e} {t₁} te
-  | eqType-refl t₁ = refl
+  | to {Γ} {t} {ty} tt
+  | to {Γ} {e} {ty} te
+  | eqType-refl ty = refl
 to (⊢v {Γ} {i} {h}) = lookup≡ {Type} {Γ} {i} h
 to {Γ} {Lam name dom body} {Arrow dom codom} (⊢l {Γ} {name} {body} {dom} {codom} wt) =
   begin
@@ -100,12 +100,11 @@ to {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
 
 from : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
 from {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
-... | Just U = ⊥-elim (injection-maybe eq)
 ... | Just (Arrow t₁ t₂) with typeCheck' Γ e₂ in e₂Type
 ... | Just t₃ with iteAbs (λ()) eq
 ...   | ⟨ t₁Eqt₃ , tEqt₂ ⟩ =
             let e₁Typet₁Tot = subst (λ x -> Γ ⊢ e₁ ∶ (Arrow t₁ x)) (Just-injective tEqt₂) (from e₁Type)
-                e₂Typet₁ = subst (λ x -> Γ ⊢ e₂ ∶ x) (sym (==ᵗto≡ t₁Eqt₃)) (from e₂Type)
+                e₂Typet₁ = subst (λ x -> Γ ⊢ e₂ ∶ x) (sym (eqType->≡ t₁Eqt₃)) (from e₂Type)
             in ⊢a e₁Typet₁Tot e₂Typet₁
 from {Γ} {Lam x t' e₁} {t} eq with typeCheck' (t' ∷ Γ) e₁ in te
 ... | Just t'' rewrite (sym (Just-injective eq)) = ⊢l (from {t' ∷ Γ} {e₁} {t''} te)
@@ -118,10 +117,12 @@ from {Γ} {Var x} {t} eq =
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
 from {Γ} {BoolVal b} {t} eq rewrite sym (Just-injective eq) = ⊢b
 from {Γ} {NumVal z} {t} eq rewrite sym (Just-injective eq)  = ⊢n
-from {Γ} {PrimE PlusPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢+
+from {Γ} {PrimE PlusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢+
 from {Γ} {PrimE MinusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢-
-from {Γ} {PrimE MultPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢*
-from {Γ} {PrimE AndPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢&&
-from {Γ} {PrimE OrPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢||
-from {Γ} {PrimE NotPrim} {t} eq rewrite sym (Just-injective eq)  = ⊢!
-from {Γ} {Ite _ _ _} eq = {!!}
+from {Γ} {PrimE MultPrim} {t} eq rewrite sym (Just-injective eq) = ⊢*
+from {Γ} {PrimE AndPrim} {t} eq rewrite sym (Just-injective eq) = ⊢&&
+from {Γ} {PrimE OrPrim} {t} eq rewrite sym (Just-injective eq) = ⊢||
+from {Γ} {PrimE NotPrim} {t} eq rewrite sym (Just-injective eq) = ⊢!
+from {Γ} {Ite b t e} {ty} eq with
+    typeCheck' Γ b in bPf
+... | Just BoolT = {!!}
