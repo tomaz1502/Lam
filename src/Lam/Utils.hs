@@ -60,6 +60,8 @@ instance Show Expr where
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
   where go :: LocalContext -> Bool -> Expr -> String
+        go ctx isUntyped (Ite b t e) = unwords
+          ["if", go ctx isUntyped b, "then", go ctx isUntyped t, "else", go ctx isUntyped e]
         go ctx _ (PrimE PlusPrim)  = "Plus"
         go ctx _ (PrimE MinusPrim) = "Minus"
         go ctx _ (PrimE MultPrim)  = "Mult"
@@ -91,6 +93,11 @@ typedPrettyPrint   = prettyPrint False
 eraseNames :: GlobalContext -> RawExpr -> Either String Expr
 eraseNames = go []
   where
+    go lctx gctx (RawIte b t e) =
+      go lctx gctx b >>= \b' ->
+      go lctx gctx t >>= \t' ->
+      go lctx gctx e >>= \e' ->
+      Right (Ite b' t' e')
     go lctx gctx (RawPrimE p) = Right (PrimE p)
     go lctx gctx (RawNumVal z) = Right (NumVal z)
     go lctx gctx (RawBoolVal b) = Right (BoolVal b)
@@ -117,6 +124,7 @@ printAST (NumVal n)      = "NumVal " ++ show n
 printAST (BoolVal True)  = "BoolVal true"
 printAST (BoolVal False) = "BoolVal false"
 printAST (PrimE p)       = "PrimE " ++ show p
+printAST (Ite b t e)     = unwords ["Ite", printAST b, printAST t, printAST e]
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =
