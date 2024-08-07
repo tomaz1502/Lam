@@ -26,7 +26,13 @@ genLetter :: Gen Char
 genLetter = choose ('a', 'z')
 
 genIdentifier :: Gen String
-genIdentifier = listOf1 genLetter
+genIdentifier = listOf1 genLetter `suchThat` notForbidden
+  where notForbidden "if" = False
+        notForbidden "then" = False
+        notForbidden "else" = False
+        notForbidden "lam" = False
+        notForbidden _ = True
+ 
 
 instance Arbitrary Type where
   arbitrary = frequency
