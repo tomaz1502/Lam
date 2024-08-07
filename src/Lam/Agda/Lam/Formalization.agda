@@ -130,3 +130,21 @@ from {Γ} {Ite b t e} {ty} eq with typeCheck' Γ b in bPf
             rewrite
               sym (Just-injective justTyEqTt)
             | eqType->≡ {tt} {te} eqTypeTtTe = ⊢ite (from bPf) (from tPf) (from ePf)
+
+module Examples where
+
+  open import Relation.Nullary using (¬_)
+  open import Data.Bool using (true)
+
+  ex1 : [] ⊢ BoolVal true ∶ BoolT
+  ex1 = ⊢b
+
+  ex2 : ¬ ([] ⊢ BoolVal true ∶ IntT)
+  ex2 ()
+
+  ex3 : ∀ (t : Type) → ¬ ([] ⊢ App (App (PrimE PlusPrim) (BoolVal true)) (BoolVal true) ∶ t)
+  ex3 t (⊢a (⊢a () _) ⊢b)
+
+  ex4 : ∀ (t : Type) → ¬ ([ IntT ] ⊢ Ite (Var Z) (BoolVal true) (BoolVal true) ∶ t)
+  ex4 t (⊢ite () _ _)
+
