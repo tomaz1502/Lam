@@ -21,13 +21,14 @@ import Lam.Parser.Lexer qualified as L
 %monad { L.Alex } { >>= } { pure }
 %lexer { lexer } { L.EOF }
 
+-- Lowest priority to highest priority
+%right "else"
 %left "."
 %right "=>"
 %left "&&" "||"
 %left "+" "-"
 %left "*"
 %right "!"
-%right "if" "then" "else"
 
 %token
   "lam"     { L.Lam        }
