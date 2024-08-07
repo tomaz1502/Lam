@@ -40,6 +40,9 @@ tokens :-
 <0> "!"       { tok Not             }
 <0> "true"    { tok (BoolVal True)  }
 <0> "false"   { tok (BoolVal False) }
+<0> "if"      { tok If              }
+<0> "then"    { tok Then            }
+<0> "else"    { tok Else            }
 <0> @id       { tok (Var "")        }
 <0> @path     { tok (Path "")       }
 <0> @digits   { tok (NumVal 0)      }
@@ -75,6 +78,9 @@ data Token =
   | And
   | Or
   | Not
+  | If
+  | Then
+  | Else
   | EOF
   deriving Show
 

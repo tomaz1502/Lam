@@ -27,6 +27,7 @@ import Lam.Parser.Lexer qualified as L
 %left "+" "-"
 %left "*"
 %right "!"
+%right "if" "then" "else"
 
 %token
   "lam"     { L.Lam        }
@@ -57,6 +58,9 @@ import Lam.Parser.Lexer qualified as L
   "&&"      { L.And        }
   "||"      { L.Or         }
   "!"       { L.Not        }
+  "if"      { L.If         }
+  "then"    { L.Then       }
+  "else"    { L.Else       }
 %%
 
 
@@ -125,6 +129,7 @@ RawExpr :: { RawExpr }
   | RawExpr "&&" RawExpr { RawApp (RawApp (RawPrimE AndPrim) $1) $3 }
   | RawExpr "||" RawExpr { RawApp (RawApp (RawPrimE OrPrim) $1) $3 }
   | "!" RawExpr { RawApp (RawPrimE NotPrim) $2 }
+  | "if" RawExpr "then" RawExpr "else" RawExpr { RawIte $2 $4 $6 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }
