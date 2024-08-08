@@ -14,7 +14,6 @@ open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import Haskell.Prelude using
   (Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe)
-open import Haskell.Law.Maybe using (Just-injective)
 
 open import Lam.Data
 open import Lam.TypeChecker
@@ -50,7 +49,6 @@ to {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
 
 from : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
 from {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
-... | Just U = ⊥-elim (injection-maybe eq)
 ... | Just (Arrow t₁ t₂) with typeCheck' Γ e₂ in e₂Type
 ... | Just t₃ with iteAbs (λ()) eq
 ...   | ⟨ t₁Eqt₃ , tEqt₂ ⟩ =
@@ -59,7 +57,6 @@ from {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
             in ⊢a e₁Typet₁Tot e₂Typet₁
 from {Γ} {Lam x t' e₁} {t} eq with typeCheck' (t' ∷ Γ) e₁ in te
 ... | Just t'' rewrite (sym (Just-injective eq)) = ⊢l (from {t' ∷ Γ} {e₁} {t''} te)
-... | Nothing = ⊥-elim (injection-maybe eq)
 from {Γ} {Var x} {t} eq =
   let x<lenΓ = lookup?< {Type} {Γ} {x} eq in
   let lookupMaybeEqLookup = lookup≡ {Type} {Γ} {x} x<lenΓ in

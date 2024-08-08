@@ -109,3 +109,6 @@ iteAbs {t} {x} {y} {z} {true} h₁ h₂ = ⟨ refl , h₂ ⟩
 ==ᵗto≡ {U} {U} h = refl
 ==ᵗto≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h
 ... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Arrow (==ᵗto≡ t==t') (==ᵗto≡ t₁==t'')
+
+Just-injective : ∀ {A : Set} {a b : A} → (Just a) ≡ (Just b) → _≡_ a b
+Just-injective refl = refl
