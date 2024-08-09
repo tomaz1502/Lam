@@ -1,8 +1,11 @@
 # Slow nat operations with unary representation
 # How to use Data.Text in Agda?
-# Is it possible to use intrinsically typed terms, introduced in PLFA, De Bruijn?
+# Is it possible to compile intrinsically typed terms, introduced in PLFA, De Bruijn?
  - It would be nice to remove the typing judgment using lists for variables
 # More examples and tests for new constructs
+# Eliminate all uses of \bN -> replace by your Nat
+  - It is awful to have both representations and keep turning one in the other
+  - \bN does not seem to compile well to haskell
 
 # Note on Reduction
   - Notice that we allow reduction under lambda terms
