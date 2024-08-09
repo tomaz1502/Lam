@@ -142,6 +142,18 @@ normalDontReduce (no-ne (ne-a neutralL normalM)) (r-a' normalL mReduce) =
 normalDontReduce (no-a normalN) (r-l nReduce) =
   normalDontReduce normalN nReduce
 
+redIsDeterministic : ∀ {M N1 N2 : Expr} → M —→ N1 → M —→ N2 → N1 ≡ N2
+redIsDeterministic (r-a red1) (r-a red2) rewrite redIsDeterministic red1 red2 = refl
+redIsDeterministic (r-a red1) (r-a' normalL red2) = ⊥-elim (normalDontReduce normalL red1)
+redIsDeterministic (r-a (r-l red1)) (r-l' normalM normalL) = ⊥-elim (normalDontReduce normalL red1)
+redIsDeterministic (r-a' normalV red1) (r-a red2) = ⊥-elim (normalDontReduce normalV red2)
+redIsDeterministic (r-a' _ red1) (r-a' _ red2) rewrite redIsDeterministic red1 red2 = refl
+redIsDeterministic (r-a' _ red1) (r-l' normalM _) = ⊥-elim (normalDontReduce normalM red1)
+redIsDeterministic (r-l red1) (r-l red2) rewrite redIsDeterministic red1 red2 = refl
+redIsDeterministic (r-l' _ normalL) (r-a (r-l red2)) = ⊥-elim (normalDontReduce normalL red2)
+redIsDeterministic (r-l' normalL _) (r-a' _ red2) = ⊥-elim (normalDontReduce normalL red2)
+redIsDeterministic (r-l' _ _) (r-l' _ _) = refl
+
 -- f : ∀ {M N : Expr} → smallStep M ≡ Just N → M —→ N
 -- f = {!!}
 
