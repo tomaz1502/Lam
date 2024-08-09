@@ -41,7 +41,11 @@ substitute i s (Var x) = if eqNat i x then s else Var x
 smallStep : Expr → Expr
 smallStep (Var x) = Var x
 smallStep (Lam n t e) = Lam n t (smallStep e)
-smallStep (App (Lam _ _ e) e₂) = shiftDown (substitute Z (shiftUp e₂) e)
+smallStep (App (Lam s ty e1) e2) =
+  if eqExpr e2 e2' then
+    shiftDown (substitute Z (shiftUp e2) e1)
+  else App (Lam s ty e1) e2'
+  where e2' = smallStep e2
 smallStep (App e1 e2) =
   if eqExpr e1' e1 then App e1 (smallStep e2)
   else App e1' e2

@@ -7,15 +7,15 @@ open import Data.Fin.Base         using (fromℕ<)
 open import Data.List
 open import Data.Nat              using (ℕ; _<_)
 open import Data.Product          using (_×_) renaming (_,_ to ⟨_,_⟩)
-open import Function.Base         using (id)
 open import Relation.Binary.PropositionalEquality using
-  (_≡_; refl; sym; trans; cong; subst)
+  (_≡_; _≢_; refl; sym; trans; cong; subst)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import Haskell.Prelude using
   (Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe)
 
 open import Lam.Data
+open import Lam.Evaluator
 open import Lam.TypeChecker
 open import Lam.UtilsAgda
 
@@ -63,3 +63,57 @@ from {Γ} {Var x} {t} eq =
   let justTEqJustLookup = trans (sym eq) lookupMaybeEqLookup in
   let tEqLookup = Just-injective justTEqJustLookup in
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
+
+-- Reference: https://plfa.github.io/Untyped/
+-- But we don't guarantee well-scopedness
+
+data Neutral : Expr → Set
+data Normal  : Expr → Set
+
+data Neutral where
+  ne-v : ∀ {k : Nat}
+    → Neutral (Var k)
+  ne-a : ∀ {L M : Expr}
+    → Neutral L
+    → Normal M
+    -------------------
+    → Neutral (App L M)
+
+data Normal where
+  no-ne : ∀ {M : Expr}
+    → Neutral M
+    ----------
+    → Normal M
+
+  no-a : ∀ {s : Id} {ty : Type} {N : Expr}
+    → Normal N
+    → Normal (Lam s ty N)
+
+data _—→_ : Expr → Expr → Set where
+  r-a : ∀ {L L' M : Expr}
+    → L —→ L'
+    -------------------------
+    → App L M —→ App L' M
+
+  r-a' : ∀ {V M M' : Expr}
+    → Normal V
+    → M —→ M'
+    ---------------------
+    → App V M —→ App V M'
+
+  r-l : ∀ {s : Id} {ty : Type} {L V : Expr}
+    → Normal V
+    ---------------------------
+    → App (Lam s ty L) V —→ shiftDown (substitute Z (shiftUp V) L)
+    -- using a predicate to specify substitution here gets pretty ugly
+
+
+data _—↠_ : Expr → Expr → Set where
+  done : ∀ {M : Expr}
+    → M —↠ M
+
+  step : ∀ {L M N : Expr}
+    → M —↠ N
+    → L —→ M
+    --------
+    → L —↠ N
