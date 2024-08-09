@@ -112,3 +112,9 @@ iteAbs {t} {x} {y} {z} {true} h₁ h₂ = ⟨ refl , h₂ ⟩
 
 Just-injective : ∀ {A : Set} {a b : A} → (Just a) ≡ (Just b) → _≡_ a b
 Just-injective refl = refl
+
+-- removing the equality proof of case_of_
+myCaseOf : {a b : Set} → a → (a → b) → b
+myCaseOf x f = f x
+
+{-# COMPILE AGDA2HS myCaseOf #-}

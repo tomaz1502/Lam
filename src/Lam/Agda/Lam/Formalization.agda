@@ -10,6 +10,7 @@ open import Data.Product          using (_×_) renaming (_,_ to ⟨_,_⟩)
 open import Relation.Binary.PropositionalEquality using
   (_≡_; _≢_; refl; sym; trans; cong; subst)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
+open import Relation.Nullary using (¬_)
 
 open import Haskell.Prelude using
   (Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe)
@@ -117,3 +118,19 @@ data _—↠_ : Expr → Expr → Set where
     → L —→ M
     --------
     → L —↠ N
+
+
+l : ∀ {M N : Expr} → Normal M → ¬ (M —→ N)
+l = {!!}
+
+f : ∀ {M N : Expr} → smallStep M ≡ Just N → M —→ N
+f = {!!}
+
+g : ∀ {M N : Expr} → M —→ N → smallStep M ≡ Just N
+g = {!!}
+
+f2 : ∀ {M N : Expr} → eval M ≡ N → ( M —↠ N × Normal N )
+f2 = {!!}
+
+g2 : ∀ {M N : Expr} → M —↠ N → Normal N → eval M ≡ N
+g2 = ?

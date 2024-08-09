@@ -1,6 +1,6 @@
 module Lam.Evaluator where
 
-open import Haskell.Prelude using (if_then_else_)
+open import Haskell.Prelude using (if_then_else_; Maybe; Just; Nothing; _>>=_)
 
 open import Lam.Data
 open import Lam.UtilsAgda
@@ -38,31 +38,31 @@ substitute i s (Var x) = if eqNat i x then s else Var x
 
 {-# COMPILE AGDA2HS substitute #-}
 
-smallStep : Expr → Expr
-smallStep (Var x) = Var x
-smallStep (Lam n t e) = Lam n t (smallStep e)
+smallStep : Expr → Maybe Expr
+smallStep (Var x) = Nothing
+smallStep (Lam n t e) = smallStep e >>= λ e' -> Just (Lam n t e')
 smallStep (App (Lam s ty e1) e2) =
-  if eqExpr e2 e2' then
-    shiftDown (substitute Z (shiftUp e2) e1)
-  else App (Lam s ty e1) e2'
-  where e2' = smallStep e2
+  myCaseOf (smallStep e2)
+    λ { Nothing -> Just (shiftDown (substitute Z (shiftUp e2) e1))
+      ; (Just e2') -> Just (App (Lam s ty e1) e2')
+      }
 smallStep (App e1 e2) =
-  if eqExpr e1' e1 then App e1 (smallStep e2)
-  else App e1' e2
-  where e1' = smallStep e1
+  myCaseOf (smallStep e1)
+    λ { Nothing -> smallStep e2 >>= λ e2' -> Just (App e1 e2')
+      ; (Just e1') -> Just (App e1' e2)
+      }
 
 {-# COMPILE AGDA2HS smallStep #-}
 
 {-# NON_TERMINATING #-}
 eval : Expr → Expr
 eval e =
-   if eqExpr e' e then e' else eval e'
-   where e' = smallStep e
+  myCaseOf (smallStep e)
+    λ { Nothing -> e ; (Just e') -> eval e' }
 
 {-# COMPILE AGDA2HS eval #-}
 
 evalWithGas : Nat → Expr → Expr
 evalWithGas Z e = e
 evalWithGas (S gas) e =
-   if eqExpr e' e then e' else evalWithGas gas e'
-   where e' = smallStep e
+  myCaseOf (smallStep e) λ { Nothing -> e ; (Just e') -> evalWithGas gas e' }
