@@ -90,10 +90,18 @@ data Normal where
     → Normal N
     → Normal (Lam s ty N)
 
+-- *not* deterministic :(
+-- If V is a value we can potentially apply
+-- r-a App L V
+-- or
+-- r-l', together with r-l
+-- which one smallStep will take?
+-- Adding Normal L to r-l' solves it?
+-- I think so, but I need to change smallStep
 data _—→_ : Expr → Expr → Set where
   r-a : ∀ {L L' M : Expr}
     → L —→ L'
-    -------------------------
+    ---------------------
     → App L M —→ App L' M
 
   r-a' : ∀ {V M M' : Expr}
@@ -102,8 +110,14 @@ data _—→_ : Expr → Expr → Set where
     ---------------------
     → App V M —→ App V M'
 
-  r-l : ∀ {s : Id} {ty : Type} {L V : Expr}
+  r-l : ∀ {s : Id} {ty : Type} {L L' : Expr}
+    → L —→ L'
+    ---------------------------
+    → Lam s ty L —→ Lam s ty L'
+
+  r-l' : ∀ {s : Id} {ty : Type} {L V : Expr}
     → Normal V
+    → Normal L
     ---------------------------
     → App (Lam s ty L) V —→ shiftDown (substitute Z (shiftUp V) L)
     -- using a predicate to specify substitution here gets pretty ugly
@@ -120,17 +134,22 @@ data _—↠_ : Expr → Expr → Set where
     → L —↠ N
 
 
-l : ∀ {M N : Expr} → Normal M → ¬ (M —→ N)
-l = {!!}
+normalDontReduce : ∀ {M N : Expr} → Normal M → ¬ (M —→ N)
+normalDontReduce (no-ne (ne-a neutralL _)) (r-a lReduce) =
+  normalDontReduce (no-ne neutralL) lReduce
+normalDontReduce (no-ne (ne-a neutralL normalM)) (r-a' normalL mReduce) =
+  normalDontReduce normalM mReduce
+normalDontReduce (no-a normalN) (r-l nReduce) =
+  normalDontReduce normalN nReduce
 
-f : ∀ {M N : Expr} → smallStep M ≡ Just N → M —→ N
-f = {!!}
+-- f : ∀ {M N : Expr} → smallStep M ≡ Just N → M —→ N
+-- f = {!!}
 
 g : ∀ {M N : Expr} → M —→ N → smallStep M ≡ Just N
-g = {!!}
+g _ = {!!}
 
-f2 : ∀ {M N : Expr} → eval M ≡ N → ( M —↠ N × Normal N )
-f2 = {!!}
+-- f2 : ∀ {M N : Expr} → eval M ≡ N → ( M —↠ N × Normal N )
+-- f2 = {!!}
 
-g2 : ∀ {M N : Expr} → M —↠ N → Normal N → eval M ≡ N
-g2 = ?
+-- g2 : ∀ {M N : Expr} → M —↠ N → Normal N → eval M ≡ N
+-- g2 = {!!}

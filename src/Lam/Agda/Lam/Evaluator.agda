@@ -41,16 +41,16 @@ substitute i s (Var x) = if eqNat i x then s else Var x
 smallStep : Expr → Maybe Expr
 smallStep (Var x) = Nothing
 smallStep (Lam n t e) = smallStep e >>= λ e' -> Just (Lam n t e')
-smallStep (App (Lam s ty e1) e2) =
-  myCaseOf (smallStep e2)
-    λ { Nothing -> Just (shiftDown (substitute Z (shiftUp e2) e1))
-      ; (Just e2') -> Just (App (Lam s ty e1) e2')
-      }
 smallStep (App e1 e2) =
   myCaseOf (smallStep e1)
-    λ { Nothing -> smallStep e2 >>= λ e2' -> Just (App e1 e2')
-      ; (Just e1') -> Just (App e1' e2)
-      }
+    λ { (Just e1') -> Just (App e1' e2)
+      ; Nothing ->
+          myCaseOf (smallStep e2)
+            λ { (Just e2') -> Just (App e1 e2')
+              ; Nothing ->
+                  myCaseOf e1
+                    λ { (Lam s ty bd) -> Just (shiftDown (substitute Z (shiftUp e2) bd))
+                      ; _ -> Nothing }}}
 
 {-# COMPILE AGDA2HS smallStep #-}
 
