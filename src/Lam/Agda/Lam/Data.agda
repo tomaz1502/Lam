@@ -2,7 +2,7 @@ module Lam.Data where
 
 open import Data.Bool using (true; false)
 
-open import Haskell.Prelude using (Int; Bool; String)
+open import Haskell.Prelude using (Int; Bool; String; _×_)
 
 Id : Set
 Id = String
@@ -67,3 +67,11 @@ data Expr : Set where
   PrimE   : Prim → Expr
 
 {-# COMPILE AGDA2HS Expr #-}
+
+data Command : Set where
+    TypedefC : Id × RawType → Command
+    DefineC  : Id × RawExpr → Command
+    EvalC    : RawExpr → Command
+    LoadC    : Id → Command
+
+{-# COMPILE AGDA2HS Command #-}

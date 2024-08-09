@@ -25,7 +25,6 @@ executable lam
 
 library
   exposed-modules:
-    Lam.Command
     Lam.Context
     Lam.Data
     Lam.Evaluator

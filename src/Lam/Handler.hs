@@ -12,7 +12,6 @@ import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError (..) )
 import Data.Map qualified as M
 import System.Exit              (exitSuccess, exitFailure)
 
-import Lam.Command
 import Lam.Context
 import Lam.Data
 import Lam.Evaluator
