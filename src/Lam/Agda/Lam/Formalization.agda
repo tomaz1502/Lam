@@ -91,14 +91,6 @@ data Normal where
     ---------------------
     → Normal (Lam s ty N)
 
--- *not* deterministic :(
--- If V is a value we can potentially apply
--- r-a App L V
--- or
--- r-l', together with r-l
--- which one smallStep will take?
--- Adding Normal L to r-l' solves it?
--- I think so, but I need to change smallStep
 data _—→_ : Expr → Expr → Set where
   r-a : ∀ {L L' M : Expr}
     → L —→ L'
@@ -129,11 +121,16 @@ data _—↠_ : Expr → Expr → Set where
     → M —↠ M
 
   step : ∀ {L M N : Expr}
-    → M —↠ N
     → L —→ M
+    → M —↠ N
     --------
     → L —↠ N
 
+data Irreducible : Expr → Set where
+  i-e : ∀ {M : Expr}
+    → (∀ {N : Expr} → ¬ (M —→ N))
+    ---------------
+    → Irreducible M
 
 normalDontReduce : ∀ {M N : Expr} → Normal M → ¬ (M —→ N)
 normalDontReduce (no-ne (ne-a neutralL _)) (r-a lReduce) =
@@ -142,6 +139,9 @@ normalDontReduce (no-ne (ne-a neutralL normalM)) (r-a' normalL mReduce) =
   normalDontReduce normalM mReduce
 normalDontReduce (no-a normalN) (r-l nReduce) =
   normalDontReduce normalN nReduce
+
+normalImpliesIrreducible : ∀ {M : Expr} → Normal M → Irreducible M
+normalImpliesIrreducible {M} normalM = i-e λ h -> normalDontReduce normalM h
 
 redIsDeterministic : ∀ {M N1 N2 : Expr} → M —→ N1 → M —→ N2 → N1 ≡ N2
 redIsDeterministic (r-a red1) (r-a red2) rewrite redIsDeterministic red1 red2 = refl
@@ -159,8 +159,7 @@ x : ∀ {L M : Expr} → Normal (App L M) → Neutral (App L M)
 x (no-ne h) = h
 
 k3 : ∀ {V : Expr} → smallStep V ≡ Nothing → Normal V
-
-k3 {Var x} h = no-ne ne-v
+k3 {Var _} h = no-ne ne-v
 k3 {Lam _ _ V} h with smallStep V in eq
 ...               | Nothing = no-a (k3 eq)
 k3 {App V1 V2} h with smallStep V1 in eqV1
@@ -196,8 +195,50 @@ g (r-l red) rewrite g red = refl
 g (r-a' normalV red) rewrite k1 normalV | g red = refl
 g (r-l' normalL normalV) rewrite k1 normalV | k1 normalL = refl
 
--- f2 : ∀ {M N : Expr} → eval M ≡ N → ( M —↠ N × Normal N )
--- f2 = {!!}
 
--- g2 : ∀ {M N : Expr} → M —↠ N → Normal N → eval M ≡ N
--- g2 = {!!}
+-- TODO: This is necessary since we marked `eval` as `NON_TERMINATING`
+-- This stops the typechecker from reducing this definition
+-- Ideally we would also do a formalization of `evalWithGas`,
+-- which would not require new axioms, but I need to think more
+-- about how this should be done
+postulate eval_def : ∀ {M : Expr} → eval M ≡ myCaseOf (smallStep M) λ { Nothing -> M ; (Just M') -> eval M' }
+
+g2 : ∀ {M N : Expr} → M —↠ N → Irreducible N → eval M ≡ N
+g2 {M} {M} done (i-e irreducibleM) with smallStep M in eqM
+...                     | Nothing rewrite eval_def {M} | eqM = refl
+...                     | Just M' = ⊥-elim (irreducibleM (f eqM))
+g2 {L} {N} (step {L} {M} {N} LtoM MtoN) irreducibleN with smallStep L in eqL
+... | Just L' rewrite eval_def {L} | g LtoM = g2 MtoN irreducibleN
+... | Nothing = ⊥-elim (normalDontReduce (k3 eqL) LtoM)
+
+-- f2 : ∀ {M N : Expr} → eval M ≡ N → ( (M —↠ N) × Irreducible N )
+-- f2 {M} {N} h rewrite eval_def {M} with smallStep M in eqM
+-- ... | Nothing rewrite h = ⟨ done , normalImpliesIrreducible (k3 eqM) ⟩
+-- -- here we are stuck because we can't use induction without breaking the termination checker
+-- ... | Just M' = {!!}
+
+-- MultiReduces n M N: I can go from M to N with gas n
+data MultiReduces : Nat → Expr → Expr → Set where
+  done : ∀ {n : Nat} {M : Expr}
+    → MultiReduces n M M
+
+  step : ∀ {n : Nat} {L M N : Expr}
+    → L —→ M
+    → MultiReduces n M N
+    --------
+    → MultiReduces (S n) L N
+
+f3 : ∀ {n : Nat} {M N : Expr} → MultiReduces n M N → Irreducible N → evalWithGas n M ≡ N
+f3 {Z} done (i-e irreducibleN) = refl
+f3 {S n} {M} {N} done (i-e irreducibleN) with smallStep N in eqN
+... | Nothing = refl
+... | Just _ = ⊥-elim (irreducibleN (f eqN))
+f3 {S n} {M} {N} (step red reds) (i-e irreducibleN) with smallStep M in eqM
+... | Nothing = ⊥-elim (normalDontReduce (k3 eqM) red)
+... | Just M' rewrite redIsDeterministic red (f eqM) = f3 {n} reds (i-e irreducibleN)
+
+g3 : ∀ {n M N} → evalWithGas n M ≡ N → Irreducible N → MultiReduces n M N
+g3 {Z} {M} {N} h _ rewrite h = done
+g3 {S n} {M} {N} h irreducibleN with smallStep M in eqM
+... | Nothing rewrite h = done
+... | Just M' = step (f eqM) (g3 h irreducibleN)
