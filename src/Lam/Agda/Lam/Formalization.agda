@@ -88,6 +88,7 @@ data Normal where
 
   no-a : ∀ {s : Id} {ty : Type} {N : Expr}
     → Normal N
+    ---------------------
     → Normal (Lam s ty N)
 
 -- *not* deterministic :(
@@ -154,11 +155,46 @@ redIsDeterministic (r-l' _ normalL) (r-a (r-l red2)) = ⊥-elim (normalDontReduc
 redIsDeterministic (r-l' normalL _) (r-a' _ red2) = ⊥-elim (normalDontReduce normalL red2)
 redIsDeterministic (r-l' _ _) (r-l' _ _) = refl
 
--- f : ∀ {M N : Expr} → smallStep M ≡ Just N → M —→ N
--- f = {!!}
+x : ∀ {L M : Expr} → Normal (App L M) → Neutral (App L M)
+x (no-ne h) = h
+
+k3 : ∀ {V : Expr} → smallStep V ≡ Nothing → Normal V
+
+k3 {Var x} h = no-ne ne-v
+k3 {Lam _ _ V} h with smallStep V in eq
+...               | Nothing = no-a (k3 eq)
+k3 {App V1 V2} h with smallStep V1 in eqV1
+...              | Nothing with smallStep V2 in eqV2
+...                        | Nothing with V1
+...                                  | Var k = no-ne (ne-a ne-v (k3 eqV2))
+...                                  | App V11 V12 = no-ne (ne-a (x (k3 eqV1)) (k3 eqV2))
+
+k1 : ∀ {V : Expr} → Normal V → smallStep V ≡ Nothing
+k2 : ∀ {V : Expr} → Neutral V → smallStep V ≡ Nothing
+
+k1 (no-ne neutralV) = k2 neutralV
+k1 (no-a nv) rewrite k1 nv = refl
+
+k2 ne-v = refl
+k2 {App (Var x) M} (ne-a neutralL normalM) rewrite k2 neutralL | k1 normalM = refl
+k2 {App (App L L₁) M} (ne-a neutralL normalM) rewrite k2 neutralL | k1 normalM = refl
+
+f : ∀ {M N : Expr} → smallStep M ≡ Just N → M —→ N
+f {Lam s ty M} {N} eq with smallStep M in eqM
+... | Just _ rewrite sym (Just-injective eq) = r-l (f eqM)
+f {App L M} {N} eq with smallStep L in eqL
+... | Just L' rewrite sym (Just-injective eq) = r-a (f eqL)
+... | Nothing with smallStep M in eqM
+...                | Just M' rewrite sym (Just-injective eq) = r-a' (k3 eqL) (f eqM)
+...                | Nothing with L
+...                          | Lam _ _ L' with smallStep L' in eqL'
+...                                       | Nothing rewrite sym (Just-injective eq) = r-l' (k3 eqM) (k3 eqL')
 
 g : ∀ {M N : Expr} → M —→ N → smallStep M ≡ Just N
-g _ = {!!}
+g (r-a red) rewrite g red = refl
+g (r-l red) rewrite g red = refl
+g (r-a' normalV red) rewrite k1 normalV | g red = refl
+g (r-l' normalL normalV) rewrite k1 normalV | k1 normalL = refl
 
 -- f2 : ∀ {M N : Expr} → eval M ≡ N → ( M —↠ N × Normal N )
 -- f2 = {!!}
