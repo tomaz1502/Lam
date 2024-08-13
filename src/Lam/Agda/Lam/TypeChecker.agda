@@ -18,12 +18,6 @@ emptyTypingContext = []
 {-# COMPILE AGDA2HS emptyTypingContext #-}
 
 typeCheck' : TypingContext → Expr → Maybe Type
-typeCheck' gam (PrimE PlusPrim)  = Just (Arrow IntT (Arrow IntT IntT))
-typeCheck' gam (PrimE MinusPrim) = Just (Arrow IntT (Arrow IntT IntT))
-typeCheck' gam (PrimE MultPrim)  = Just (Arrow IntT (Arrow IntT IntT))
-typeCheck' gam (PrimE AndPrim)   = Just (Arrow BoolT (Arrow BoolT BoolT))
-typeCheck' gam (PrimE OrPrim)    = Just (Arrow BoolT (Arrow BoolT BoolT))
-typeCheck' gam (PrimE NotPrim)   = Just (Arrow BoolT BoolT)
 typeCheck' gam (Ite b t e)       =
   typeCheck' gam b >>= λ
     { BoolT ->
@@ -42,6 +36,53 @@ typeCheck' gam (App e1 e2) =
     λ { (Just (Arrow t11 t12)) -> typeCheck' gam e2 >>= λ t2 -> if eqType t11 t2 then Just t12 else Nothing
       ; _ -> Nothing
       }
+typeCheck' gam (Add e1 e2) =
+  myCaseOf (typeCheck' gam e1)
+    λ { (Just IntT) ->
+           myCaseOf (typeCheck' gam e2)
+             λ { (Just IntT) -> Just IntT
+               ; _ -> Nothing
+               }
+      ; _ -> Nothing
+      }
+typeCheck' gam (Sub e1 e2) =
+  myCaseOf (typeCheck' gam e1)
+    λ { (Just IntT) ->
+           myCaseOf (typeCheck' gam e2)
+             λ { (Just IntT) -> Just IntT
+               ; _ -> Nothing
+               }
+      ; _ -> Nothing
+      }
+typeCheck' gam (Mul e1 e2) =
+  myCaseOf (typeCheck' gam e1)
+    λ { (Just IntT) ->
+           myCaseOf (typeCheck' gam e2)
+             λ { (Just IntT) -> Just IntT
+               ; _ -> Nothing
+               }
+      ; _ -> Nothing
+      }
+typeCheck' gam (And e1 e2) =
+  myCaseOf (typeCheck' gam e1)
+    λ { (Just BoolT) ->
+           myCaseOf (typeCheck' gam e2)
+             λ { (Just BoolT) -> Just BoolT
+               ; _ -> Nothing
+               }
+      ; _ -> Nothing
+      }
+typeCheck' gam (Or e1 e2) =
+  myCaseOf (typeCheck' gam e1)
+    λ { (Just BoolT) ->
+           myCaseOf (typeCheck' gam e2)
+             λ { (Just BoolT) -> Just BoolT
+               ; _ -> Nothing
+               }
+      ; _ -> Nothing
+      }
+typeCheck' gam (Not e) =
+  myCaseOf (typeCheck' gam e) λ { (Just BoolT) -> Just BoolT ; _ -> Nothing }
 
 {-# COMPILE AGDA2HS typeCheck' #-}
 

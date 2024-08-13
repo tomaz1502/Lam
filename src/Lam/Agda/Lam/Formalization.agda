@@ -28,23 +28,35 @@ module TypeChecker where
     ⊢n : ∀ {Γ : TypingContext} {z : Int}
       → Γ ⊢ NumVal z ∶ IntT
 
-    ⊢|| : ∀ {Γ : TypingContext}
-      → Γ ⊢ PrimE OrPrim ∶ Arrow BoolT (Arrow BoolT BoolT)
+    ⊢|| : ∀ {L M : Expr} {Γ : TypingContext}
+      → Γ ⊢ L ∶ BoolT
+      → Γ ⊢ M ∶ BoolT
+      → Γ ⊢ Or L M ∶ BoolT
 
-    ⊢&& : ∀ {Γ : TypingContext}
-      → Γ ⊢ PrimE AndPrim ∶ Arrow BoolT (Arrow BoolT BoolT)
+    ⊢&& : ∀ {L M : Expr} {Γ : TypingContext}
+      → Γ ⊢ L ∶ BoolT
+      → Γ ⊢ M ∶ BoolT
+      → Γ ⊢ And L M ∶ BoolT
 
-    ⊢! : ∀ {Γ : TypingContext}
-      → Γ ⊢ PrimE NotPrim ∶ Arrow BoolT BoolT
+    ⊢! : ∀ {L : Expr} {Γ : TypingContext}
+      → Γ ⊢ L ∶ BoolT
+      → Γ ⊢ Not L ∶ BoolT
 
-    ⊢+ : ∀ {Γ : TypingContext}
-      → Γ ⊢ PrimE PlusPrim ∶ Arrow IntT (Arrow IntT IntT)
+    ⊢+ : ∀ {L M : Expr} {Γ : TypingContext}
+      → Γ ⊢ L ∶ IntT
+      → Γ ⊢ M ∶ IntT
+      → Γ ⊢ Add L M ∶ IntT
 
-    ⊢- : ∀ {Γ : TypingContext}
-      → Γ ⊢ PrimE MinusPrim ∶ Arrow IntT (Arrow IntT IntT)
+    ⊢- : ∀ {L M : Expr} {Γ : TypingContext}
+      → Γ ⊢ L ∶ IntT
+      → Γ ⊢ M ∶ IntT
+      → Γ ⊢ Sub L M ∶ IntT
 
-    ⊢* : ∀ {Γ : TypingContext}
-      → Γ ⊢ PrimE MultPrim ∶ Arrow IntT (Arrow IntT IntT)
+    ⊢* : ∀ {L M : Expr} {Γ : TypingContext}
+      → Γ ⊢ L ∶ IntT
+      → Γ ⊢ M ∶ IntT
+      → Γ ⊢ Mul L M ∶ IntT
+
 
     ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : Type}
       → Γ ⊢ b ∶ BoolT
@@ -72,12 +84,12 @@ module TypeChecker where
   ⊢→tc : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
   ⊢→tc ⊢b  = refl
   ⊢→tc ⊢n  = refl
-  ⊢→tc ⊢&& = refl
-  ⊢→tc ⊢|| = refl
-  ⊢→tc ⊢!  = refl
-  ⊢→tc ⊢+  = refl
-  ⊢→tc ⊢-  = refl
-  ⊢→tc ⊢*  = refl
+  ⊢→tc (⊢&& h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
+  ⊢→tc (⊢|| h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
+  ⊢→tc (⊢!  h)     rewrite ⊢→tc h = refl
+  ⊢→tc (⊢+  h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
+  ⊢→tc (⊢-  h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
+  ⊢→tc (⊢*  h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
   ⊢→tc {Γ} {Ite b t e} {ty} (⊢ite tb tt te)
     rewrite
       ⊢→tc {Γ} {b} {BoolT} tb
@@ -116,12 +128,6 @@ module TypeChecker where
     subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
   tc→⊢ {Γ} {BoolVal b} {t} eq rewrite sym (Just-injective eq) = ⊢b
   tc→⊢ {Γ} {NumVal z} {t} eq rewrite sym (Just-injective eq)  = ⊢n
-  tc→⊢ {Γ} {PrimE PlusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢+
-  tc→⊢ {Γ} {PrimE MinusPrim} {t} eq rewrite sym (Just-injective eq) = ⊢-
-  tc→⊢ {Γ} {PrimE MultPrim} {t} eq rewrite sym (Just-injective eq) = ⊢*
-  tc→⊢ {Γ} {PrimE AndPrim} {t} eq rewrite sym (Just-injective eq) = ⊢&&
-  tc→⊢ {Γ} {PrimE OrPrim} {t} eq rewrite sym (Just-injective eq) = ⊢||
-  tc→⊢ {Γ} {PrimE NotPrim} {t} eq rewrite sym (Just-injective eq) = ⊢!
   -- Weirdly, doing parallel with clauses doesn't work here, we have to nest them
   tc→⊢ {Γ} {Ite b t e} {ty} eq with typeCheck' Γ b in bPf
   ... | Just BoolT with typeCheck' Γ t in tPf
@@ -131,11 +137,28 @@ module TypeChecker where
               rewrite
                 sym (Just-injective justTyEqTt)
               | eqType->≡ {tt} {te} eqTypeTtTe = ⊢ite (tc→⊢ bPf) (tc→⊢ tPf) (tc→⊢ ePf)
+  tc→⊢ {Γ} {Add e1 e2} eq with typeCheck' Γ e1 in eqE1
+  ... | Just IntT with typeCheck' Γ e2 in eqE2
+  ...   | Just IntT rewrite sym (Just-injective eq) = ⊢+ (tc→⊢ eqE1) (tc→⊢ eqE2)
+  tc→⊢ {Γ} {Mul e1 e2} eq with typeCheck' Γ e1 in eqE1
+  ... | Just IntT with typeCheck' Γ e2 in eqE2
+  ...   | Just IntT rewrite sym (Just-injective eq) = ⊢* (tc→⊢ eqE1) (tc→⊢ eqE2)
+  tc→⊢ {Γ} {Sub e1 e2} eq with typeCheck' Γ e1 in eqE1
+  ... | Just IntT with typeCheck' Γ e2 in eqE2
+  ...   | Just IntT rewrite sym (Just-injective eq) = ⊢- (tc→⊢ eqE1) (tc→⊢ eqE2)
+  tc→⊢ {Γ} {And e1 e2} eq with typeCheck' Γ e1 in eqE1
+  ... | Just BoolT with typeCheck' Γ e2 in eqE2
+  ...   | Just BoolT rewrite sym (Just-injective eq) = ⊢&& (tc→⊢ eqE1) (tc→⊢ eqE2)
+  tc→⊢ {Γ} {Or e1 e2}  eq with typeCheck' Γ e1 in eqE1
+  ... | Just BoolT with typeCheck' Γ e2 in eqE2
+  ...   | Just BoolT rewrite sym (Just-injective eq) = ⊢|| (tc→⊢ eqE1) (tc→⊢ eqE2)
+  tc→⊢ {Γ} {Not e} eq with typeCheck' Γ e in eqE
+  ... | Just BoolT rewrite sym (Just-injective eq) = ⊢! (tc→⊢ eqE)
 
   module Examples where
 
-    open import Relation.Nullary using (¬_)
     open import Data.Bool using (true)
+    open import Relation.Nullary using (¬_)
 
     ex1 : [] ⊢ BoolVal true ∶ BoolT
     ex1 = ⊢b
@@ -143,8 +166,8 @@ module TypeChecker where
     ex2 : ¬ ([] ⊢ BoolVal true ∶ IntT)
     ex2 ()
 
-    ex3 : ∀ (t : Type) → ¬ ([] ⊢ App (App (PrimE PlusPrim) (BoolVal true)) (BoolVal true) ∶ t)
-    ex3 t (⊢a (⊢a () _) ⊢b)
+    -- ex3 : ∀ (t : Type) → ¬ ([] ⊢ App (App (PrimE PlusPrim) (BoolVal true)) (BoolVal true) ∶ t)
+    -- ex3 t (⊢a (⊢a () _) ⊢b)
 
     ex4 : ∀ (t : Type) → ¬ ([ IntT ] ⊢ Ite (Var Z) (BoolVal true) (BoolVal true) ∶ t)
     ex4 t (⊢ite () _ _)
@@ -158,6 +181,7 @@ module Evaluator where
 
   open import Data.Bool using (true; false)
   open import Data.Empty                            using (⊥-elim)
+  open import Data.Sum                              using (_⊎_; inj₁; inj₂)
   open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
   open import Relation.Nullary                      using (¬_)
 
@@ -203,6 +227,53 @@ module Evaluator where
     noe-bool : ∀ {b : Bool}
       → NormalExt (BoolVal b)
 
+    noe-ite : ∀ {L M N : Expr}
+      → NormalExt L
+      → (∀ {b : Bool} → ¬ (L ≡ BoolVal b))
+      -----------------------
+      → NormalExt (Ite L M N)
+
+    noe-add : ∀ {L M : Expr}
+      → NormalExt L
+      → NormalExt M
+      → ((∀ {i : Int} → ¬ (L ≡ NumVal i)) ⊎ (∀ {j : Int} → ¬ (M ≡ NumVal j)))
+      ---------------------
+      → NormalExt (Add L M)
+
+    noe-sub : ∀ {L M : Expr}
+      → NormalExt L
+      → NormalExt M
+      → ((∀ {i : Int} → ¬ (L ≡ NumVal i)) ⊎ (∀ {j : Int} → ¬ (M ≡ NumVal j)))
+      ---------------------
+      → NormalExt (Sub L M)
+
+    noe-mul : ∀ {L M : Expr}
+      → NormalExt L
+      → NormalExt M
+      → ((∀ {i : Int} → ¬ (L ≡ NumVal i)) ⊎ (∀ {j : Int} → ¬ (M ≡ NumVal j)))
+      ---------------------
+      → NormalExt (Mul L M)
+
+    noe-and : ∀ {L M : Expr}
+      → NormalExt L
+      → NormalExt M
+      → ((∀ {i : Bool} → ¬ (L ≡ BoolVal i)) ⊎ (∀ {j : Bool} → ¬ (M ≡ BoolVal j)))
+      ---------------------
+      → NormalExt (And L M)
+
+    noe-or : ∀ {L M : Expr}
+      → NormalExt L
+      → NormalExt M
+      → ((∀ {i : Bool} → ¬ (L ≡ BoolVal i)) ⊎ (∀ {j : Bool} → ¬ (M ≡ BoolVal j)))
+      ---------------------
+      → NormalExt (Or L M)
+
+    noe-not : ∀ {L : Expr}
+      → NormalExt L
+      → (∀ {i : Bool} → ¬ (L ≡ BoolVal i))
+      -------------------
+      → NormalExt (Not L)
+
   data ReducesTo : Expr → Expr → Set where
     r-a : ∀ {L L' M : Expr}
       → ReducesTo L L'
@@ -227,29 +298,84 @@ module Evaluator where
       ---------------------------
       → ReducesTo (Lam s ty L) (Lam s ty L')
 
-    r-plus : ∀ {i1 i2 : Int}
-      ------------------------------------------------------------------------------------
-      → ReducesTo (App (App (PrimE PlusPrim) (NumVal i1)) (NumVal i2)) (NumVal (i1 + i2))
+    r-plus1 : ∀ {L L' M : Expr}
+      → ReducesTo L L'
+      --------------------------------
+      → ReducesTo (Add L M) (Add L' M)
 
-    r-minus : ∀ {i1 i2 : Int}
-      ------------------------------------------------------------------------------------
-      → ReducesTo (App (App (PrimE MinusPrim) (NumVal i1)) (NumVal i2)) (NumVal (i1 - i2))
+    r-plus2 : ∀ {L M M' : Expr}
+      → NormalExt L
+      → ReducesTo M M'
+      --------------------------------
+      → ReducesTo (Add L M) (Add L M')
 
-    r-mult : ∀ {i1 i2 : Int}
-      -----------------------------------------------------------------------------------
-      → ReducesTo (App (App (PrimE MultPrim) (NumVal i1)) (NumVal i2)) (NumVal (i1 * i2))
+    r-plus3 : ∀ {i1 i2 : Int}
+      → ReducesTo (Add (NumVal i1) (NumVal i2)) (NumVal (i1 + i2))
 
-    r-and : ∀ {b1 b2 : Bool}
-      -------------------------------------------------------------------------------------
-      → ReducesTo (App (App (PrimE AndPrim) (BoolVal b1)) (BoolVal b2)) (BoolVal (b1 && b2))
+    r-sub1 : ∀ {L L' M : Expr}
+      → ReducesTo L L'
+      --------------------------------
+      → ReducesTo (Sub L M) (Sub L' M)
 
-    r-or : ∀ {b1 b2 : Bool}
-      -------------------------------------------------------------------------------------
-      → ReducesTo (App (App (PrimE OrPrim) (BoolVal b1)) (BoolVal b2)) (BoolVal (b1 || b2))
+    r-sub2 : ∀ {L M M' : Expr}
+      → NormalExt L
+      → ReducesTo M M'
+      --------------------------------
+      → ReducesTo (Sub L M) (Sub L M')
 
-    r-not : ∀ {b : Bool}
-      ---------------------------------------------------------------
-      → ReducesTo (App (PrimE NotPrim) (BoolVal b)) (BoolVal (not b))
+    r-sub3 : ∀ {i1 i2 : Int}
+      → ReducesTo (Sub (NumVal i1) (NumVal i2)) (NumVal (i1 - i2))
+
+    r-mul1 : ∀ {L L' M : Expr}
+      → ReducesTo L L'
+      --------------------------------
+      → ReducesTo (Mul L M) (Mul L' M)
+
+    r-mul2 : ∀ {L M M' : Expr}
+      → NormalExt L
+      → ReducesTo M M'
+      --------------------------------
+      → ReducesTo (Mul L M) (Mul L M')
+
+    r-mul3 : ∀ {i1 i2 : Int}
+      → ReducesTo (Mul (NumVal i1) (NumVal i2)) (NumVal (i1 * i2))
+
+    r-and1 : ∀ {L L' M : Expr}
+      → ReducesTo L L'
+      --------------------------------
+      → ReducesTo (And L M) (And L' M)
+
+    r-and2 : ∀ {L M M' : Expr}
+      → NormalExt L
+      → ReducesTo M M'
+      --------------------------------
+      → ReducesTo (And L M) (And L M')
+
+    r-and3 : ∀ {i1 i2 : Bool}
+      → ReducesTo (And (BoolVal i1) (BoolVal i2)) (BoolVal (i1 && i2))
+
+    r-or1 : ∀ {L L' M : Expr}
+      → ReducesTo L L'
+      --------------------------------
+      → ReducesTo (Or L M) (Or L' M)
+
+    r-or2 : ∀ {L M M' : Expr}
+      → NormalExt L
+      → ReducesTo M M'
+      --------------------------------
+      → ReducesTo (Or L M) (Or L M')
+
+    r-or3 : ∀ {i1 i2 : Bool}
+      → ReducesTo (Or (BoolVal i1) (BoolVal i2)) (BoolVal (i1 || i2))
+
+    r-not1 : ∀ {L L' : Expr}
+      → ReducesTo L L'
+      ----------------------------
+      → ReducesTo (Not L) (Not L')
+
+    r-not2 : ∀ {b : Bool}
+      ----------------------------------------------
+      → ReducesTo (Not (BoolVal b)) (BoolVal (not b))
 
     r-ite-true : ∀ {L M : Expr}
       --------------------------------------
@@ -272,33 +398,42 @@ module Evaluator where
       → Irreducible M
 
   normalNeverReduces : ∀ {M : Expr} → Normal M → (∀ {N : Expr} → ¬ (ReducesTo M N))
-  normalNeverReduces {Lam x x₁ M} (no-a normalM) (r-l' red) = normalNeverReduces normalM red
-  normalNeverReduces {App M M₁} (no-ne (ne-a neutralM x₁)) (r-a red) = normalNeverReduces (no-ne neutralM) red
-  normalNeverReduces {App M M₁} (no-ne (ne-a x x₁)) (r-a' x₂ red) = normalNeverReduces x₁ red
-  normalNeverReduces {App .(App (PrimE PlusPrim) (NumVal _)) .(NumVal _)} (no-ne (ne-a (ne-a () x₂) x₁)) r-plus
-  normalNeverReduces {App .(App (PrimE MinusPrim) (NumVal _)) .(NumVal _)} (no-ne (ne-a (ne-a () x₂) x₁)) r-minus
-  normalNeverReduces {App .(App (PrimE MultPrim) (NumVal _)) .(NumVal _)} (no-ne (ne-a (ne-a () x₂) x₁)) r-mult
-  normalNeverReduces {App .(App (PrimE AndPrim) (BoolVal _)) .(BoolVal _)} (no-ne (ne-a (ne-a () x₂) x₁)) r-and
-  normalNeverReduces {App .(App (PrimE OrPrim) (BoolVal _)) .(BoolVal _)} (no-ne (ne-a (ne-a () x₂) x₁)) r-or
-  normalNeverReduces {Ite M M₁ M₂} (no-ne ()) red
+  normalNeverReduces (no-ne (ne-a neutralM x₁)) (r-a red) = normalNeverReduces (no-ne neutralM) red
+  normalNeverReduces (no-ne (ne-a neutralM x₁)) (r-a' x red) = normalNeverReduces x₁ red
+  normalNeverReduces (no-a normalM) (r-l' red) = normalNeverReduces normalM red
 
   normalExtNeverReduces : ∀ {M : Expr} → NormalExt M → (∀ {N : Expr} → ¬ (ReducesTo M N))
-  normalExtNeverReduces (noe-no normalM) = normalNeverReduces normalM
+  normalExtNeverReduces (noe-no x) red = normalNeverReduces x red
+  normalExtNeverReduces (noe-ite _ x) r-ite-true = x {true} refl
+  normalExtNeverReduces (noe-ite _ x) r-ite-false = x {false} refl
+  normalExtNeverReduces (noe-ite n x) (r-ite red) = normalExtNeverReduces n red
+  normalExtNeverReduces (noe-add n1 n2 x) (r-plus1 red) = normalExtNeverReduces n1 red
+  normalExtNeverReduces (noe-add n1 n2 x) (r-plus2 _ red) = normalExtNeverReduces n2 red
+  normalExtNeverReduces {Add (NumVal i1) _} (noe-add n1 n2 (inj₁ x)) r-plus3 = x {i1} refl
+  normalExtNeverReduces {Add _ (NumVal i2)} (noe-add n1 n2 (inj₂ y)) r-plus3 = y {i2} refl
+  normalExtNeverReduces (noe-sub n1 n2 x) (r-sub1 red) = normalExtNeverReduces n1 red
+  normalExtNeverReduces (noe-sub n1 n2 x) (r-sub2 _ red) = normalExtNeverReduces n2 red
+  normalExtNeverReduces {Sub (NumVal i1) _} (noe-sub n1 n2 (inj₁ x)) r-sub3 = x {i1} refl
+  normalExtNeverReduces {Sub _ (NumVal i2)} (noe-sub n1 n2 (inj₂ y)) r-sub3 = y {i2} refl
+  normalExtNeverReduces (noe-mul n1 n2 x) (r-mul1 red) = normalExtNeverReduces n1 red
+  normalExtNeverReduces (noe-mul n1 n2 x) (r-mul2 _ red) = normalExtNeverReduces n2 red
+  normalExtNeverReduces {Mul (NumVal i1) _} (noe-mul n1 n2 (inj₁ x)) r-mul3 = x {i1} refl
+  normalExtNeverReduces {Mul _ (NumVal i2)} (noe-mul n1 n2 (inj₂ y)) r-mul3 = y {i2} refl
+  normalExtNeverReduces (noe-and n1 n2 x) (r-and1 red) = normalExtNeverReduces n1 red
+  normalExtNeverReduces (noe-and n1 n2 x) (r-and2 _ red) = normalExtNeverReduces n2 red
+  normalExtNeverReduces {And (BoolVal i1) _} (noe-and n1 n2 (inj₁ x)) r-and3 = x {i1} refl
+  normalExtNeverReduces {And _ (BoolVal i2)} (noe-and n1 n2 (inj₂ y)) r-and3 = y {i2} refl
+  normalExtNeverReduces (noe-or n1 n2 x) (r-or1 red) = normalExtNeverReduces n1 red
+  normalExtNeverReduces (noe-or n1 n2 x) (r-or2 _ red) = normalExtNeverReduces n2 red
+  normalExtNeverReduces {Or (BoolVal i1) _} (noe-or n1 n2₁ (inj₁ x)) r-or3 = x {i1} refl
+  normalExtNeverReduces {Or _ (BoolVal i2)} (noe-or n1 n2 (inj₂ y)) r-or3 = y {i2} refl
+  normalExtNeverReduces (noe-not n x) (r-not1 red) = normalExtNeverReduces n red
+  normalExtNeverReduces {Not (BoolVal b)} (noe-not normalExtBi x) r-not2 = x {b} refl
 
   redIsDeterministic : ∀ {M N1 N2 : Expr} → ReducesTo M N1 → ReducesTo M N2 → N1 ≡ N2
   redIsDeterministic (r-a red1) (r-a red2) rewrite redIsDeterministic red1 red2 = refl
-  redIsDeterministic (r-a red1) (r-a' normalExtM red2) = ⊥-elim (normalExtNeverReduces normalExtM red1)
+  redIsDeterministic (r-a red1) (r-a' x red2) = ⊥-elim (normalExtNeverReduces x red1)
   redIsDeterministic (r-a (r-l' red1)) (r-l x x₁) = ⊥-elim (normalExtNeverReduces x₁ red1)
-  redIsDeterministic (r-a (r-a ())) r-plus
-  redIsDeterministic (r-a (r-a' x ())) r-plus
-  redIsDeterministic (r-a (r-a ())) r-minus
-  redIsDeterministic (r-a (r-a' x ())) r-minus
-  redIsDeterministic (r-a (r-a ())) r-mult
-  redIsDeterministic (r-a (r-a' x ())) r-mult
-  redIsDeterministic (r-a (r-a ())) r-and
-  redIsDeterministic (r-a (r-a' x ())) r-and
-  redIsDeterministic (r-a (r-a ())) r-or
-  redIsDeterministic (r-a (r-a' x ())) r-or
   redIsDeterministic (r-a' x red1) (r-a red2) = ⊥-elim (normalExtNeverReduces x red2)
   redIsDeterministic (r-a' x red1) (r-a' x₁ red2) rewrite redIsDeterministic red1 red2 = refl
   redIsDeterministic (r-a' x red1) (r-l x₁ x₂) = ⊥-elim (normalExtNeverReduces x₁ red1)
@@ -306,22 +441,33 @@ module Evaluator where
   redIsDeterministic (r-l x x₁) (r-a' x₂ red2) = ⊥-elim (normalExtNeverReduces x red2)
   redIsDeterministic (r-l x x₁) (r-l x₂ x₃) = refl
   redIsDeterministic (r-l' red1) (r-l' red2) rewrite redIsDeterministic red1 red2 = refl
-  redIsDeterministic r-plus (r-a (r-a ()))
-  redIsDeterministic r-plus (r-a (r-a' x ()))
-  redIsDeterministic r-plus r-plus = refl
-  redIsDeterministic r-minus (r-a (r-a ()))
-  redIsDeterministic r-minus (r-a (r-a' x ()))
-  redIsDeterministic r-minus r-minus = refl
-  redIsDeterministic r-mult (r-a (r-a ()))
-  redIsDeterministic r-mult (r-a (r-a' x ()))
-  redIsDeterministic r-mult r-mult = refl
-  redIsDeterministic r-and (r-a (r-a ()))
-  redIsDeterministic r-and (r-a (r-a' x ()))
-  redIsDeterministic r-and r-and = refl
-  redIsDeterministic r-or (r-a (r-a ()))
-  redIsDeterministic r-or (r-a (r-a' x ()))
-  redIsDeterministic r-or r-or = refl
-  redIsDeterministic r-not r-not = refl
+  redIsDeterministic (r-plus1 red1) (r-plus1 red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic (r-plus1 red1) (r-plus2 n red2) = ⊥-elim (normalExtNeverReduces n red1)
+  redIsDeterministic (r-plus2 n red1) (r-plus1 red2) = ⊥-elim (normalExtNeverReduces n red2)
+  redIsDeterministic (r-plus2 _ red1) (r-plus2 x red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic r-plus3 r-plus3 = refl
+  redIsDeterministic (r-sub1 red1) (r-sub1 red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic (r-sub1 red1) (r-sub2 n red2) = ⊥-elim (normalExtNeverReduces n red1)
+  redIsDeterministic (r-sub2 n red1) (r-sub1 red2) = ⊥-elim (normalExtNeverReduces n red2)
+  redIsDeterministic (r-sub2 _ red1) (r-sub2 x red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic r-sub3 r-sub3 = refl
+  redIsDeterministic (r-mul1 red1) (r-mul1 red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic (r-mul1 red1) (r-mul2 n red2) = ⊥-elim (normalExtNeverReduces n red1)
+  redIsDeterministic (r-mul2 n red1) (r-mul1 red2) = ⊥-elim (normalExtNeverReduces n red2)
+  redIsDeterministic (r-mul2 _ red1) (r-mul2 x red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic r-mul3 r-mul3 = refl
+  redIsDeterministic (r-and1 red1) (r-and1 red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic (r-and1 red1) (r-and2 n red2) = ⊥-elim (normalExtNeverReduces n red1)
+  redIsDeterministic (r-and2 n red1) (r-and1 red2) = ⊥-elim (normalExtNeverReduces n red2)
+  redIsDeterministic (r-and2 _ red1) (r-and2 x red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic r-and3 r-and3 = refl
+  redIsDeterministic (r-or1 red1) (r-or1 red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic (r-or1 red1) (r-or2 n red2) = ⊥-elim (normalExtNeverReduces n red1)
+  redIsDeterministic (r-or2 n red1) (r-or1 red2) = ⊥-elim (normalExtNeverReduces n red2)
+  redIsDeterministic (r-or2 _ red1) (r-or2 x red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic r-or3 r-or3 = refl
+  redIsDeterministic (r-not1 red1) (r-not1 red2) rewrite redIsDeterministic red1 red2 = refl
+  redIsDeterministic r-not2 r-not2 = refl
   redIsDeterministic r-ite-true r-ite-true = refl
   redIsDeterministic r-ite-false r-ite-false = refl
   redIsDeterministic (r-ite red1) (r-ite red2) rewrite redIsDeterministic red1 red2 = refl
@@ -329,53 +475,68 @@ module Evaluator where
   normalImpliesNeutral : ∀ {L M : Expr} → Normal (App L M) → Neutral (App L M)
   normalImpliesNeutral (no-ne h) = h
 
-  -- -- no longer holds
-  -- -- stepNothingNormal : ∀ {V : Expr} → smallStep V ≡ Nothing → NormalExt V
-  -- -- stepNothingNormal {Var _} h = noe-no (no-ne ne-v)
-  -- -- stepNothingNormal {Lam x x₁ V} h = {!!}
-  -- -- stepNothingNormal {App V V₁} h = {!!}
-  -- -- stepNothingNormal {Ite V V₁ V₂} h = {!!}
-  -- -- stepNothingNormal {NumVal x} h = noe-num
-  -- -- stepNothingNormal {BoolVal x} h = noe-bool
-  -- -- stepNothingNormal {PrimE x} h = {!!}
+  stepNothingNormal : ∀ {V : Expr} → smallStep V ≡ Nothing → NormalExt V
+  stepNothingNormal {Var x} eq = noe-no (no-ne ne-v)
+  stepNothingNormal {Lam x x₁ (Var x₂)} eq = noe-no (no-a (no-ne ne-v))
+  stepNothingNormal {Lam x x₁ (Lam x₂ x₃ V)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (App V V₁)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (Ite V V₁ V₂)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (NumVal x₂)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (BoolVal x₂)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (Add V V₁)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (Sub V V₁)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (Mul V V₁)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (Not V)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (And V V₁)} eq = {!!}
+  stepNothingNormal {Lam x x₁ (Or V V₁)} eq = {!!}
+  stepNothingNormal {App V V₁} eq = {!!}
+  stepNothingNormal {Ite V V₁ V₂} eq = {!!}
+  stepNothingNormal {NumVal x} eq = noe-num
+  stepNothingNormal {BoolVal x} eq = noe-bool
+  stepNothingNormal {Add V1 V2} eq = {!!}
+  stepNothingNormal {Sub V V₁} eq = {!!}
+  stepNothingNormal {Mul V V₁} eq = {!!}
+  stepNothingNormal {Not V} eq = {!!}
+  stepNothingNormal {And V V₁} eq = {!!}
+  stepNothingNormal {Or V V₁} eq = {!!}
 
-  -- normalStepNothing : ∀ {V : Expr} → Normal V → smallStep V ≡ Nothing
-  -- neutralStepNothing : ∀ {V : Expr} → Neutral V → smallStep V ≡ Nothing
+--   -- normalStepNothing : ∀ {V : Expr} → Normal V → smallStep V ≡ Nothing
+--   -- neutralStepNothing : ∀ {V : Expr} → Neutral V → smallStep V ≡ Nothing
 
-  -- normalStepNothing (no-ne neutralV) = neutralStepNothing neutralV
-  -- normalStepNothing (no-a nv) rewrite normalStepNothing nv = refl
+--   -- normalStepNothing (no-ne neutralV) = neutralStepNothing neutralV
+--   -- normalStepNothing (no-a nv) rewrite normalStepNothing nv = refl
 
-  -- neutralStepNothing ne-v = refl
-  -- neutralStepNothing {App (Var _) M} (ne-a neutralL normalM) rewrite neutralStepNothing neutralL | normalStepNothing normalM = refl
-  -- neutralStepNothing {App (App (Var x) L2) M} (ne-a neutralL normalM) rewrite neutralStepNothing neutralL | normalStepNothing normalM = refl
-  -- neutralStepNothing {App (App (Lam x x₁ L1) L2) M} (ne-a (ne-a () x₂) normalM)
-  -- neutralStepNothing {App (App (App L1 L3) L2) M} (ne-a neutralL normalM) rewrite neutralStepNothing neutralL | normalStepNothing normalM = refl
-  -- neutralStepNothing {App (App (Ite L1 L3 L4) L2) M} (ne-a (ne-a () x) normalM)
-  -- neutralStepNothing {App (App (NumVal x) L2) M} (ne-a (ne-a () x₁) normalM)
-  -- neutralStepNothing {App (App (BoolVal x) L2) M} (ne-a (ne-a () x₁) normalM)
-  -- neutralStepNothing {App (App (PrimE x) L2) M} (ne-a (ne-a () x₁) normalM)
+--   -- neutralStepNothing ne-v = refl
+--   -- neutralStepNothing {App (Var _) M} (ne-a neutralL normalM) rewrite neutralStepNothing neutralL | normalStepNothing normalM = refl
+--   -- neutralStepNothing {App (App (Var x) L2) M} (ne-a neutralL normalM) rewrite neutralStepNothing neutralL | normalStepNothing normalM = refl
+--   -- neutralStepNothing {App (App (Lam x x₁ L1) L2) M} (ne-a (ne-a () x₂) normalM)
+--   -- neutralStepNothing {App (App (App L1 L3) L2) M} (ne-a neutralL normalM) rewrite neutralStepNothing neutralL | normalStepNothing normalM = refl
+--   -- neutralStepNothing {App (App (Ite L1 L3 L4) L2) M} (ne-a (ne-a () x) normalM)
+--   -- neutralStepNothing {App (App (NumVal x) L2) M} (ne-a (ne-a () x₁) normalM)
+--   -- neutralStepNothing {App (App (BoolVal x) L2) M} (ne-a (ne-a () x₁) normalM)
+--   -- neutralStepNothing {App (App (PrimE x) L2) M} (ne-a (ne-a () x₁) normalM)
 
-  -- normalExtStepNothing : ∀ {V : Expr} → NormalExt V → smallStep V ≡ Nothing
-  -- normalExtStepNothing (noe-no h) = normalStepNothing h
-  -- normalExtStepNothing noe-num = refl
-  -- normalExtStepNothing noe-bool = refl
+--   -- normalExtStepNothing : ∀ {V : Expr} → NormalExt V → smallStep V ≡ Nothing
+--   -- normalExtStepNothing (noe-no h) = normalStepNothing h
+--   -- normalExtStepNothing noe-num = refl
+--   -- normalExtStepNothing noe-bool = refl
 
-  -- step→red : ∀ {M N : Expr} → smallStep M ≡ Just N → ReducesTo M N
-  -- step→red h = {!!}
-  -- -- step→red {Lam s ty M} {N} eq with smallStep M in eqM
-  -- -- ... | Just _ rewrite sym (Just-injective eq) = r-l (step→red eqM)
-  -- -- step→red {App L M} {N} eq with smallStep L in eqL
-  -- -- ... | Just L' rewrite sym (Just-injective eq) = r-a (step→red eqL)
-  -- -- ... | Nothing with smallStep M in eqM
-  -- -- ...   | Just M' rewrite sym (Just-injective eq) = r-a' (stepNothingNormal eqL) (step→red eqM)
-  -- -- ...   | Nothing with L
-  -- -- ...     | Lam _ _ L' with smallStep L' in eqL'
-  -- -- ...       | Nothing rewrite sym (Just-injective eq) = r-l' (stepNothingNormal eqM) (stepNothingNormal eqL')
+--   -- step→red : ∀ {M N : Expr} → smallStep M ≡ Just N → ReducesTo M N
+--   -- step→red h = {!!}
+--   -- -- step→red {Lam s ty M} {N} eq with smallStep M in eqM
+--   -- -- ... | Just _ rewrite sym (Just-injective eq) = r-l (step→red eqM)
+--   -- -- step→red {App L M} {N} eq with smallStep L in eqL
+--   -- -- ... | Just L' rewrite sym (Just-injective eq) = r-a (step→red eqL)
+--   -- -- ... | Nothing with smallStep M in eqM
+--   -- -- ...   | Just M' rewrite sym (Just-injective eq) = r-a' (stepNothingNormal eqL) (step→red eqM)
+--   -- -- ...   | Nothing with L
+--   -- -- ...     | Lam _ _ L' with smallStep L' in eqL'
+--   -- -- ...       | Nothing rewrite sym (Just-injective eq) = r-l' (stepNothingNormal eqM) (stepNothingNormal eqL')
 
-  -- red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
-  -- red→step {Lam x x₁ M} {N} h = {!!}
-  -- red→step {App M M₁} {N} h = {!!}
-  -- -- red→step (r-a red) rewrite red→step red = refl
-  -- -- red→step (r-l red) rewrite red→step red = refl
-  -- -- red→step (r-a' normalV red) rewrite normalStepNothing normalV | red→step red = refl
-  -- -- red→step (r-l' normalL normalV) rewrite normalStepNothing normalV | normalStepNothing normalL = refl
+--   -- red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
+--   -- red→step {Lam x x₁ M} {N} h = {!!}
+--   -- red→step {App M M₁} {N} h = {!!}
+--   -- -- red→step (r-a red) rewrite red→step red = refl
+--   -- -- red→step (r-l red) rewrite red→step red = refl
+--   -- -- red→step (r-a' normalV red) rewrite normalStepNothing normalV | red→step red = refl
+--   -- -- red→step (r-l' normalL normalV) rewrite normalStepNothing normalV | normalStepNothing normalL = refl
