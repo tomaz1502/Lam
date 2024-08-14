@@ -13,3 +13,5 @@
   - Therefore, a lambda is only a value if it's body is also a value
   - This makes substitution a bit harder. I thought it was only harder if we had named variables, but it is also harder using DeBruijn indices (not much harder thought, but the definition of substitution treating lambdas as values is ridiculously simple, and is nicer to formalize that way).
   - To substitute Z by N at M, we have to also increase the numbers of the free variables in N
+
+# Can we implement traverse for Expr to get a nicer implementation?
