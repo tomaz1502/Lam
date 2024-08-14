@@ -77,8 +77,8 @@ substitute _ _ e = e
 -- Lambda Lifting so the proofs work
 
 smallStepIte : Expr → Expr → Expr → Maybe Expr → Maybe Expr
-smallStepIte b t e (Just b') = Just (Ite b' t e)
-smallStepIte (BoolVal b) t e _ = Just (if b then t else e)
+smallStepIte _ t e (Just b') = Just (Ite b' t e)
+smallStepIte (BoolVal b) t e Nothing = Just (if b then t else e)
 smallStepIte _ _ _ _ = Nothing
 
 smallStepNot : Expr → Maybe Expr → Maybe Expr

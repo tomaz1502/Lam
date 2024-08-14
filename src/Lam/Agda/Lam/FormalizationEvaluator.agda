@@ -110,7 +110,6 @@ data ReducesTo : Expr → Expr → Set where
         → Normal L
         ---------------------------
         → ReducesTo (App (Lam s ty L) V) (shiftDown (substitute Z (shiftUp V) L))
-        -- using a predicate to specify substitution here gets pretty ugly
 
     r-l' : ∀ {s : Id} {ty : Type} {L L' : Expr}
         → ReducesTo L L'
@@ -311,28 +310,6 @@ normalImpliesNeutralIte (no-ne h) = h
 normalImpliesNeutralNot : ∀ {L : Expr} → Normal (Not L) → Neutral (Not L)
 normalImpliesNeutralNot (no-ne h) = h
 
-
-notStepNothing : ∀ {V : Expr} {i : Bool} → smallStepNot V Nothing ≡ Nothing → ¬ (V ≡ BoolVal i)
-notStepNothing () refl
-
-orStepNothing : ∀ {i j : Bool} {V1 V2 : Expr} → smallStepOr V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ BoolVal i) × (V2 ≡ BoolVal j))
-orStepNothing () ⟨ refl , refl ⟩
-
-andStepNothing : ∀ {i j : Bool} {V1 V2 : Expr} → smallStepAnd V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ BoolVal i) × (V2 ≡ BoolVal j))
-andStepNothing () ⟨ refl , refl ⟩
-
-addStepNothing : ∀ {i j : Int} {V1 V2 : Expr} → smallStepAdd V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
-addStepNothing () ⟨ refl , refl ⟩
-
-subStepNothing : ∀ {i j : Int} {V1 V2 : Expr} → smallStepSub V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
-subStepNothing () ⟨ refl , refl ⟩
-
-mulStepNothing : ∀ {i j : Int} {V1 V2 : Expr} → smallStepMul V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
-mulStepNothing () ⟨ refl , refl ⟩
-
-iteStepNothing : ∀ {b : Bool} {L M N : Expr} → smallStepIte L M N Nothing ≡ Nothing → ¬ (L ≡ BoolVal b)
-iteStepNothing () refl
-
 stepNothingNormal : ∀ {V : Expr} → smallStep V ≡ Nothing → Normal V
 stepNothingNormal {Var x} eq = no-ne ne-v
 stepNothingNormal {Lam x x₁ V} eq with smallStep V in eqV
@@ -353,39 +330,46 @@ stepNothingNormal {App V1 V2} eq with smallStep V1 in eqV1
 ...     | Or a a₁ = no-ne (ne-a (normalImpliesNeutralOr (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
 stepNothingNormal {Ite L M N} eq with smallStep L in eqL
 ... | Nothing = no-ne (noe-ite (stepNothingNormal eqL) (iteStepNothing eq))
+  where
+    iteStepNothing : ∀ {i} → smallStepIte L M N Nothing ≡ Nothing → ¬ (L ≡ BoolVal i)
+    iteStepNothing () refl
 stepNothingNormal {NumVal x} eq = no-ne noe-num
 stepNothingNormal {BoolVal x} eq = no-ne noe-bool
 stepNothingNormal {Add V1 V2} eq with smallStep V1 in eqV1
 ... | Nothing with smallStep V2 in eqV2
 ...   | Nothing = no-ne (noe-add (stepNothingNormal eqV1) (stepNothingNormal eqV2) (addStepNothing eq))
+  where
+    addStepNothing : ∀ {i j} → smallStepAdd V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
+    addStepNothing () ⟨ refl , refl ⟩
 stepNothingNormal {Sub V1 V2} eq with smallStep V1 in eqV1
 ... | Nothing with smallStep V2 in eqV2
 ...   | Nothing = no-ne (noe-sub (stepNothingNormal eqV1) (stepNothingNormal eqV2) (subStepNothing eq))
+  where
+    subStepNothing : ∀ {i j} → smallStepSub V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
+    subStepNothing () ⟨ refl , refl ⟩
 stepNothingNormal {Mul V1 V2} eq with smallStep V1 in eqV1
 ... | Nothing with smallStep V2 in eqV2
 ...   | Nothing = no-ne (noe-mul (stepNothingNormal eqV1) (stepNothingNormal eqV2) (mulStepNothing eq))
+  where
+    mulStepNothing : ∀ {i j} → smallStepMul V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
+    mulStepNothing () ⟨ refl , refl ⟩
 stepNothingNormal {Not V} eq with smallStep V in eqV
 ... | Nothing = no-ne (noe-not (stepNothingNormal eqV) (notStepNothing eq))
+  where
+    notStepNothing : ∀ {i} → smallStepNot V Nothing ≡ Nothing → ¬ (V ≡ BoolVal i)
+    notStepNothing () refl
 stepNothingNormal {And V1 V2} eq with smallStep V1 in eqV1
 ... | Nothing with smallStep V2 in eqV2
 ...   | Nothing = no-ne (noe-and (stepNothingNormal eqV1) (stepNothingNormal eqV2) (andStepNothing eq))
+  where
+    andStepNothing : ∀ {i j} → smallStepAnd V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ BoolVal i) × (V2 ≡ BoolVal j))
+    andStepNothing () ⟨ refl , refl ⟩
 stepNothingNormal {Or V1 V2} eq with smallStep V1 in eqV1
 ... | Nothing with smallStep V2 in eqV2
 ...   | Nothing = no-ne (noe-or (stepNothingNormal eqV1) (stepNothingNormal eqV2) (orStepNothing eq))
-
-stepNothingNot2 : ∀ {b V : Expr} → (smallStepNot b Nothing ≡ Just V) → ( ∃[ x ]  ( _≡_ b (BoolVal x)) )
-stepNothingNot2 {BoolVal x} {V} h = ⟨ x , refl ⟩
-
-stepNothingNot : ∀ {V V2 : Expr} → (∀ {i : Bool} → ¬ (V ≡ BoolVal i)) → ¬ (smallStepNot V Nothing ≡ (Just V2))
-stepNothingNot {BoolVal x} h = ⊥-elim (h {x} refl)
-stepNothingNot {V'} h h2 with stepNothingNot2 h2
-... | ⟨ a , b ⟩ = h {a} b
-
-stepNothingNot' : ∀ {V : Expr} → (∀ {i : Bool} → ¬ (V ≡ BoolVal i)) → smallStepNot V Nothing ≡ Nothing
-stepNothingNot' {V} h with smallStepNot V Nothing in eq
-... | Nothing = refl
-... | Just V' = ⊥-elim (stepNothingNot h eq)
-
+  where
+    orStepNothing : ∀ {i j} → smallStepOr V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ BoolVal i) × (V2 ≡ BoolVal j))
+    orStepNothing () ⟨ refl , refl ⟩
 
 normalStepNothing : ∀ {V : Expr} → Normal V → smallStep V ≡ Nothing
 neutralStepNothing : ∀ {V : Expr} → Neutral V → smallStep V ≡ Nothing
@@ -393,16 +377,50 @@ neutralStepNothing : ∀ {V : Expr} → Neutral V → smallStep V ≡ Nothing
 normalStepNothing {V} (no-ne h) = neutralStepNothing h
 normalStepNothing {(Lam _ _ L)} (no-a h) rewrite normalStepNothing h = refl
 neutralStepNothing ne-v = refl
-neutralStepNothing (ne-a h x) = {!!}
+neutralStepNothing {App (Var _) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (App L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Ite L L₁ L₂) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (NumVal x₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (BoolVal x₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Add L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Sub L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Mul L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Not L) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (And L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Or L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
 neutralStepNothing noe-num = refl
 neutralStepNothing noe-bool = refl
-neutralStepNothing (noe-ite x x₁) = {!!}
-neutralStepNothing (noe-add x x₁ x₂) = {!!}
-neutralStepNothing (noe-sub x x₁ x₂) = {!!}
-neutralStepNothing (noe-mul x x₁ x₂) = {!!}
-neutralStepNothing (noe-and x x₁ x₂) = {!!}
-neutralStepNothing (noe-or x x₁ x₂) = {!!}
-neutralStepNothing {Not L} (noe-not x h) rewrite normalStepNothing x = stepNothingNot' h
+neutralStepNothing {Ite L M N} (noe-ite h1 h2) rewrite normalStepNothing h1 with smallStepIte L M N Nothing in eq
+... | Nothing = refl
+neutralStepNothing {Ite (BoolVal L') M N} (noe-ite h1 h2) | Just _ = ⊥-elim (h2 {L'} refl)
+neutralStepNothing {Add L M} (noe-add h1 h2 h3)
+  rewrite normalStepNothing h1
+       |  normalStepNothing h2 with smallStepAdd L M Nothing Nothing in eq
+neutralStepNothing {Add L M} (noe-add h1 h2 h3) | Nothing = refl
+neutralStepNothing {Add (NumVal L') (NumVal M')} (noe-add h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {Sub L M} (noe-sub h1 h2 h3)
+  rewrite normalStepNothing h1
+       |  normalStepNothing h2 with smallStepSub L M Nothing Nothing in eq
+neutralStepNothing {Sub L M} (noe-sub h1 h2 h3) | Nothing = refl
+neutralStepNothing {Sub (NumVal L') (NumVal M')} (noe-sub h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {Mul L M} (noe-mul h1 h2 h3)
+  rewrite normalStepNothing h1
+       |  normalStepNothing h2 with smallStepMul L M Nothing Nothing in eq
+neutralStepNothing {Mul L M} (noe-mul h1 h2 h3) | Nothing = refl
+neutralStepNothing {Mul (NumVal L') (NumVal M')} (noe-mul h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {And L M} (noe-and h1 h2 h3)
+  rewrite normalStepNothing h1
+       |  normalStepNothing h2 with smallStepAnd L M Nothing Nothing in eq
+neutralStepNothing {And L M} (noe-and h1 h2 h3) | Nothing = refl
+neutralStepNothing {And (BoolVal L') (BoolVal M')} (noe-and h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {Or L M} (noe-or h1 h2 h3)
+  rewrite normalStepNothing h1
+       |  normalStepNothing h2 with smallStepOr L M Nothing Nothing in eq
+neutralStepNothing {Or L M} (noe-or h1 h2 h3) | Nothing = refl
+neutralStepNothing {Or (BoolVal L') (BoolVal M')} (noe-or h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {Not L} (noe-not x h) rewrite normalStepNothing x with smallStepNot L Nothing in eq
+neutralStepNothing {Not L} (noe-not _ _)            | Nothing = refl
+neutralStepNothing {Not (BoolVal L')} (noe-not _ h) | Just _ = ⊥-elim (h {L'} refl)
 
 
 --   -- step→red : ∀ {M N : Expr} → smallStep M ≡ Just N → ReducesTo M N
