@@ -26,8 +26,8 @@ typeCheck' gam (Ite b t e)       =
             if eqType tt te then (Just tt) else Nothing
     ; _ -> Nothing
     }
-typeCheck' gam (NumVal _)        = Just IntT
-typeCheck' gam (BoolVal _)       = Just BoolT
+typeCheck' gam (Const (NumC _))  = Just IntT
+typeCheck' gam (Const (BoolC _)) = Just BoolT
 typeCheck' gam (Var i)           = lookupMaybe i gam
 typeCheck' gam (Lam _ t e)       =
   typeCheck' (t ∷ gam) e >>= λ t' -> Just (Arrow t t')
@@ -36,7 +36,7 @@ typeCheck' gam (App e1 e2) =
     λ { (Just (Arrow t11 t12)) -> typeCheck' gam e2 >>= λ t2 -> if eqType t11 t2 then Just t12 else Nothing
       ; _ -> Nothing
       }
-typeCheck' gam (Add e1 e2) =
+typeCheck' gam (BinOp Add e1 e2) =
   myCaseOf (typeCheck' gam e1)
     λ { (Just IntT) ->
            myCaseOf (typeCheck' gam e2)
@@ -45,7 +45,7 @@ typeCheck' gam (Add e1 e2) =
                }
       ; _ -> Nothing
       }
-typeCheck' gam (Sub e1 e2) =
+typeCheck' gam (BinOp Sub e1 e2) =
   myCaseOf (typeCheck' gam e1)
     λ { (Just IntT) ->
            myCaseOf (typeCheck' gam e2)
@@ -54,7 +54,7 @@ typeCheck' gam (Sub e1 e2) =
                }
       ; _ -> Nothing
       }
-typeCheck' gam (Mul e1 e2) =
+typeCheck' gam (BinOp Mul e1 e2) =
   myCaseOf (typeCheck' gam e1)
     λ { (Just IntT) ->
            myCaseOf (typeCheck' gam e2)
@@ -63,7 +63,7 @@ typeCheck' gam (Mul e1 e2) =
                }
       ; _ -> Nothing
       }
-typeCheck' gam (And e1 e2) =
+typeCheck' gam (BinOp And e1 e2) =
   myCaseOf (typeCheck' gam e1)
     λ { (Just BoolT) ->
            myCaseOf (typeCheck' gam e2)
@@ -72,7 +72,7 @@ typeCheck' gam (And e1 e2) =
                }
       ; _ -> Nothing
       }
-typeCheck' gam (Or e1 e2) =
+typeCheck' gam (BinOp Or e1 e2) =
   myCaseOf (typeCheck' gam e1)
     λ { (Just BoolT) ->
            myCaseOf (typeCheck' gam e2)
@@ -81,7 +81,7 @@ typeCheck' gam (Or e1 e2) =
                }
       ; _ -> Nothing
       }
-typeCheck' gam (Not e) =
+typeCheck' gam (UnaryOp Not e) =
   myCaseOf (typeCheck' gam e) λ { (Just BoolT) -> Just BoolT ; _ -> Nothing }
 
 {-# COMPILE AGDA2HS typeCheck' #-}

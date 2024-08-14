@@ -15,7 +15,6 @@ open import Relation.Nullary                      using (¬_)
 
 -- Reference: https://plfa.github.io/Untyped/
 -- But we don't guarantee well-scopedness
-
 data Neutral : Expr → Set
 data Normal  : Expr → Set
 
@@ -29,58 +28,55 @@ data Neutral where
         -------------------
         → Neutral (App L M)
 
-    noe-num : ∀ {i : Int}
-        → Neutral (NumVal i)
-
-    noe-bool : ∀ {b : Bool}
-        → Neutral (BoolVal b)
+    noe-const : ∀ {c : ConstT}
+        → Neutral (Const c)
 
     noe-ite : ∀ {L M N : Expr}
         → Normal L
-        → (∀ {b : Bool} → ¬ (L ≡ BoolVal b))
+        → (∀ {b : Bool} → ¬ (L ≡ (Const (BoolC b))))
         -----------------------
         → Neutral (Ite L M N)
 
     noe-add : ∀ {L M : Expr}
         → Normal L
         → Normal M
-        → (∀ {i j : Int} → ¬ (L ≡ NumVal i × M ≡ NumVal j))
+        → (∀ {i j : Int} → ¬ (L ≡ (Const (NumC i)) × M ≡ (Const (NumC j))))
         ---------------------
-        → Neutral (Add L M)
+        → Neutral (BinOp Add L M)
 
     noe-sub : ∀ {L M : Expr}
         → Normal L
         → Normal M
-        → (∀ {i j : Int} → ¬ (L ≡ NumVal i × M ≡ NumVal j))
+        → (∀ {i j : Int} → ¬ (L ≡ (Const (NumC i)) × M ≡ (Const (NumC j))))
         ---------------------
-        → Neutral (Sub L M)
+        → Neutral (BinOp Sub L M)
 
     noe-mul : ∀ {L M : Expr}
         → Normal L
         → Normal M
-        → (∀ {i j : Int} → ¬ (L ≡ NumVal i × M ≡ NumVal j))
+        → (∀ {i j : Int} → ¬ (L ≡ (Const (NumC i)) × M ≡ (Const (NumC j))))
         ---------------------
-        → Neutral (Mul L M)
+        → Neutral (BinOp Mul L M)
 
     noe-and : ∀ {L M : Expr}
         → Normal L
         → Normal M
-        → (∀ {i j : Bool} → ¬ (L ≡ BoolVal i × M ≡ BoolVal j))
+        → (∀ {i j : Bool} → ¬ (L ≡ (Const (BoolC i)) × M ≡ (Const (BoolC j))))
         ---------------------
-        → Neutral (And L M)
+        → Neutral (BinOp And L M)
 
     noe-or : ∀ {L M : Expr}
         → Normal L
         → Normal M
-        → (∀ {i j : Bool} → ¬ (L ≡ BoolVal i × M ≡ BoolVal j))
+        → (∀ {i j : Bool} → ¬ (L ≡ (Const (BoolC i)) × M ≡ Const (BoolC j)))
         ---------------------
-        → Neutral (Or L M)
+        → Neutral (BinOp Or L M)
 
     noe-not : ∀ {L : Expr}
         → Normal L
-        → (∀ {i : Bool} → ¬ (L ≡ BoolVal i))
+        → (∀ {i : Bool} → ¬ (L ≡ (Const (BoolC i))))
         -------------------
-        → Neutral (Not L)
+        → Neutral (UnaryOp Not L)
 
 data Normal where
     no-ne : ∀ {M : Expr}
@@ -110,6 +106,7 @@ data ReducesTo : Expr → Expr → Set where
         → Normal L
         ---------------------------
         → ReducesTo (App (Lam s ty L) V) (shiftDown (substitute Z (shiftUp V) L))
+        -- using a predicate to specify substitution here gets pretty ugly
 
     r-l' : ∀ {s : Id} {ty : Type} {L L' : Expr}
         → ReducesTo L L'
@@ -119,89 +116,89 @@ data ReducesTo : Expr → Expr → Set where
     r-plus1 : ∀ {L L' M : Expr}
         → ReducesTo L L'
         --------------------------------
-        → ReducesTo (Add L M) (Add L' M)
+        → ReducesTo (BinOp Add L M) (BinOp Add L' M)
 
     r-plus2 : ∀ {L M M' : Expr}
         → Normal L
         → ReducesTo M M'
         --------------------------------
-        → ReducesTo (Add L M) (Add L M')
+        → ReducesTo (BinOp Add L M) (BinOp Add L M')
 
     r-plus3 : ∀ {i1 i2 : Int}
-        → ReducesTo (Add (NumVal i1) (NumVal i2)) (NumVal (i1 + i2))
+        → ReducesTo (BinOp Add (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 + i2)))
 
     r-sub1 : ∀ {L L' M : Expr}
         → ReducesTo L L'
         --------------------------------
-        → ReducesTo (Sub L M) (Sub L' M)
+        → ReducesTo (BinOp Sub L M) (BinOp Sub L' M)
 
     r-sub2 : ∀ {L M M' : Expr}
         → Normal L
         → ReducesTo M M'
         --------------------------------
-        → ReducesTo (Sub L M) (Sub L M')
+        → ReducesTo (BinOp Sub L M) (BinOp Sub L M')
 
     r-sub3 : ∀ {i1 i2 : Int}
-        → ReducesTo (Sub (NumVal i1) (NumVal i2)) (NumVal (i1 - i2))
+        → ReducesTo (BinOp Sub (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 - i2)))
 
     r-mul1 : ∀ {L L' M : Expr}
         → ReducesTo L L'
         --------------------------------
-        → ReducesTo (Mul L M) (Mul L' M)
+        → ReducesTo (BinOp Mul L M) (BinOp Mul L' M)
 
     r-mul2 : ∀ {L M M' : Expr}
         → Normal L
         → ReducesTo M M'
         --------------------------------
-        → ReducesTo (Mul L M) (Mul L M')
+        → ReducesTo (BinOp Mul L M) (BinOp Mul L M')
 
     r-mul3 : ∀ {i1 i2 : Int}
-        → ReducesTo (Mul (NumVal i1) (NumVal i2)) (NumVal (i1 * i2))
+        → ReducesTo (BinOp Mul (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 * i2)))
 
     r-and1 : ∀ {L L' M : Expr}
         → ReducesTo L L'
         --------------------------------
-        → ReducesTo (And L M) (And L' M)
+        → ReducesTo (BinOp And L M) (BinOp And L' M)
 
     r-and2 : ∀ {L M M' : Expr}
         → Normal L
         → ReducesTo M M'
         --------------------------------
-        → ReducesTo (And L M) (And L M')
+        → ReducesTo (BinOp And L M) (BinOp And L M')
 
     r-and3 : ∀ {i1 i2 : Bool}
-        → ReducesTo (And (BoolVal i1) (BoolVal i2)) (BoolVal (i1 && i2))
+        → ReducesTo (BinOp And (Const (BoolC i1)) (Const (BoolC i2))) (Const (BoolC (i1 && i2)))
 
     r-or1 : ∀ {L L' M : Expr}
         → ReducesTo L L'
         --------------------------------
-        → ReducesTo (Or L M) (Or L' M)
+        → ReducesTo (BinOp Or L M) (BinOp Or L' M)
 
     r-or2 : ∀ {L M M' : Expr}
         → Normal L
         → ReducesTo M M'
         --------------------------------
-        → ReducesTo (Or L M) (Or L M')
+        → ReducesTo (BinOp Or L M) (BinOp Or L M')
 
     r-or3 : ∀ {i1 i2 : Bool}
-        → ReducesTo (Or (BoolVal i1) (BoolVal i2)) (BoolVal (i1 || i2))
+        → ReducesTo (BinOp Or (Const (BoolC i1)) (Const (BoolC i2))) (Const (BoolC (i1 || i2)))
 
     r-not1 : ∀ {L L' : Expr}
         → ReducesTo L L'
         ----------------------------
-        → ReducesTo (Not L) (Not L')
+        → ReducesTo (UnaryOp Not L) (UnaryOp Not L')
 
     r-not2 : ∀ {b : Bool}
         ----------------------------------------------
-        → ReducesTo (Not (BoolVal b)) (BoolVal (not b))
+        → ReducesTo (UnaryOp Not (Const (BoolC b))) (Const (BoolC (not b)))
 
     r-ite-true : ∀ {L M : Expr}
         --------------------------------------
-        → ReducesTo (Ite (BoolVal true) L M) L
+        → ReducesTo (Ite (Const (BoolC true)) L M) L
 
     r-ite-false : ∀ {L M : Expr}
         ---------------------------------------
-        → ReducesTo (Ite (BoolVal false) L M) M
+        → ReducesTo (Ite (Const (BoolC false)) L M) M
 
     r-ite : ∀ {L L' M N : Expr}
         → ReducesTo L L'
@@ -214,7 +211,6 @@ data Irreducible : Expr → Set where
         → (∀ {N : Expr} → ¬ (ReducesTo M N))
         ---------------
         → Irreducible M
-
 neutralNeverReduces : ∀ {M : Expr} → Neutral M → (∀ {N : Expr} → ¬ (ReducesTo M N))
 normalNeverReduces : ∀ {M : Expr} → Normal M → (∀ {N : Expr} → ¬ (ReducesTo M N))
 
@@ -237,7 +233,7 @@ neutralNeverReduces (noe-and n1 n2 x) (r-and2 _ red) = normalNeverReduces n2 red
 neutralNeverReduces (noe-and n1 n2 h) r-and3 = h ⟨ refl , refl ⟩
 neutralNeverReduces (noe-or n1 n2 x) (r-or1 red) = normalNeverReduces n1 red
 neutralNeverReduces (noe-or n1 n2 x) (r-or2 _ red) = normalNeverReduces n2 red
-neutralNeverReduces (noe-or n1 n2₁ h) r-or3 = h ⟨ refl , refl ⟩
+neutralNeverReduces (noe-or n1 n2 h) r-or3 = h ⟨ refl , refl ⟩
 neutralNeverReduces (noe-not n x) (r-not1 red) = normalNeverReduces n red
 neutralNeverReduces (noe-not normalExtBi h) r-not2 = h refl
 
@@ -286,159 +282,150 @@ redIsDeterministic r-ite-true r-ite-true = refl
 redIsDeterministic r-ite-false r-ite-false = refl
 redIsDeterministic (r-ite red1) (r-ite red2) rewrite redIsDeterministic red1 red2 = refl
 
-normalImpliesNeutralApp : ∀ {L M : Expr} → Normal (App L M) → Neutral (App L M)
-normalImpliesNeutralApp (no-ne h) = h
-
-normalImpliesNeutralAdd : ∀ {L M : Expr} → Normal (Add L M) → Neutral (Add L M)
-normalImpliesNeutralAdd (no-ne h) = h
-
-normalImpliesNeutralSub : ∀ {L M : Expr} → Normal (Sub L M) → Neutral (Sub L M)
-normalImpliesNeutralSub (no-ne h) = h
-
-normalImpliesNeutralMul : ∀ {L M : Expr} → Normal (Mul L M) → Neutral (Mul L M)
-normalImpliesNeutralMul (no-ne h) = h
-
-normalImpliesNeutralAnd : ∀ {L M : Expr} → Normal (And L M) → Neutral (And L M)
-normalImpliesNeutralAnd (no-ne h) = h
-
-normalImpliesNeutralOr : ∀ {L M : Expr} → Normal (Or L M) → Neutral (Or L M)
-normalImpliesNeutralOr (no-ne h) = h
-
 normalImpliesNeutralIte : ∀ {L M N : Expr} → Normal (Ite L M N) → Neutral (Ite L M N)
 normalImpliesNeutralIte (no-ne h) = h
 
-normalImpliesNeutralNot : ∀ {L : Expr} → Normal (Not L) → Neutral (Not L)
-normalImpliesNeutralNot (no-ne h) = h
+normalImpliesNeutralApp : ∀ {L M : Expr} → Normal (App L M) → Neutral (App L M)
+normalImpliesNeutralApp (no-ne h) = h
+
+normalImpliesNeutralBinOp : ∀ {L M : Expr} {O : BinOpT} → Normal (BinOp O L M) → Neutral (BinOp O L M)
+normalImpliesNeutralBinOp (no-ne h) = h
+
+normalImpliesNeutralUnOp : ∀ {L : Expr} {O : UnaryOpT} → Normal (UnaryOp O L) → Neutral (UnaryOp O L)
+normalImpliesNeutralUnOp (no-ne h) = h
 
 stepNothingNormal : ∀ {V : Expr} → smallStep V ≡ Nothing → Normal V
 stepNothingNormal {Var x} eq = no-ne ne-v
 stepNothingNormal {Lam x x₁ V} eq with smallStep V in eqV
 ... | Nothing = no-a (stepNothingNormal eqV)
-stepNothingNormal {App V1 V2} eq with smallStep V1 in eqV1
-... | Nothing with smallStep V2 in eqV2
-...   | Nothing with V1
-...     | Var x = no-ne (ne-a ne-v (stepNothingNormal eqV2))
-...     | App a a₁ = no-ne (ne-a (normalImpliesNeutralApp (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
-...     | Ite a a₁ a₂ = no-ne (ne-a (normalImpliesNeutralIte (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
-...     | NumVal x = no-ne (ne-a (noe-num) (stepNothingNormal eqV2))
-...     | BoolVal x = no-ne (ne-a (noe-bool) (stepNothingNormal eqV2))
-...     | Add a a₁ = no-ne (ne-a (normalImpliesNeutralAdd (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
-...     | Sub a a₁ = no-ne (ne-a (normalImpliesNeutralSub (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
-...     | Mul a a₁ = no-ne (ne-a (normalImpliesNeutralMul (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
-...     | Not a = no-ne (ne-a (normalImpliesNeutralNot (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
-...     | And a a₁ = no-ne (ne-a (normalImpliesNeutralAnd (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
-...     | Or a a₁ = no-ne (ne-a (normalImpliesNeutralOr (stepNothingNormal eqV1)) (stepNothingNormal eqV2))
+stepNothingNormal {App L M} eq with smallStep L in eqL
+... | Nothing with smallStep M in eqM
+...   | Nothing with L
+...     | Var _ = no-ne (ne-a ne-v (stepNothingNormal eqM))
+...     | App _ _ = no-ne (ne-a (normalImpliesNeutralApp (stepNothingNormal eqL)) (stepNothingNormal eqM))
+...     | Ite _ _ _ = no-ne (ne-a (normalImpliesNeutralIte (stepNothingNormal eqL)) (stepNothingNormal eqM))
+...     | Const _ = no-ne (ne-a noe-const (stepNothingNormal eqM))
+...     | BinOp _ _ _ = no-ne (ne-a (normalImpliesNeutralBinOp (stepNothingNormal eqL)) (stepNothingNormal eqM))
+...     | UnaryOp _ _ = no-ne (ne-a (normalImpliesNeutralUnOp (stepNothingNormal eqL)) (stepNothingNormal eqM))
 stepNothingNormal {Ite L M N} eq with smallStep L in eqL
 ... | Nothing = no-ne (noe-ite (stepNothingNormal eqL) (iteStepNothing eq))
   where
-    iteStepNothing : ∀ {i} → smallStepIte L M N Nothing ≡ Nothing → ¬ (L ≡ BoolVal i)
+    iteStepNothing : ∀ {i} → smallStepIte L M N Nothing ≡ Nothing → ¬ (L ≡ (Const (BoolC i)))
     iteStepNothing () refl
-stepNothingNormal {NumVal x} eq = no-ne noe-num
-stepNothingNormal {BoolVal x} eq = no-ne noe-bool
-stepNothingNormal {Add V1 V2} eq with smallStep V1 in eqV1
-... | Nothing with smallStep V2 in eqV2
-...   | Nothing = no-ne (noe-add (stepNothingNormal eqV1) (stepNothingNormal eqV2) (addStepNothing eq))
+stepNothingNormal {Const x} eq = no-ne noe-const
+stepNothingNormal {BinOp o L M} eq with smallStep L in eqL
+... | Nothing with smallStep M in eqM
+stepNothingNormal {BinOp Add L M} eq | Nothing | Nothing =
+  no-ne (noe-add (stepNothingNormal eqL) (stepNothingNormal eqM) (addStepNothing eq))
   where
-    addStepNothing : ∀ {i j} → smallStepAdd V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
+    addStepNothing : ∀ {i j} → smallStepBinOp Add L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (NumC i)) × (M ≡ Const (NumC j)))
     addStepNothing () ⟨ refl , refl ⟩
-stepNothingNormal {Sub V1 V2} eq with smallStep V1 in eqV1
-... | Nothing with smallStep V2 in eqV2
-...   | Nothing = no-ne (noe-sub (stepNothingNormal eqV1) (stepNothingNormal eqV2) (subStepNothing eq))
+stepNothingNormal {BinOp Sub L M} eq | Nothing | Nothing =
+  no-ne (noe-sub (stepNothingNormal eqL) (stepNothingNormal eqM) (subStepNothing eq))
   where
-    subStepNothing : ∀ {i j} → smallStepSub V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
+    subStepNothing : ∀ {i j} → smallStepBinOp Sub L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (NumC i)) × (M ≡ Const (NumC j)))
     subStepNothing () ⟨ refl , refl ⟩
-stepNothingNormal {Mul V1 V2} eq with smallStep V1 in eqV1
-... | Nothing with smallStep V2 in eqV2
-...   | Nothing = no-ne (noe-mul (stepNothingNormal eqV1) (stepNothingNormal eqV2) (mulStepNothing eq))
+stepNothingNormal {BinOp Mul L M} eq | Nothing | Nothing =
+  no-ne (noe-mul (stepNothingNormal eqL) (stepNothingNormal eqM) (mulStepNothing eq))
   where
-    mulStepNothing : ∀ {i j} → smallStepMul V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ NumVal i) × (V2 ≡ NumVal j))
+    mulStepNothing : ∀ {i j} → smallStepBinOp Mul L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (NumC i)) × (M ≡ Const (NumC j)))
     mulStepNothing () ⟨ refl , refl ⟩
-stepNothingNormal {Not V} eq with smallStep V in eqV
+stepNothingNormal {BinOp And L M} eq | Nothing | Nothing =
+  no-ne (noe-and (stepNothingNormal eqL) (stepNothingNormal eqM) (andStepNothing eq))
+  where
+    andStepNothing : ∀ {i j} → smallStepBinOp And L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (BoolC i)) × (M ≡ Const (BoolC j)))
+    andStepNothing () ⟨ refl , refl ⟩
+stepNothingNormal {BinOp Or L M} eq | Nothing | Nothing =
+  no-ne (noe-or (stepNothingNormal eqL) (stepNothingNormal eqM) (orStepNothing eq))
+  where
+    orStepNothing : ∀ {i j} → smallStepBinOp Or L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (BoolC i)) × (M ≡ Const (BoolC j)))
+    orStepNothing () ⟨ refl , refl ⟩
+stepNothingNormal {UnaryOp Not V} eq with smallStep V in eqV
 ... | Nothing = no-ne (noe-not (stepNothingNormal eqV) (notStepNothing eq))
   where
-    notStepNothing : ∀ {i} → smallStepNot V Nothing ≡ Nothing → ¬ (V ≡ BoolVal i)
+    notStepNothing : ∀ {i} → smallStepUnOp Not V Nothing ≡ Nothing → ¬ (V ≡ Const (BoolC i))
     notStepNothing () refl
-stepNothingNormal {And V1 V2} eq with smallStep V1 in eqV1
-... | Nothing with smallStep V2 in eqV2
-...   | Nothing = no-ne (noe-and (stepNothingNormal eqV1) (stepNothingNormal eqV2) (andStepNothing eq))
-  where
-    andStepNothing : ∀ {i j} → smallStepAnd V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ BoolVal i) × (V2 ≡ BoolVal j))
-    andStepNothing () ⟨ refl , refl ⟩
-stepNothingNormal {Or V1 V2} eq with smallStep V1 in eqV1
-... | Nothing with smallStep V2 in eqV2
-...   | Nothing = no-ne (noe-or (stepNothingNormal eqV1) (stepNothingNormal eqV2) (orStepNothing eq))
-  where
-    orStepNothing : ∀ {i j} → smallStepOr V1 V2 Nothing Nothing ≡ Nothing → ¬ ((V1 ≡ BoolVal i) × (V2 ≡ BoolVal j))
-    orStepNothing () ⟨ refl , refl ⟩
 
 normalStepNothing : ∀ {V : Expr} → Normal V → smallStep V ≡ Nothing
 neutralStepNothing : ∀ {V : Expr} → Neutral V → smallStep V ≡ Nothing
 
 normalStepNothing {V} (no-ne h) = neutralStepNothing h
 normalStepNothing {(Lam _ _ L)} (no-a h) rewrite normalStepNothing h = refl
+
 neutralStepNothing ne-v = refl
-neutralStepNothing {App (Var _) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (App L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (Ite L L₁ L₂) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (NumVal x₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (BoolVal x₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (Add L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (Sub L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (Mul L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (Not L) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (And L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (Or L L₁) M} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing noe-num = refl
-neutralStepNothing noe-bool = refl
+neutralStepNothing {App (Var _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (App _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Ite _ _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Const _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (BinOp _ _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (UnaryOp _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing noe-const = refl
 neutralStepNothing {Ite L M N} (noe-ite h1 h2) rewrite normalStepNothing h1 with smallStepIte L M N Nothing in eq
 ... | Nothing = refl
-neutralStepNothing {Ite (BoolVal L') M N} (noe-ite h1 h2) | Just _ = ⊥-elim (h2 {L'} refl)
-neutralStepNothing {Add L M} (noe-add h1 h2 h3)
+neutralStepNothing {Ite (Const (BoolC L')) M N} (noe-ite h1 h2) | Just _ = ⊥-elim (h2 {L'} refl)
+neutralStepNothing {BinOp Add L M} (noe-add h1 h2 h3)
   rewrite normalStepNothing h1
-       |  normalStepNothing h2 with smallStepAdd L M Nothing Nothing in eq
-neutralStepNothing {Add L M} (noe-add h1 h2 h3) | Nothing = refl
-neutralStepNothing {Add (NumVal L') (NumVal M')} (noe-add h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
-neutralStepNothing {Sub L M} (noe-sub h1 h2 h3)
+       |  normalStepNothing h2 with smallStepBinOp Add L M Nothing Nothing in eq
+neutralStepNothing {BinOp Add L M} (noe-add h1 h2 h3) | Nothing = refl
+neutralStepNothing {BinOp Add (Const (NumC L')) (Const (NumC M'))} (noe-add h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {BinOp Sub L M} (noe-sub h1 h2 h3)
   rewrite normalStepNothing h1
-       |  normalStepNothing h2 with smallStepSub L M Nothing Nothing in eq
-neutralStepNothing {Sub L M} (noe-sub h1 h2 h3) | Nothing = refl
-neutralStepNothing {Sub (NumVal L') (NumVal M')} (noe-sub h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
-neutralStepNothing {Mul L M} (noe-mul h1 h2 h3)
+       |  normalStepNothing h2 with smallStepBinOp Sub L M Nothing Nothing in eq
+neutralStepNothing {BinOp Sub L M} (noe-sub h1 h2 h3) | Nothing = refl
+neutralStepNothing {BinOp Sub (Const (NumC L')) (Const (NumC M'))} (noe-sub h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {BinOp Mul L M} (noe-mul h1 h2 h3)
   rewrite normalStepNothing h1
-       |  normalStepNothing h2 with smallStepMul L M Nothing Nothing in eq
-neutralStepNothing {Mul L M} (noe-mul h1 h2 h3) | Nothing = refl
-neutralStepNothing {Mul (NumVal L') (NumVal M')} (noe-mul h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
-neutralStepNothing {And L M} (noe-and h1 h2 h3)
+       |  normalStepNothing h2 with smallStepBinOp Mul L M Nothing Nothing in eq
+neutralStepNothing {BinOp Mul L M} (noe-mul h1 h2 h3) | Nothing = refl
+neutralStepNothing {BinOp Mul (Const (NumC L')) (Const (NumC M'))} (noe-mul h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {BinOp And L M} (noe-and h1 h2 h3)
   rewrite normalStepNothing h1
-       |  normalStepNothing h2 with smallStepAnd L M Nothing Nothing in eq
-neutralStepNothing {And L M} (noe-and h1 h2 h3) | Nothing = refl
-neutralStepNothing {And (BoolVal L') (BoolVal M')} (noe-and h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
-neutralStepNothing {Or L M} (noe-or h1 h2 h3)
+       |  normalStepNothing h2 with smallStepBinOp And L M Nothing Nothing in eq
+neutralStepNothing {BinOp And L M} (noe-and h1 h2 h3) | Nothing = refl
+neutralStepNothing {BinOp And (Const (BoolC L')) (Const (BoolC M'))} (noe-and h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {BinOp Or L M} (noe-or h1 h2 h3)
   rewrite normalStepNothing h1
-       |  normalStepNothing h2 with smallStepOr L M Nothing Nothing in eq
-neutralStepNothing {Or L M} (noe-or h1 h2 h3) | Nothing = refl
-neutralStepNothing {Or (BoolVal L') (BoolVal M')} (noe-or h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
-neutralStepNothing {Not L} (noe-not x h) rewrite normalStepNothing x with smallStepNot L Nothing in eq
-neutralStepNothing {Not L} (noe-not _ _)            | Nothing = refl
-neutralStepNothing {Not (BoolVal L')} (noe-not _ h) | Just _ = ⊥-elim (h {L'} refl)
+       |  normalStepNothing h2 with smallStepBinOp Or L M Nothing Nothing in eq
+neutralStepNothing {BinOp Or L M} (noe-or h1 h2 h3) | Nothing = refl
+neutralStepNothing {BinOp Or (Const (BoolC L')) (Const (BoolC M'))} (noe-or h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {UnaryOp Not L} (noe-not x h) rewrite normalStepNothing x with smallStepUnOp Not L Nothing in eq
+neutralStepNothing {UnaryOp Not L}                  (noe-not _ _) | Nothing = refl
+neutralStepNothing {UnaryOp Not (Const (BoolC L'))} (noe-not _ h) | Just _ = ⊥-elim (h {L'} refl)
 
+step→red : ∀ {M N : Expr} → smallStep M ≡ Just N → ReducesTo M N
+step→red {Lam x x₁ M} {N} h = {!!}
+step→red {App M M₁} {N} h = {!!}
+step→red {Ite M M₁ M₂} {N} h = {!!}
+step→red {BinOp x M M₁} {N} h = {!!}
+step→red {UnaryOp Not (Const (BoolC x))} {N} h  = {!r-not2!}
+step→red {UnaryOp Not (Lam x x₁ M)} {N} h = {!!}
+step→red {UnaryOp Not (App M M₁)} {N} h = {!!}
+step→red {UnaryOp Not (Ite M M₁ M₂)} {N} h = {!!}
+step→red {UnaryOp Not (BinOp x M M₁)} {N} h = {!!}
+step→red {UnaryOp Not (UnaryOp x M)} {N} h = {!!}
 
---   -- step→red : ∀ {M N : Expr} → smallStep M ≡ Just N → ReducesTo M N
---   -- step→red h = {!!}
---   -- -- step→red {Lam s ty M} {N} eq with smallStep M in eqM
---   -- -- ... | Just _ rewrite sym (Just-injective eq) = r-l (step→red eqM)
---   -- -- step→red {App L M} {N} eq with smallStep L in eqL
---   -- -- ... | Just L' rewrite sym (Just-injective eq) = r-a (step→red eqL)
---   -- -- ... | Nothing with smallStep M in eqM
---   -- -- ...   | Just M' rewrite sym (Just-injective eq) = r-a' (stepNothingNormal eqL) (step→red eqM)
---   -- -- ...   | Nothing with L
---   -- -- ...     | Lam _ _ L' with smallStep L' in eqL'
---   -- -- ...       | Nothing rewrite sym (Just-injective eq) = r-l' (stepNothingNormal eqM) (stepNothingNormal eqL')
-
---   -- red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
---   -- red→step {Lam x x₁ M} {N} h = {!!}
---   -- red→step {App M M₁} {N} h = {!!}
---   -- -- red→step (r-a red) rewrite red→step red = refl
---   -- -- red→step (r-l red) rewrite red→step red = refl
---   -- -- red→step (r-a' normalV red) rewrite normalStepNothing normalV | red→step red = refl
---   -- -- red→step (r-l' normalL normalV) rewrite normalStepNothing normalV | normalStepNothing normalL = refl
+red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
+red→step (r-a h) rewrite red→step h = refl
+red→step (r-a' x h) rewrite normalStepNothing x | red→step h = refl
+red→step {App (Lam _ _ L) V} (r-l x h) rewrite normalStepNothing h | normalStepNothing x = refl
+red→step (r-l' h) rewrite red→step h = refl
+red→step (r-plus1 h) rewrite red→step h = refl
+red→step (r-plus2 x h) rewrite normalStepNothing x | red→step h = refl
+red→step r-plus3 = refl
+red→step (r-sub1 h) rewrite red→step h = refl
+red→step (r-sub2 x h) rewrite normalStepNothing x | red→step h = refl
+red→step r-sub3 = refl
+red→step (r-mul1 h) rewrite red→step h = refl
+red→step (r-mul2 x h) rewrite normalStepNothing x | red→step h = refl
+red→step r-mul3 = refl
+red→step (r-and1 h) rewrite red→step h = refl
+red→step (r-and2 x h) rewrite normalStepNothing x | red→step h = refl
+red→step r-and3 = refl
+red→step (r-or1 h) rewrite red→step h = refl
+red→step (r-or2 x h) rewrite normalStepNothing x | red→step h = refl
+red→step r-or3 = refl
+red→step (r-not1 h) rewrite red→step h = refl
+red→step r-not2 = refl
+red→step r-ite-true = refl
+red→step r-ite-false = refl
+red→step (r-ite h) rewrite red→step h = refl

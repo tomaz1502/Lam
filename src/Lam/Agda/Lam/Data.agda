@@ -33,35 +33,49 @@ data Type : Set where
 
 {-# COMPILE AGDA2HS Type #-}
 
-data RawExpr : Set where
-  RawVar     : Id → RawExpr
-  RawLam     : Id → RawType → RawExpr → RawExpr
-  RawApp     : RawExpr → RawExpr → RawExpr
-  RawIte     : RawExpr → RawExpr → RawExpr → RawExpr
-  RawNumVal  : Int → RawExpr
-  RawBoolVal : Bool → RawExpr
-  RawAdd     : RawExpr → RawExpr → RawExpr
-  RawSub     : RawExpr → RawExpr → RawExpr
-  RawMul     : RawExpr → RawExpr → RawExpr
-  RawNot     : RawExpr → RawExpr
-  RawAnd     : RawExpr → RawExpr → RawExpr
-  RawOr      : RawExpr → RawExpr → RawExpr
+data ConstT : Set where
+  NumC : Int → ConstT
+  BoolC : Bool → ConstT
+
+data RawOperationT : Set
+data RawExpr : Set
+
+data RawOperationT where
+  RawAdd : RawExpr → RawExpr → RawOperationT
+  RawSub : RawExpr → RawExpr → RawOperationT
+  RawMul : RawExpr → RawExpr → RawOperationT
+  RawAnd : RawExpr → RawExpr → RawOperationT
+  RawOr  : RawExpr → RawExpr → RawOperationT
+  RawNot : RawExpr → RawOperationT
+
+data RawExpr where
+  RawVar       : Id → RawExpr
+  RawLam       : Id → RawType → RawExpr → RawExpr
+  RawApp       : RawExpr → RawExpr → RawExpr
+  RawIte       : RawExpr → RawExpr → RawExpr → RawExpr
+  RawConst     : ConstT → RawExpr
+  RawOperation : RawOperationT → RawExpr
 
 {-# COMPILE AGDA2HS RawExpr deriving Show #-}
+
+data BinOpT : Set where
+  Add : BinOpT
+  Sub : BinOpT
+  Mul : BinOpT
+  And : BinOpT
+  Or  : BinOpT
+
+data UnaryOpT : Set where
+  Not : UnaryOpT
 
 data Expr : Set where
   Var     : Nat → Expr
   Lam     : Id → Type → Expr → Expr
   App     : Expr → Expr → Expr
   Ite     : Expr → Expr → Expr → Expr
-  NumVal  : Int → Expr
-  BoolVal : Bool → Expr
-  Add     : Expr → Expr → Expr
-  Sub     : Expr → Expr → Expr
-  Mul     : Expr → Expr → Expr
-  Not     : Expr → Expr
-  And     : Expr → Expr → Expr
-  Or      : Expr → Expr → Expr
+  Const   : ConstT → Expr
+  BinOp   : BinOpT → Expr → Expr → Expr
+  UnaryOp : UnaryOpT → Expr → Expr
 
 {-# COMPILE AGDA2HS Expr #-}
 

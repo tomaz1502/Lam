@@ -1,6 +1,6 @@
 -- NOTE: Consider the type of subst as: {A : Set} {x y : A} (P : A -> Set) : x ≡ y → P x → P y
 
-module Lam.Formalization2 where
+module Lam.FormalizationTypeChecker where
 
 open import Data.Fin.Base         using (fromℕ<)
 open import Data.List
@@ -22,39 +22,39 @@ open import Lam.UtilsAgda
 data _⊢_∶_ : TypingContext → Expr → Type → Set where
 
   ⊢b : ∀ {Γ : TypingContext} {b : Bool}
-    → Γ ⊢ BoolVal b ∶ BoolT
+    → Γ ⊢ Const (BoolC b) ∶ BoolT
 
   ⊢n : ∀ {Γ : TypingContext} {z : Int}
-    → Γ ⊢ NumVal z ∶ IntT
+    → Γ ⊢ Const (NumC z) ∶ IntT
 
   ⊢|| : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ BoolT
     → Γ ⊢ M ∶ BoolT
-    → Γ ⊢ Or L M ∶ BoolT
+    → Γ ⊢ BinOp Or L M ∶ BoolT
 
   ⊢&& : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ BoolT
     → Γ ⊢ M ∶ BoolT
-    → Γ ⊢ And L M ∶ BoolT
+    → Γ ⊢ BinOp And L M ∶ BoolT
 
   ⊢! : ∀ {L : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ BoolT
-    → Γ ⊢ Not L ∶ BoolT
+    → Γ ⊢ UnaryOp Not L ∶ BoolT
 
   ⊢+ : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ IntT
     → Γ ⊢ M ∶ IntT
-    → Γ ⊢ Add L M ∶ IntT
+    → Γ ⊢ BinOp Add L M ∶ IntT
 
   ⊢- : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ IntT
     → Γ ⊢ M ∶ IntT
-    → Γ ⊢ Sub L M ∶ IntT
+    → Γ ⊢ BinOp Sub L M ∶ IntT
 
   ⊢* : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ IntT
     → Γ ⊢ M ∶ IntT
-    → Γ ⊢ Mul L M ∶ IntT
+    → Γ ⊢ BinOp Mul L M ∶ IntT
 
 
   ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : Type}
@@ -125,8 +125,8 @@ tc→⊢ {Γ} {Var x} {t} eq =
   let justTEqJustLookup = trans (sym eq) lookupMaybeEqLookup in
   let tEqLookup = Just-injective justTEqJustLookup in
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
-tc→⊢ {Γ} {BoolVal b} {t} eq rewrite sym (Just-injective eq) = ⊢b
-tc→⊢ {Γ} {NumVal z} {t} eq rewrite sym (Just-injective eq)  = ⊢n
+tc→⊢ {Γ} {Const (BoolC _)} {t} eq rewrite sym (Just-injective eq) = ⊢b
+tc→⊢ {Γ} {Const (NumC _)} {t} eq rewrite sym (Just-injective eq)  = ⊢n
 -- Weirdly, doing parallel with clauses doesn't work here, we have to nest them
 tc→⊢ {Γ} {Ite b t e} {ty} eq with typeCheck' Γ b in bPf
 ... | Just BoolT with typeCheck' Γ t in tPf
@@ -136,22 +136,22 @@ tc→⊢ {Γ} {Ite b t e} {ty} eq with typeCheck' Γ b in bPf
             rewrite
               sym (Just-injective justTyEqTt)
             | eqType->≡ {tt} {te} eqTypeTtTe = ⊢ite (tc→⊢ bPf) (tc→⊢ tPf) (tc→⊢ ePf)
-tc→⊢ {Γ} {Add e1 e2} eq with typeCheck' Γ e1 in eqE1
+tc→⊢ {Γ} {BinOp Add e1 e2} eq with typeCheck' Γ e1 in eqE1
 ... | Just IntT with typeCheck' Γ e2 in eqE2
 ...   | Just IntT rewrite sym (Just-injective eq) = ⊢+ (tc→⊢ eqE1) (tc→⊢ eqE2)
-tc→⊢ {Γ} {Mul e1 e2} eq with typeCheck' Γ e1 in eqE1
+tc→⊢ {Γ} {BinOp Mul e1 e2} eq with typeCheck' Γ e1 in eqE1
 ... | Just IntT with typeCheck' Γ e2 in eqE2
 ...   | Just IntT rewrite sym (Just-injective eq) = ⊢* (tc→⊢ eqE1) (tc→⊢ eqE2)
-tc→⊢ {Γ} {Sub e1 e2} eq with typeCheck' Γ e1 in eqE1
+tc→⊢ {Γ} {BinOp Sub e1 e2} eq with typeCheck' Γ e1 in eqE1
 ... | Just IntT with typeCheck' Γ e2 in eqE2
 ...   | Just IntT rewrite sym (Just-injective eq) = ⊢- (tc→⊢ eqE1) (tc→⊢ eqE2)
-tc→⊢ {Γ} {And e1 e2} eq with typeCheck' Γ e1 in eqE1
+tc→⊢ {Γ} {BinOp And e1 e2} eq with typeCheck' Γ e1 in eqE1
 ... | Just BoolT with typeCheck' Γ e2 in eqE2
 ...   | Just BoolT rewrite sym (Just-injective eq) = ⊢&& (tc→⊢ eqE1) (tc→⊢ eqE2)
-tc→⊢ {Γ} {Or e1 e2}  eq with typeCheck' Γ e1 in eqE1
+tc→⊢ {Γ} {BinOp Or e1 e2}  eq with typeCheck' Γ e1 in eqE1
 ... | Just BoolT with typeCheck' Γ e2 in eqE2
 ...   | Just BoolT rewrite sym (Just-injective eq) = ⊢|| (tc→⊢ eqE1) (tc→⊢ eqE2)
-tc→⊢ {Γ} {Not e} eq with typeCheck' Γ e in eqE
+tc→⊢ {Γ} {UnaryOp Not e} eq with typeCheck' Γ e in eqE
 ... | Just BoolT rewrite sym (Just-injective eq) = ⊢! (tc→⊢ eqE)
 
 module Examples where
@@ -159,14 +159,14 @@ module Examples where
   open import Data.Bool using (true)
   open import Relation.Nullary using (¬_)
 
-  ex1 : [] ⊢ BoolVal true ∶ BoolT
+  ex1 : [] ⊢ Const (BoolC true) ∶ BoolT
   ex1 = ⊢b
 
-  ex2 : ¬ ([] ⊢ BoolVal true ∶ IntT)
+  ex2 : ¬ ([] ⊢ Const (BoolC true) ∶ IntT)
   ex2 ()
 
   -- ex3 : ∀ (t : Type) → ¬ ([] ⊢ App (App (PrimE PlusPrim) (BoolVal true)) (BoolVal true) ∶ t)
   -- ex3 t (⊢a (⊢a () _) ⊢b)
 
-  ex4 : ∀ (t : Type) → ¬ ([ IntT ] ⊢ Ite (Var Z) (BoolVal true) (BoolVal true) ∶ t)
+  ex4 : ∀ (t : Type) → ¬ ([ IntT ] ⊢ Ite (Var Z) (Const (BoolC true)) (Const (BoolC true)) ∶ t)
   ex4 t (⊢ite () _ _)
