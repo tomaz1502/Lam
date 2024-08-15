@@ -101,11 +101,11 @@ data ReducesTo : Expr → Expr → Set where
         ---------------------
         → ReducesTo (App V M) (App V M')
 
-    r-l : ∀ {s : Id} {ty : Type} {L V : Expr}
-        → Normal V
-        → Normal L
+    r-l : ∀ {s : Id} {ty : Type} {V1 V2 : Expr}
+        → Normal V1
+        → Normal V2
         ---------------------------
-        → ReducesTo (App (Lam s ty L) V) (shiftDown (substitute Z (shiftUp V) L))
+        → ReducesTo (App (Lam s ty V1) V2) (shiftDown (substitute Z (shiftUp V2) V1))
         -- using a predicate to specify substitution here gets pretty ugly
 
     r-l' : ∀ {s : Id} {ty : Type} {L L' : Expr}
@@ -113,18 +113,18 @@ data ReducesTo : Expr → Expr → Set where
         ---------------------------
         → ReducesTo (Lam s ty L) (Lam s ty L')
 
-    r-plus1 : ∀ {L L' M : Expr}
+    r-add1 : ∀ {L L' M : Expr}
         → ReducesTo L L'
         --------------------------------
         → ReducesTo (BinOp Add L M) (BinOp Add L' M)
 
-    r-plus2 : ∀ {L M M' : Expr}
+    r-add2 : ∀ {L M M' : Expr}
         → Normal L
         → ReducesTo M M'
         --------------------------------
         → ReducesTo (BinOp Add L M) (BinOp Add L M')
 
-    r-plus3 : ∀ {i1 i2 : Int}
+    r-add3 : ∀ {i1 i2 : Int}
         → ReducesTo (BinOp Add (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 + i2)))
 
     r-sub1 : ∀ {L L' M : Expr}
@@ -204,83 +204,6 @@ data ReducesTo : Expr → Expr → Set where
         → ReducesTo L L'
         ------------------------------------
         → ReducesTo (Ite L M N) (Ite L' M N)
-
-
-data Irreducible : Expr → Set where
-    i-e : ∀ {M : Expr}
-        → (∀ {N : Expr} → ¬ (ReducesTo M N))
-        ---------------
-        → Irreducible M
-neutralNeverReduces : ∀ {M : Expr} → Neutral M → (∀ {N : Expr} → ¬ (ReducesTo M N))
-normalNeverReduces : ∀ {M : Expr} → Normal M → (∀ {N : Expr} → ¬ (ReducesTo M N))
-
-neutralNeverReduces (ne-a n x) (r-a red) = neutralNeverReduces n red
-neutralNeverReduces (ne-a n x) (r-a' x₁ red) = normalNeverReduces x red
-neutralNeverReduces (noe-ite _ x) r-ite-true = x {true} refl
-neutralNeverReduces (noe-ite _ x) r-ite-false = x {false} refl
-neutralNeverReduces (noe-ite n x) (r-ite red) = normalNeverReduces n red
-neutralNeverReduces (noe-add n1 n2 x) (r-plus1 red) = normalNeverReduces n1 red
-neutralNeverReduces (noe-add n1 n2 x) (r-plus2 _ red) = normalNeverReduces n2 red
-neutralNeverReduces (noe-add n1 n2 h) r-plus3 = h ⟨ refl , refl ⟩
-neutralNeverReduces (noe-sub n1 n2 x) (r-sub1 red) = normalNeverReduces n1 red
-neutralNeverReduces (noe-sub n1 n2 x) (r-sub2 _ red) = normalNeverReduces n2 red
-neutralNeverReduces (noe-sub n1 n2 h) r-sub3 = h ⟨ refl , refl ⟩
-neutralNeverReduces (noe-mul n1 n2 x) (r-mul1 red) = normalNeverReduces n1 red
-neutralNeverReduces (noe-mul n1 n2 x) (r-mul2 _ red) = normalNeverReduces n2 red
-neutralNeverReduces (noe-mul n1 n2 h) r-mul3 = h ⟨ refl , refl ⟩
-neutralNeverReduces (noe-and n1 n2 x) (r-and1 red) = normalNeverReduces n1 red
-neutralNeverReduces (noe-and n1 n2 x) (r-and2 _ red) = normalNeverReduces n2 red
-neutralNeverReduces (noe-and n1 n2 h) r-and3 = h ⟨ refl , refl ⟩
-neutralNeverReduces (noe-or n1 n2 x) (r-or1 red) = normalNeverReduces n1 red
-neutralNeverReduces (noe-or n1 n2 x) (r-or2 _ red) = normalNeverReduces n2 red
-neutralNeverReduces (noe-or n1 n2 h) r-or3 = h ⟨ refl , refl ⟩
-neutralNeverReduces (noe-not n x) (r-not1 red) = normalNeverReduces n red
-neutralNeverReduces (noe-not normalExtBi h) r-not2 = h refl
-
-normalNeverReduces (no-ne x) red = neutralNeverReduces x red
-normalNeverReduces (no-a n) (r-l' red) = normalNeverReduces n red
-
-redIsDeterministic : ∀ {M N1 N2 : Expr} → ReducesTo M N1 → ReducesTo M N2 → N1 ≡ N2
-redIsDeterministic (r-a red1) (r-a red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-a red1) (r-a' x red2) = ⊥-elim (normalNeverReduces x red1)
-redIsDeterministic (r-a (r-l' red1)) (r-l x x₁) = ⊥-elim (normalNeverReduces x₁ red1)
-redIsDeterministic (r-a' x red1) (r-a red2) = ⊥-elim (normalNeverReduces x red2)
-redIsDeterministic (r-a' x red1) (r-a' x₁ red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-a' x red1) (r-l x₁ x₂) = ⊥-elim (normalNeverReduces x₁ red1)
-redIsDeterministic (r-l x x₁) (r-a (r-l' red2)) = ⊥-elim (normalNeverReduces x₁ red2)
-redIsDeterministic (r-l x x₁) (r-a' x₂ red2) = ⊥-elim (normalNeverReduces x red2)
-redIsDeterministic (r-l x x₁) (r-l x₂ x₃) = refl
-redIsDeterministic (r-l' red1) (r-l' red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-plus1 red1) (r-plus1 red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-plus1 red1) (r-plus2 n red2) = ⊥-elim (normalNeverReduces n red1)
-redIsDeterministic (r-plus2 n red1) (r-plus1 red2) = ⊥-elim (normalNeverReduces n red2)
-redIsDeterministic (r-plus2 _ red1) (r-plus2 x red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic r-plus3 r-plus3 = refl
-redIsDeterministic (r-sub1 red1) (r-sub1 red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-sub1 red1) (r-sub2 n red2) = ⊥-elim (normalNeverReduces n red1)
-redIsDeterministic (r-sub2 n red1) (r-sub1 red2) = ⊥-elim (normalNeverReduces n red2)
-redIsDeterministic (r-sub2 _ red1) (r-sub2 x red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic r-sub3 r-sub3 = refl
-redIsDeterministic (r-mul1 red1) (r-mul1 red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-mul1 red1) (r-mul2 n red2) = ⊥-elim (normalNeverReduces n red1)
-redIsDeterministic (r-mul2 n red1) (r-mul1 red2) = ⊥-elim (normalNeverReduces n red2)
-redIsDeterministic (r-mul2 _ red1) (r-mul2 x red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic r-mul3 r-mul3 = refl
-redIsDeterministic (r-and1 red1) (r-and1 red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-and1 red1) (r-and2 n red2) = ⊥-elim (normalNeverReduces n red1)
-redIsDeterministic (r-and2 n red1) (r-and1 red2) = ⊥-elim (normalNeverReduces n red2)
-redIsDeterministic (r-and2 _ red1) (r-and2 x red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic r-and3 r-and3 = refl
-redIsDeterministic (r-or1 red1) (r-or1 red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic (r-or1 red1) (r-or2 n red2) = ⊥-elim (normalNeverReduces n red1)
-redIsDeterministic (r-or2 n red1) (r-or1 red2) = ⊥-elim (normalNeverReduces n red2)
-redIsDeterministic (r-or2 _ red1) (r-or2 x red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic r-or3 r-or3 = refl
-redIsDeterministic (r-not1 red1) (r-not1 red2) rewrite redIsDeterministic red1 red2 = refl
-redIsDeterministic r-not2 r-not2 = refl
-redIsDeterministic r-ite-true r-ite-true = refl
-redIsDeterministic r-ite-false r-ite-false = refl
-redIsDeterministic (r-ite red1) (r-ite red2) rewrite redIsDeterministic red1 red2 = refl
 
 normalImpliesNeutralIte : ∀ {L M N : Expr} → Normal (Ite L M N) → Neutral (Ite L M N)
 normalImpliesNeutralIte (no-ne h) = h
@@ -393,25 +316,56 @@ neutralStepNothing {UnaryOp Not L}                  (noe-not _ _) | Nothing = re
 neutralStepNothing {UnaryOp Not (Const (BoolC L'))} (noe-not _ h) | Just _ = ⊥-elim (h {L'} refl)
 
 step→red : ∀ {M N : Expr} → smallStep M ≡ Just N → ReducesTo M N
-step→red {Lam x x₁ M} {N} h = {!!}
-step→red {App M M₁} {N} h = {!!}
-step→red {Ite M M₁ M₂} {N} h = {!!}
-step→red {BinOp x M M₁} {N} h = {!!}
-step→red {UnaryOp Not (Const (BoolC x))} {N} h  = {!r-not2!}
-step→red {UnaryOp Not (Lam x x₁ M)} {N} h = {!!}
-step→red {UnaryOp Not (App M M₁)} {N} h = {!!}
-step→red {UnaryOp Not (Ite M M₁ M₂)} {N} h = {!!}
-step→red {UnaryOp Not (BinOp x M M₁)} {N} h = {!!}
-step→red {UnaryOp Not (UnaryOp x M)} {N} h = {!!}
+step→red {Lam _ _ L} {N} h with smallStep L in eqL
+... | Just _ rewrite sym (Just-injective h) = r-l' (step→red eqL)
+step→red {App L M} {N} h with smallStep L in eqL
+... | Just _ rewrite sym (Just-injective h) = r-a (step→red eqL)
+... | Nothing with smallStep M in eqM
+...   | Just _ rewrite sym (Just-injective h) = r-a' (stepNothingNormal eqL) (step→red eqM)
+...   | Nothing with L
+...      | Lam _ _ L' rewrite sym (Just-injective h) with smallStep L' in eqL'
+...         | Nothing = r-l (stepNothingNormal eqL') (stepNothingNormal eqM)
+step→red {Ite L M N} {E} h with smallStep L in eqL
+step→red {Ite (Const (BoolC true))  M N} {E} h | Nothing rewrite sym (Just-injective h) = r-ite-true
+step→red {Ite (Const (BoolC false)) M N} {E} h | Nothing rewrite sym (Just-injective h) = r-ite-false
+step→red {Ite L M N} {E} h                     | Just _ rewrite sym (Just-injective h) = r-ite (step→red eqL)
+step→red {BinOp Add L M} {N} h with smallStep L in eqL
+step→red {BinOp Add L M} {N} h | Just _ rewrite sym (Just-injective h) = r-add1 (step→red eqL)
+step→red {BinOp Add L M} {N} h | Nothing with smallStep M in eqM
+step→red {BinOp Add L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-add2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Add (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-add3
+step→red {BinOp Sub L M} {N} h with smallStep L in eqL
+step→red {BinOp Sub L M} {N} h | Just _ rewrite sym (Just-injective h) = r-sub1 (step→red eqL)
+step→red {BinOp Sub L M} {N} h | Nothing with smallStep M in eqM
+step→red {BinOp Sub L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-sub2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Sub (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-sub3
+step→red {BinOp Mul L M} {N} h with smallStep L in eqL
+step→red {BinOp Mul L M} {N} h | Just _ rewrite sym (Just-injective h) = r-mul1 (step→red eqL)
+step→red {BinOp Mul L M} {N} h | Nothing with smallStep M in eqM
+step→red {BinOp Mul L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-mul2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Mul (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-mul3
+step→red {BinOp And L M} {N} h with smallStep L in eqL
+step→red {BinOp And L M} {N} h | Just _ rewrite sym (Just-injective h) = r-and1 (step→red eqL)
+step→red {BinOp And L M} {N} h | Nothing with smallStep M in eqM
+step→red {BinOp And L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-and2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp And (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-and3
+step→red {BinOp Or L M} {N} h with smallStep L in eqL
+step→red {BinOp Or L M} {N} h | Just _ rewrite sym (Just-injective h) = r-or1 (step→red eqL)
+step→red {BinOp Or L M} {N} h | Nothing with smallStep M in eqM
+step→red {BinOp Or L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-or2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Or (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-or3
+step→red {UnaryOp Not L} {M} h with smallStep L in eqL
+step→red {UnaryOp Not L} {M} h | Just _ rewrite sym (Just-injective h) = r-not1 (step→red eqL)
+step→red {UnaryOp Not (Const (BoolC x))} {M} h | Nothing rewrite sym (Just-injective h) = r-not2
 
 red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
 red→step (r-a h) rewrite red→step h = refl
 red→step (r-a' x h) rewrite normalStepNothing x | red→step h = refl
-red→step {App (Lam _ _ L) V} (r-l x h) rewrite normalStepNothing h | normalStepNothing x = refl
+red→step {App (Lam _ _ L) V} (r-l x h) rewrite normalStepNothing x | normalStepNothing h = refl
 red→step (r-l' h) rewrite red→step h = refl
-red→step (r-plus1 h) rewrite red→step h = refl
-red→step (r-plus2 x h) rewrite normalStepNothing x | red→step h = refl
-red→step r-plus3 = refl
+red→step (r-add1 h) rewrite red→step h = refl
+red→step (r-add2 x h) rewrite normalStepNothing x | red→step h = refl
+red→step r-add3 = refl
 red→step (r-sub1 h) rewrite red→step h = refl
 red→step (r-sub2 x h) rewrite normalStepNothing x | red→step h = refl
 red→step r-sub3 = refl
@@ -429,3 +383,22 @@ red→step r-not2 = refl
 red→step r-ite-true = refl
 red→step r-ite-false = refl
 red→step (r-ite h) rewrite red→step h = refl
+
+redIsDeterministic' : ∀ {M N1 N2 : Expr} → ReducesTo M N1 → ReducesTo M N2 → Just N1 ≡ Just N2
+redIsDeterministic' h1 h2 rewrite sym (red→step h1) | sym (red→step h2) = refl
+
+redIsDeterministic : ∀ {M N1 N2 : Expr} → ReducesTo M N1 → ReducesTo M N2 → N1 ≡ N2
+redIsDeterministic h1 h2 = Just-injective (redIsDeterministic' h1 h2)
+
+normalNeverReduces : ∀ {M : Expr} → Normal M → (∀ {N : Expr} → ¬ (ReducesTo M N))
+normalNeverReduces {M} normalM red with smallStep M in eqM
+... | Nothing = injection-maybe (trans (sym eqM) (red→step red))
+... | Just _  = injection-maybe (trans (sym (normalStepNothing normalM)) eqM)
+
+neutralNeverReduces : ∀ {M : Expr} → Neutral M → (∀ {N : Expr} → ¬ (ReducesTo M N))
+neutralNeverReduces neutralM red = normalNeverReduces (no-ne neutralM) red
+
+neverReducesNormal : ∀ {L : Expr} → (∀ {M : Expr} → ¬ ReducesTo L M) → Normal L
+neverReducesNormal {L} h with smallStep L in eqL
+... | Nothing = stepNothingNormal eqL
+... | Just _  = ⊥-elim (h (step→red eqL))
