@@ -13,21 +13,23 @@ Build with the `build.sh` script.
     - [x] Parser
     - [x] Evaluator
   - [x] De Bruijn Indices
-  - [ ] Basic formalization
+  - [x] Basic formalization
     + [x] Type checker
-    + [ ] Evaluator
+    + [x] Evaluator
 
 ### Features
   - [x] Simple Types
   - [ ] Extensions (TaPL ch 11)
     + [x] Uninterpreted (opaque) Types
-    + [ ] Numbers, booleans and strings
+    + [x] Numbers, booleans, ITE
+    + [ ] Equality, Strings
     + [ ] Pairs
     + [ ] Sums
     + [ ] General recursion
+    + [ ] Pattern Matching
   - [ ] Polymorphism
   - [ ] Verify properties using Agda (Progress/Preservation)
-  - [ ] Richer library
+  - [ ] Library of examples
 
 ### Usability
   - [ ] Code Generation
@@ -41,7 +43,6 @@ Build with the `build.sh` script.
 
 ## Future Work
   - DAG instead of AST
-  - Tagless Final style
   - System F omega
   - Type Inference
   - Type Classes
