@@ -58,7 +58,7 @@ handleEval rExpr = do
       Nothing -> throwError "Typing error."
       Just t  ->
         let normalizedExpr = eval expr in
-        let msg = untypedPrettyPrint normalizedExpr <> " :: " <> show t in
+        let msg = untypedPrettyPrint normalizedExpr <> " :: " <> prettyPrintType t in
         liftIO (putStrLnFlush msg)
 
 handleCommand :: Command -> Result ()

@@ -121,14 +121,14 @@ RawExpr :: { RawExpr }
   | "lam" CommaSeparatedIdents "::" RawType "->" RawExpr %shift
     { joinLams $2 $4 $6 }
   | var { RawVar $1 }
-  | number { RawNumVal $1 }
-  | boolean { RawBoolVal $1 }
-  | RawExpr "+" RawExpr { RawApp (RawApp (RawPrimE PlusPrim) $1) $3 }
-  | RawExpr "-" RawExpr { RawApp (RawApp (RawPrimE MinusPrim) $1) $3 }
-  | RawExpr "*" RawExpr { RawApp (RawApp (RawPrimE MultPrim) $1) $3 }
-  | RawExpr "&&" RawExpr { RawApp (RawApp (RawPrimE AndPrim) $1) $3 }
-  | RawExpr "||" RawExpr { RawApp (RawApp (RawPrimE OrPrim) $1) $3 }
-  | "!" RawExpr { RawApp (RawPrimE NotPrim) $2 }
+  | number { RawConst (NumC $1) }
+  | boolean { RawConst (BoolC $1) }
+  | RawExpr "+" RawExpr { RawBinOp Add $1 $3 }
+  | RawExpr "-" RawExpr { RawBinOp Sub $1 $3 }
+  | RawExpr "*" RawExpr { RawBinOp Mul $1 $3 }
+  | RawExpr "&&" RawExpr { RawBinOp And $1 $3 }
+  | RawExpr "||" RawExpr { RawBinOp Or $1 $3 }
+  | "!" RawExpr { RawUnOp Not $2 }
   | "if" RawExpr "then" RawExpr "else" RawExpr { RawIte $2 $4 $6 }
   | ParExpr { $1 }
 

@@ -22,16 +22,17 @@ toNat i =
     EQ -> Z
     LT -> error "[toNat]: negative input"
 
-instance Show Type where
-    show BoolT = "Bool"
-    show IntT = "Int"
-    show U = "U"
-    show (Arrow t1 t2) = concat [ "("
-                                , show t1
-                                , ")"
-                                , " => "
-                                , show t2
-                                ]
+
+prettyPrintType :: Type -> String
+prettyPrintType BoolT = "Bool"
+prettyPrintType IntT = "Int"
+prettyPrintType U = "U"
+prettyPrintType (Arrow t1 t2) = concat [ "("
+                            , prettyPrintType t1
+                            , ")"
+                            , " => "
+                            , prettyPrintType t2
+                            ]
 
 expandType :: GlobalContext -> RawType -> Either String Type
 expandType _ RawBoolT = Right BoolT
@@ -53,38 +54,42 @@ instance Eq Expr where -- if we derive we don't get alpha equivalence
   (==) (App e11 e12) (App e21 e22) = e11 == e21 && e12 == e22
   (==) _ _ = False
 
-instance Show Expr where
-    show = typedPrettyPrint
-
 -- print respecting Lam's syntax
 prettyPrint :: Bool -> Expr -> String
 prettyPrint = go []
-  where go :: LocalContext -> Bool -> Expr -> String
+  where ppBinOp Add = "+"
+        ppBinOp Sub = "-"
+        ppBinOp Mul = "*"
+        ppBinOp And = "&&"
+        ppBinOp Or = "||"
+        ppUnOp Not = "!"
+        go :: LocalContext -> Bool -> Expr -> String
         go ctx isUntyped (Ite b t e) = unwords
-          ["if", go ctx isUntyped b, "then", go ctx isUntyped t, "else", go ctx isUntyped e]
-        go ctx _ (PrimE PlusPrim)  = "Plus"
-        go ctx _ (PrimE MinusPrim) = "Minus"
-        go ctx _ (PrimE MultPrim)  = "Mult"
-        go ctx _ (PrimE AndPrim)   = "And"
-        go ctx _ (PrimE OrPrim)    = "Or"
-        go ctx _ (NumVal z)        = show z
-        go ctx _ (BoolVal True)    = "true"
-        go ctx _ (BoolVal False)   = "false"
+          ["(", "if", go ctx isUntyped b, "then", go ctx isUntyped t, "else", go ctx isUntyped e, ")"]
+        go ctx isUntyped (BinOp op e1 e2)     = unwords
+          ["(", go ctx isUntyped e1, ppBinOp op, go ctx isUntyped e2, ")"]
+        go ctx isUntyped (UnaryOp op e)   = unwords
+          ["(", ppUnOp op, go ctx isUntyped e, ")"]
+        go ctx _ (Const (NumC z))      = show z
+        go ctx _ (Const (BoolC True))  = "true"
+        go ctx _ (Const (BoolC False)) = "false"
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx isUntyped (Lam n ty e) =
             let freshName = pickFresh ctx n
-             in unwords $ [ "lam"
+             in unwords $ [ "("
+                          , "lam"
                           , freshName
                           ] ++
                           -- show types depending on the parameter
-                          [":: " <> show ty | not isUntyped] ++
+                          [":: " <> prettyPrintType ty | not isUntyped] ++
                           [ "->"
                           , go (freshName : ctx) isUntyped e
+                          , ")"
                           ]
         go ctx isUntyped (App e1 e2) =
           let f e@(Var _) = go ctx isUntyped e
               f e         = concat ["(", go ctx isUntyped e, ")"]
-           in unwords [f e1, ".", f e2]
+           in unwords ["(", f e1, ".", f e2, ")"]
 
 untypedPrettyPrint, typedPrettyPrint :: Expr -> String
 untypedPrettyPrint = prettyPrint True
@@ -98,9 +103,13 @@ eraseNames = go []
       go lctx gctx t >>= \t' ->
       go lctx gctx e >>= \e' ->
       Right (Ite b' t' e')
-    go lctx gctx (RawPrimE p) = Right (PrimE p)
-    go lctx gctx (RawNumVal z) = Right (NumVal z)
-    go lctx gctx (RawBoolVal b) = Right (BoolVal b)
+    go lctx gctx (RawBinOp o e1 e2) =
+      go lctx gctx e1 >>= \e1' ->
+      go lctx gctx e2 >>= \e2' ->
+      Right (BinOp o e1' e2')
+    go lctx gctx (RawUnOp o e) =
+      go lctx gctx e >>= \e' ->
+      Right (UnaryOp o e')
     go lctx gctx (RawVar s) =
       case elemIndex s lctx of
         Just i  -> Right $ Var (toNat i)
@@ -115,16 +124,6 @@ eraseNames = go []
         go (s : lctx) gctx e >>= \e' ->
         expandType gctx ty >>= \ty' ->
         Right $ Lam s ty' e'
-
-printAST :: Expr -> String
-printAST (App e1 e2)     = "App (" ++ printAST e1 ++ ") (" ++ printAST e2 ++ ")"
-printAST (Lam s t e)     = "Lam " ++ s ++ "(" ++ printAST e ++ ")"
-printAST (Var i)         = "Var " ++ show i
-printAST (NumVal n)      = "NumVal " ++ show n
-printAST (BoolVal True)  = "BoolVal true"
-printAST (BoolVal False) = "BoolVal false"
-printAST (PrimE p)       = "PrimE " ++ show p
-printAST (Ite b t e)     = unwords ["Ite", printAST b, printAST t, printAST e]
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =

@@ -31,36 +31,13 @@ data Type : Set where
   U     : Type
   Arrow : Type → Type → Type
 
-{-# COMPILE AGDA2HS Type #-}
+{-# COMPILE AGDA2HS Type deriving Show #-}
 
 data ConstT : Set where
   NumC : Int → ConstT
   BoolC : Bool → ConstT
 
 {-# COMPILE AGDA2HS ConstT deriving Show #-}
-
-data RawOperationT : Set
-data RawExpr : Set
-
-data RawOperationT where
-  RawAdd : RawExpr → RawExpr → RawOperationT
-  RawSub : RawExpr → RawExpr → RawOperationT
-  RawMul : RawExpr → RawExpr → RawOperationT
-  RawAnd : RawExpr → RawExpr → RawOperationT
-  RawOr  : RawExpr → RawExpr → RawOperationT
-  RawNot : RawExpr → RawOperationT
-
-{-# COMPILE AGDA2HS RawOperationT deriving Show #-}
-
-data RawExpr where
-  RawVar       : Id → RawExpr
-  RawLam       : Id → RawType → RawExpr → RawExpr
-  RawApp       : RawExpr → RawExpr → RawExpr
-  RawIte       : RawExpr → RawExpr → RawExpr → RawExpr
-  RawConst     : ConstT → RawExpr
-  RawOperation : RawOperationT → RawExpr
-
-{-# COMPILE AGDA2HS RawExpr deriving Show #-}
 
 data BinOpT : Set where
   Add : BinOpT
@@ -69,12 +46,23 @@ data BinOpT : Set where
   And : BinOpT
   Or  : BinOpT
 
-{-# COMPILE AGDA2HS BinOpT #-}
+{-# COMPILE AGDA2HS BinOpT deriving Show #-}
 
 data UnaryOpT : Set where
   Not : UnaryOpT
 
-{-# COMPILE AGDA2HS UnaryOpT #-}
+{-# COMPILE AGDA2HS UnaryOpT deriving Show #-}
+
+data RawExpr : Set where
+  RawVar       : Id → RawExpr
+  RawLam       : Id → RawType → RawExpr → RawExpr
+  RawApp       : RawExpr → RawExpr → RawExpr
+  RawIte       : RawExpr → RawExpr → RawExpr → RawExpr
+  RawConst     : ConstT → RawExpr
+  RawBinOp     : BinOpT → RawExpr → RawExpr → RawExpr
+  RawUnOp      : UnaryOpT → RawExpr → RawExpr
+
+{-# COMPILE AGDA2HS RawExpr deriving Show #-}
 
 data Expr : Set where
   Var     : Nat → Expr
@@ -85,7 +73,7 @@ data Expr : Set where
   BinOp   : BinOpT → Expr → Expr → Expr
   UnaryOp : UnaryOpT → Expr → Expr
 
-{-# COMPILE AGDA2HS Expr #-}
+{-# COMPILE AGDA2HS Expr deriving Show #-}
 
 data Command : Set where
     TypedefC : Id × RawType → Command

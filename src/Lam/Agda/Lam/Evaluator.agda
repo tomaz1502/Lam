@@ -70,6 +70,8 @@ smallStepIte b t e (Just b') = Just (Ite b' t e)
 smallStepIte (Const (BoolC b)) t e Nothing = Just (if b then t else e)
 smallStepIte _ _ _ _ = Nothing
 
+{-# COMPILE AGDA2HS smallStepIte #-}
+
 smallStepBinOp : BinOpT → Expr → Expr → Maybe Expr → Maybe Expr → Maybe Expr
 smallStepBinOp o _ e2 (Just e1') _ = Just (BinOp o e1' e2)
 smallStepBinOp o e1 _ Nothing (Just e2') = Just (BinOp o e1 e2')
@@ -80,10 +82,14 @@ smallStepBinOp And (Const (BoolC i1)) (Const (BoolC i2)) Nothing Nothing = Just 
 smallStepBinOp Or  (Const (BoolC i1)) (Const (BoolC i2)) Nothing Nothing = Just (Const (BoolC (i1 || i2)))
 smallStepBinOp _ _ _ _ _ = Nothing
 
+{-# COMPILE AGDA2HS smallStepBinOp #-}
+
 smallStepUnOp : UnaryOpT → Expr → Maybe Expr → Maybe Expr
 smallStepUnOp o _ (Just e') = Just (UnaryOp o e')
 smallStepUnOp Not (Const (BoolC i)) Nothing = Just (Const (BoolC (not i)))
 smallStepUnOp _ _ _ = Nothing
+
+{-# COMPILE AGDA2HS smallStepUnOp #-}
 
 smallStep : Expr → Maybe Expr
 smallStep (Var x) = Nothing
