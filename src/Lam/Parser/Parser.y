@@ -112,6 +112,15 @@ UntypedRawExpr :: { RawExpr }
   | "lam" CommaSeparatedIdents "->" UntypedRawExpr %shift
     { joinLams $2 RawU $4 }
   | var { RawVar $1 }
+  | number { RawConst (NumC $1) }
+  | boolean { RawConst (BoolC $1) }
+  | UntypedRawExpr "+" UntypedRawExpr { RawBinOp Add $1 $3 }
+  | UntypedRawExpr "-" UntypedRawExpr { RawBinOp Sub $1 $3 }
+  | UntypedRawExpr "*" UntypedRawExpr { RawBinOp Mul $1 $3 }
+  | UntypedRawExpr "&&" UntypedRawExpr { RawBinOp And $1 $3 }
+  | UntypedRawExpr "||" UntypedRawExpr { RawBinOp Or $1 $3 }
+  | "!" UntypedRawExpr { RawUnOp Not $2 }
+  | "if" UntypedRawExpr "then" UntypedRawExpr "else" UntypedRawExpr { RawIte $2 $4 $6 }
   | UntypedParExpr { $1 }
 
 UntypedParExpr : "(" UntypedRawExpr ")" { $2 }
