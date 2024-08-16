@@ -2,7 +2,7 @@ module Lam.Data where
 
 open import Data.Bool using (true; false)
 
-open import Haskell.Prelude using (Int; Bool; String; _×_)
+open import Haskell.Prelude using (Int; Bool; String; _×_; Eq; _==_; _&&_)
 
 Id : Set
 Id = String
@@ -13,6 +13,12 @@ data Nat : Set where
   Z : Nat
   S : Nat → Nat
 
+instance
+  iEqNat : Eq Nat
+  iEqNat ._==_ Z Z = true
+  iEqNat ._==_ (S x) (S y) = x == y
+  iEqNat ._==_ _ _ = false
+
 {-# COMPILE AGDA2HS Nat deriving (Eq, Show) #-}
 
 data RawTypeL : Set where
@@ -22,7 +28,7 @@ data RawTypeL : Set where
   RawArrow : RawTypeL → RawTypeL → RawTypeL
   FreeType : Id → RawTypeL
 
-{-# COMPILE AGDA2HS RawTypeL deriving Show #-}
+{-# COMPILE AGDA2HS RawTypeL deriving (Eq, Show) #-}
 
 data TypeL : Set where
   BoolT : TypeL
@@ -31,13 +37,19 @@ data TypeL : Set where
   U     : TypeL
   Arrow : TypeL → TypeL → TypeL
 
-{-# COMPILE AGDA2HS TypeL deriving Show #-}
+{-# COMPILE AGDA2HS TypeL deriving (Eq, Show) #-}
 
 data ConstT : Set where
   NumC : Int → ConstT
   BoolC : Bool → ConstT
 
-{-# COMPILE AGDA2HS ConstT deriving Show #-}
+{-# COMPILE AGDA2HS ConstT deriving (Eq, Show) #-}
+
+instance
+  iEqConst : Eq ConstT
+  iEqConst ._==_ (NumC i) (NumC j) = i == j
+  iEqConst ._==_ (BoolC i) (BoolC j) = i == j
+  iEqConst ._==_ _ _ = false
 
 data BinOpT : Set where
   Add : BinOpT
@@ -46,12 +58,25 @@ data BinOpT : Set where
   And : BinOpT
   Or  : BinOpT
 
-{-# COMPILE AGDA2HS BinOpT deriving Show #-}
+{-# COMPILE AGDA2HS BinOpT deriving (Eq, Show) #-}
+
+instance
+  iEqBinOp : Eq BinOpT
+  iEqBinOp ._==_ Add Add = true
+  iEqBinOp ._==_ Sub Sub = true
+  iEqBinOp ._==_ Mul Mul = true
+  iEqBinOp ._==_ And And = true
+  iEqBinOp ._==_ Or Or = true
+  iEqBinOp ._==_ _ _ = false
 
 data UnaryOpT : Set where
   Not : UnaryOpT
 
-{-# COMPILE AGDA2HS UnaryOpT deriving Show #-}
+{-# COMPILE AGDA2HS UnaryOpT deriving (Eq, Show) #-}
+
+instance
+  iEqUnaryOp : Eq UnaryOpT
+  iEqUnaryOp ._==_ Not Not = true
 
 data RawExpr : Set where
   RawVar       : Id → RawExpr
@@ -74,6 +99,22 @@ data Expr : Set where
   UnaryOp : UnaryOpT → Expr → Expr
 
 {-# COMPILE AGDA2HS Expr deriving Show #-}
+
+instance
+  iExprEq : Eq Expr
+  iExprEq ._==_ (Var i) (Var j) = i == j
+  iExprEq ._==_ (Lam _ _ e1) (Lam _ _ e2) = e1 == e2
+  iExprEq ._==_ (App e11 e12) (App e21 e22) = e11 == e21 && e12 == e22
+  iExprEq ._==_ (Const c1) (Const c2) = c1 == c2
+  iExprEq ._==_ (BinOp o1 e11 e12) (BinOp o2 e21 e22) =
+    o1 == o2 && e11 == e21 && e12 == e22
+  iExprEq ._==_ (UnaryOp o1 e1) (UnaryOp o2 e2) =
+    o1 == o2 && e1 == e2
+  iExprEq ._==_ (Ite b1 t1 e1) (Ite b2 t2 e2) =
+    b1 == b2 && t1 == t2 && e1 == e2
+  iExprEq ._==_ _ _ = false
+
+{-# COMPILE AGDA2HS iExprEq #-}
 
 data Command : Set where
     TypedefC : Id × RawTypeL → Command

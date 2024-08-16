@@ -1,6 +1,6 @@
 module Fixtures.ChurchNum where
 
-import Lam.Data ( Expr(..), Type(..), Nat(..) )
+import Lam.Data ( Expr(..), TypeL(..), Nat(..) )
 
 import Fixtures.Common ( SourceCode )
 

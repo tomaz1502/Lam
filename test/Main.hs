@@ -4,8 +4,7 @@
 
 module Main where
 
-import Lam.Handler
-import Lam.Data ( Expr(..) , Type(..) )
+import Lam.Data ( Expr(..) , TypeL(..) )
 import Lam.Utils ( parseUntypedExpr, parseTypedExpr, typedPrettyPrint, toNat )
 import Lam.Evaluator ( eval )
 
@@ -34,7 +33,7 @@ genIdentifier = listOf1 genLetter `suchThat` notForbidden
         notForbidden _ = True
  
 
-instance Arbitrary Type where
+instance Arbitrary TypeL where
   arbitrary = frequency
     [ (3, pure U)
     , (1, Arrow <$> arbitrary <*> arbitrary)
