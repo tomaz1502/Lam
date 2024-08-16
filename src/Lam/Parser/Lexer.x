@@ -26,6 +26,7 @@ tokens :-
 <0> "TYPEDEF" { tok Typedef         }
 <0> "DEFINE"  { tok Define          }
 <0> "LOAD"    { tok Load            }
+<0> "READ"    { tok Read            }
 <0> ":"       { tok Colon           }
 <0> "::"      { tok TypeColon       }
 <0> ":="      { tok ColonEq         }
@@ -61,6 +62,7 @@ data Token =
   | Eval
   | Typedef
   | Load
+  | Read
   | Define
   | Colon
   | TypeColon

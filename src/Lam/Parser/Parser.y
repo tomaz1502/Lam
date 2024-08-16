@@ -39,6 +39,7 @@ import Lam.Parser.Lexer qualified as L
   "EVAL"    { L.Eval       }
   "TYPEDEF" { L.Typedef    }
   "LOAD"    { L.Load       }
+  "READ"    { L.Read       }
   var       { L.Var $$     }
   "->"      { L.Arrow      }
   "=>"      { L.TypeArrow  }
@@ -73,6 +74,7 @@ UntypedCommand :: { Command }
   : UntypedDefineCommand { DefineC $1  }
   | UntypedEvalCommand   { EvalC $1  }
   | LoadCommand          { LoadC $1 }
+  | ReadCommand          { ReadC $1 }
   -- we allow this here but throw an error later
   | TypedefCommand       { TypedefC $1 }
 
@@ -91,6 +93,7 @@ Command :: { Command }
   | DefineCommand  { DefineC $1 }
   | EvalCommand    { EvalC $1 }
   | LoadCommand    { LoadC $1 }
+  | ReadCommand    { ReadC $1 }
 
 TypedefCommand :: { (Id, RawTypeL) }
   : "TYPEDEF" var ":=" RawTypeL ";"
@@ -106,6 +109,9 @@ EvalCommand :: { RawExpr }
 LoadCommand :: { String }
   : "LOAD" ":" path ";" { init (tail $3) {- Removes quotes -} }
   -- yes i will change that later to FilePath thank you
+
+ReadCommand :: { String }
+  : "READ" var ";" { $2 }
 
 UntypedRawExpr :: { RawExpr }
   : UntypedRawExpr "." UntypedRawExpr { RawApp $1 $3  }

@@ -25,7 +25,7 @@ loadFile fName = do
   isUntyped <- askUntyped
   sc        <- liftIO (readFile fName)
   prog      <- liftEither (parseProg isUntyped sc)
-  mapM_ (\case {EvalC _ -> pure (); c -> handleCommand c}) prog
+  mapM_ (\case {EvalC _ -> pure (); ReadC _ -> pure (); c -> handleCommand c}) prog
 
 handleTypedef :: Id -> RawTypeL -> Result ()
 handleTypedef macroName macroType = do
@@ -67,6 +67,11 @@ handleCommand c =
     DefineC  (macroName, macroExpr) -> handleDefine macroName macroExpr
     EvalC rExpr                     -> handleEval rExpr
     LoadC path                      -> loadFile path
+    ReadC varName                   -> do
+        exprS <- liftIO getLine
+        isUntyped <- askUntyped
+        expr <- liftEither (parseRawExpr isUntyped exprS)
+        handleDefine varName expr
 
 readCommand :: Result Command
 readCommand = do

@@ -80,5 +80,6 @@ data Command : Set where
     DefineC  : Id × RawExpr → Command
     EvalC    : RawExpr → Command
     LoadC    : Id → Command
+    ReadC    : Id → Command
 
 {-# COMPILE AGDA2HS Command #-}
