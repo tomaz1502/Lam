@@ -37,6 +37,8 @@ data ConstT : Set where
   NumC : Int → ConstT
   BoolC : Bool → ConstT
 
+{-# COMPILE AGDA2HS ConstT deriving Show #-}
+
 data RawOperationT : Set
 data RawExpr : Set
 
@@ -47,6 +49,8 @@ data RawOperationT where
   RawAnd : RawExpr → RawExpr → RawOperationT
   RawOr  : RawExpr → RawExpr → RawOperationT
   RawNot : RawExpr → RawOperationT
+
+{-# COMPILE AGDA2HS RawOperationT deriving Show #-}
 
 data RawExpr where
   RawVar       : Id → RawExpr
@@ -65,8 +69,12 @@ data BinOpT : Set where
   And : BinOpT
   Or  : BinOpT
 
+{-# COMPILE AGDA2HS BinOpT #-}
+
 data UnaryOpT : Set where
   Not : UnaryOpT
+
+{-# COMPILE AGDA2HS UnaryOpT #-}
 
 data Expr : Set where
   Var     : Nat → Expr
