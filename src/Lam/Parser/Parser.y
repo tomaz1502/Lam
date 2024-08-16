@@ -92,8 +92,8 @@ Command :: { Command }
   | EvalCommand    { EvalC $1 }
   | LoadCommand    { LoadC $1 }
 
-TypedefCommand :: { (Id, RawType) }
-  : "TYPEDEF" var ":=" RawType ";"
+TypedefCommand :: { (Id, RawTypeL) }
+  : "TYPEDEF" var ":=" RawTypeL ";"
     { ($2, $4) }
 
 -- we allow name shadowing
@@ -118,7 +118,7 @@ UntypedParExpr : "(" UntypedRawExpr ")" { $2 }
 
 RawExpr :: { RawExpr }
   : RawExpr "." RawExpr { RawApp $1 $3  }
-  | "lam" CommaSeparatedIdents "::" RawType "->" RawExpr %shift
+  | "lam" CommaSeparatedIdents "::" RawTypeL "->" RawExpr %shift
     { joinLams $2 $4 $6 }
   | var { RawVar $1 }
   | number { RawConst (NumC $1) }
@@ -134,15 +134,15 @@ RawExpr :: { RawExpr }
 
 ParExpr : "(" RawExpr ")" { $2 }
 
-RawType :: { RawType }
-  : RawType "=>" RawType { RawArrow $1 $3 }
+RawTypeL :: { RawTypeL }
+  : RawTypeL "=>" RawTypeL { RawArrow $1 $3 }
   | "U" { RawU }
   | "Int" { RawIntT }
   | "Bool" { RawBoolT }
   | var { FreeType $1 }
   | ParType { $1 }
 
-ParType : "(" RawType ")" { $2 }
+ParType : "(" RawTypeL ")" { $2 }
 
 CommaSeparatedIdents :: { [Id] }
   : var "," CommaSeparatedIdents { $1 : $3 }
@@ -157,7 +157,7 @@ parseError t = L.alexMonad (\_ -> Left ("Error reading the token: " <> (show t))
 getParser :: L.Alex a -> String -> Either String a
 getParser f s = L.runAlex s f
 
-joinLams :: [Id] -> RawType -> RawExpr -> RawExpr
+joinLams :: [Id] -> RawTypeL -> RawExpr -> RawExpr
 joinLams names ty body =
   foldr (`RawLam` ty) body names
 }

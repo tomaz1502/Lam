@@ -50,7 +50,7 @@ dec (S x) = x
 
 {-# COMPILE AGDA2HS dec #-}
 
-eqType : Type → Type → Bool
+eqType : TypeL → TypeL → Bool
 eqType BoolT        BoolT       = True
 eqType IntT         IntT        = True
 eqType U            U           = True
@@ -73,14 +73,14 @@ lookup≡ {t} {x ∷ l} {S i} h = lookup≡ {t} {l} {i} (Data.Nat.≤-pred h)
 &&to× : {a b : Bool} → (a && b) ≡ True → a ≡ True × b ≡ True
 &&to× {True} {True} h = ⟨ refl , refl ⟩
 
-eqType->≡ : {t₁ t₂ : Type} → eqType t₁ t₂ ≡ True → t₁ ≡ t₂
+eqType->≡ : {t₁ t₂ : TypeL} → eqType t₁ t₂ ≡ True → t₁ ≡ t₂
 eqType->≡ {BoolT} {BoolT} _ = refl
 eqType->≡ {IntT} {IntT} _ = refl
 eqType->≡ {U} {U} _ = refl
 eqType->≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h
 ... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Arrow (eqType->≡ t==t') (eqType->≡ t₁==t'')
 
-eqType-refl : (t : Type) → eqType t t ≡ True
+eqType-refl : (t : TypeL) → eqType t t ≡ True
 eqType-refl BoolT = refl
 eqType-refl IntT = refl
 eqType-refl U = refl

@@ -1,4 +1,3 @@
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lam.Utils where
@@ -23,7 +22,7 @@ toNat i =
     LT -> error "[toNat]: negative input"
 
 
-prettyPrintType :: Type -> String
+prettyPrintType :: TypeL -> String
 prettyPrintType BoolT = "Bool"
 prettyPrintType IntT = "Int"
 prettyPrintType U = "U"
@@ -34,7 +33,7 @@ prettyPrintType (Arrow t1 t2) = concat [ "("
                             , prettyPrintType t2
                             ]
 
-expandType :: GlobalContext -> RawType -> Either String Type
+expandType :: GlobalContext -> RawTypeL -> Either String TypeL
 expandType _ RawBoolT = Right BoolT
 expandType _ RawIntT = Right IntT
 expandType _ RawU = Right U
@@ -46,13 +45,6 @@ expandType gctx (FreeType s) =
     case M.lookup s (boundTypes gctx) of
       Just t  -> Right t
       Nothing -> Left $ "free type: " <> s
-
-instance Eq Expr where -- if we derive we don't get alpha equivalence
-  (==) :: Expr -> Expr -> Bool
-  (==) (Var i) (Var j) = i == j
-  (==) (Lam _ _ e1') (Lam _ _ e2') = e1' == e2'
-  (==) (App e11 e12) (App e21 e22) = e11 == e21 && e12 == e22
-  (==) _ _ = False
 
 -- print respecting Lam's syntax
 prettyPrint :: Bool -> Expr -> String
@@ -70,9 +62,9 @@ prettyPrint = go []
           ["(", go ctx isUntyped e1, ppBinOp op, go ctx isUntyped e2, ")"]
         go ctx isUntyped (UnaryOp op e)   = unwords
           ["(", ppUnOp op, go ctx isUntyped e, ")"]
-        go ctx _ (Const (NumC z))      = show z
-        go ctx _ (Const (BoolC True))  = "true"
-        go ctx _ (Const (BoolC False)) = "false"
+        go _ _ (Const (NumC z))      = show z
+        go _ _ (Const (BoolC True))  = "true"
+        go _ _ (Const (BoolC False)) = "false"
         go ctx _ (Var i) = fromJust $ lookupMaybe i ctx
         go ctx isUntyped (Lam n ty e) =
             let freshName = pickFresh ctx n
@@ -124,6 +116,7 @@ eraseNames = go []
         go (s : lctx) gctx e >>= \e' ->
         expandType gctx ty >>= \ty' ->
         Right $ Lam s ty' e'
+    go _ _ (RawConst c) = Right (Const c)
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =

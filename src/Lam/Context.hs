@@ -7,7 +7,7 @@ import Lam.Data
 import Data.Map qualified as M
 
 data GlobalContext = GlobalContext
-    { boundTypes :: M.Map String Type
+    { boundTypes :: M.Map String TypeL
     , boundExprs :: M.Map String Expr
     }
 

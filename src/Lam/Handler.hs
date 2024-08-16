@@ -10,7 +10,6 @@ module Lam.Handler ( repl
 import Control.Monad.RWS        ( get, put )
 import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError (..) )
 import Data.Map qualified as M
-import System.Exit              (exitSuccess, exitFailure)
 
 import Lam.Context
 import Lam.Data
@@ -28,7 +27,7 @@ loadFile fName = do
   prog      <- liftEither (parseProg isUntyped sc)
   mapM_ (\case {EvalC _ -> pure (); c -> handleCommand c}) prog
 
-handleTypedef :: Id -> RawType -> Result ()
+handleTypedef :: Id -> RawTypeL -> Result ()
 handleTypedef macroName macroType = do
   isUntyped <- askUntyped
   gctx    <- get

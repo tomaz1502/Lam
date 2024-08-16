@@ -15,23 +15,23 @@ data Nat : Set where
 
 {-# COMPILE AGDA2HS Nat deriving (Eq, Show) #-}
 
-data RawType : Set where
-  RawBoolT : RawType
-  RawIntT  : RawType
-  RawU     : RawType
-  RawArrow : RawType → RawType → RawType
-  FreeType : Id → RawType
+data RawTypeL : Set where
+  RawBoolT : RawTypeL
+  RawIntT  : RawTypeL
+  RawU     : RawTypeL
+  RawArrow : RawTypeL → RawTypeL → RawTypeL
+  FreeType : Id → RawTypeL
 
-{-# COMPILE AGDA2HS RawType deriving Show #-}
+{-# COMPILE AGDA2HS RawTypeL deriving Show #-}
 
-data Type : Set where
-  BoolT : Type
-  IntT  : Type
+data TypeL : Set where
+  BoolT : TypeL
+  IntT  : TypeL
 -- U is an opaque type
-  U     : Type
-  Arrow : Type → Type → Type
+  U     : TypeL
+  Arrow : TypeL → TypeL → TypeL
 
-{-# COMPILE AGDA2HS Type deriving Show #-}
+{-# COMPILE AGDA2HS TypeL deriving Show #-}
 
 data ConstT : Set where
   NumC : Int → ConstT
@@ -55,7 +55,7 @@ data UnaryOpT : Set where
 
 data RawExpr : Set where
   RawVar       : Id → RawExpr
-  RawLam       : Id → RawType → RawExpr → RawExpr
+  RawLam       : Id → RawTypeL → RawExpr → RawExpr
   RawApp       : RawExpr → RawExpr → RawExpr
   RawIte       : RawExpr → RawExpr → RawExpr → RawExpr
   RawConst     : ConstT → RawExpr
@@ -66,7 +66,7 @@ data RawExpr : Set where
 
 data Expr : Set where
   Var     : Nat → Expr
-  Lam     : Id → Type → Expr → Expr
+  Lam     : Id → TypeL → Expr → Expr
   App     : Expr → Expr → Expr
   Ite     : Expr → Expr → Expr → Expr
   Const   : ConstT → Expr
@@ -76,7 +76,7 @@ data Expr : Set where
 {-# COMPILE AGDA2HS Expr deriving Show #-}
 
 data Command : Set where
-    TypedefC : Id × RawType → Command
+    TypedefC : Id × RawTypeL → Command
     DefineC  : Id × RawExpr → Command
     EvalC    : RawExpr → Command
     LoadC    : Id → Command

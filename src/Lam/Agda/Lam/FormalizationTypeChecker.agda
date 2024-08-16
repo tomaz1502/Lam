@@ -19,7 +19,7 @@ open import Lam.Data
 open import Lam.TypeChecker
 open import Lam.UtilsAgda
 
-data _⊢_∶_ : TypingContext → Expr → Type → Set where
+data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
 
   ⊢b : ∀ {Γ : TypingContext} {b : Bool}
     → Γ ⊢ Const (BoolC b) ∶ BoolT
@@ -57,7 +57,7 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     → Γ ⊢ BinOp Mul L M ∶ IntT
 
 
-  ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : Type}
+  ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : TypeL}
     → Γ ⊢ b ∶ BoolT
     → Γ ⊢ t ∶ A
     → Γ ⊢ e ∶ A
@@ -69,18 +69,18 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
     --------------------------------
     → Γ ⊢ Var i ∶ lookup Γ (fromℕ< h)
 
-  ⊢l : ∀ {Γ : TypingContext} {name : Id} {body : Expr} {dom codom : Type}
+  ⊢l : ∀ {Γ : TypingContext} {name : Id} {body : Expr} {dom codom : TypeL}
     → (dom ∷ Γ) ⊢ body ∶ codom
     ----------------------------------------
     → Γ ⊢ Lam name dom body ∶ Arrow dom codom
 
-  ⊢a : ∀ {Γ : TypingContext} {f x : Expr} {dom codom : Type}
+  ⊢a : ∀ {Γ : TypingContext} {f x : Expr} {dom codom : TypeL}
     → Γ ⊢ f ∶ Arrow dom codom
     → Γ ⊢ x ∶ dom
     --------------------
     → Γ ⊢ App f x ∶ codom
 
-⊢→tc : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
+⊢→tc : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
 ⊢→tc ⊢b  = refl
 ⊢→tc ⊢n  = refl
 ⊢→tc (⊢&& h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
@@ -95,7 +95,7 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
   | ⊢→tc {Γ} {t} {ty} tt
   | ⊢→tc {Γ} {e} {ty} te
   | eqType-refl ty = refl
-⊢→tc (⊢v {Γ} {i} {h}) = lookup≡ {Type} {Γ} {i} h
+⊢→tc (⊢v {Γ} {i} {h}) = lookup≡ {TypeL} {Γ} {i} h
 ⊢→tc {Γ} {Lam name dom body} {Arrow dom codom} (⊢l {Γ} {name} {body} {dom} {codom} wt) =
   begin
     typeCheck' Γ (Lam name dom body)
@@ -109,7 +109,7 @@ data _⊢_∶_ : TypingContext → Expr → Type → Set where
 ⊢→tc {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
   rewrite ⊢→tc {Γ} {f} {Arrow dom codom} wt₁ | ⊢→tc {Γ} {x} {dom} wt₂ | eqType-refl dom = refl
 
-tc→⊢ : ∀ {Γ : TypingContext} {e : Expr} {t : Type} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
+tc→⊢ : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
 tc→⊢ {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
 ... | Just (Arrow t₁ t₂) with typeCheck' Γ e₂ in e₂Type
 ... | Just t₃ with iteAbs (λ()) eq
@@ -120,8 +120,8 @@ tc→⊢ {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
 tc→⊢ {Γ} {Lam x t' e₁} {t} eq with typeCheck' (t' ∷ Γ) e₁ in te
 ... | Just t'' rewrite (sym (Just-injective eq)) = ⊢l (tc→⊢ {t' ∷ Γ} {e₁} {t''} te)
 tc→⊢ {Γ} {Var x} {t} eq =
-  let x<lenΓ = lookup?< {Type} {Γ} {x} eq in
-  let lookupMaybeEqLookup = lookup≡ {Type} {Γ} {x} x<lenΓ in
+  let x<lenΓ = lookup?< {TypeL} {Γ} {x} eq in
+  let lookupMaybeEqLookup = lookup≡ {TypeL} {Γ} {x} x<lenΓ in
   let justTEqJustLookup = trans (sym eq) lookupMaybeEqLookup in
   let tEqLookup = Just-injective justTEqJustLookup in
   subst (λ t' -> Γ ⊢ Var x ∶ t') (sym tEqLookup) (⊢v {Γ} {x} {x<lenΓ})
@@ -168,5 +168,5 @@ module Examples where
   -- ex3 : ∀ (t : Type) → ¬ ([] ⊢ App (App (PrimE PlusPrim) (BoolVal true)) (BoolVal true) ∶ t)
   -- ex3 t (⊢a (⊢a () _) ⊢b)
 
-  ex4 : ∀ (t : Type) → ¬ ([ IntT ] ⊢ Ite (Var Z) (Const (BoolC true)) (Const (BoolC true)) ∶ t)
+  ex4 : ∀ (t : TypeL) → ¬ ([ IntT ] ⊢ Ite (Var Z) (Const (BoolC true)) (Const (BoolC true)) ∶ t)
   ex4 t (⊢ite () _ _)

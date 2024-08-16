@@ -84,7 +84,7 @@ data Normal where
         ----------
         → Normal M
 
-    no-a : ∀ {s : Id} {ty : Type} {N : Expr}
+    no-a : ∀ {s : Id} {ty : TypeL} {N : Expr}
         → Normal N
         ---------------------
         → Normal (Lam s ty N)
@@ -101,14 +101,14 @@ data ReducesTo : Expr → Expr → Set where
         ---------------------
         → ReducesTo (App V M) (App V M')
 
-    r-l : ∀ {s : Id} {ty : Type} {V1 V2 : Expr}
+    r-l : ∀ {s : Id} {ty : TypeL} {V1 V2 : Expr}
         → Normal V1
         → Normal V2
         ---------------------------
         → ReducesTo (App (Lam s ty V1) V2) (shiftDown (substitute Z (shiftUp V2) V1))
         -- using a predicate to specify substitution here gets pretty ugly
 
-    r-l' : ∀ {s : Id} {ty : Type} {L L' : Expr}
+    r-l' : ∀ {s : Id} {ty : TypeL} {L L' : Expr}
         → ReducesTo L L'
         ---------------------------
         → ReducesTo (Lam s ty L) (Lam s ty L')

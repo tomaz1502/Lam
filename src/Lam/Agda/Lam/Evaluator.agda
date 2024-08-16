@@ -66,7 +66,7 @@ substitute _ _ e = e
 -- Lambda Lifting so the proofs work
 
 smallStepIte : Expr → Expr → Expr → Maybe Expr → Maybe Expr
-smallStepIte b t e (Just b') = Just (Ite b' t e)
+smallStepIte _ t e (Just b') = Just (Ite b' t e)
 smallStepIte (Const (BoolC b)) t e Nothing = Just (if b then t else e)
 smallStepIte _ _ _ _ = Nothing
 
@@ -92,7 +92,7 @@ smallStepUnOp _ _ _ = Nothing
 {-# COMPILE AGDA2HS smallStepUnOp #-}
 
 smallStep : Expr → Maybe Expr
-smallStep (Var x) = Nothing
+smallStep (Var _) = Nothing
 smallStep (Lam n t e) = smallStep e >>= λ e' -> Just (Lam n t e')
 smallStep (App e1 e2) =
   myCaseOf (smallStep e1) λ

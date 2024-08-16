@@ -8,7 +8,7 @@ open import Lam.Data
 open import Lam.UtilsAgda
 
 TypingContext : Set
-TypingContext = List Type
+TypingContext = List TypeL
 
 {-# COMPILE AGDA2HS TypingContext #-}
 
@@ -17,7 +17,7 @@ emptyTypingContext = []
 
 {-# COMPILE AGDA2HS emptyTypingContext #-}
 
-typeCheck' : TypingContext → Expr → Maybe Type
+typeCheck' : TypingContext → Expr → Maybe TypeL
 typeCheck' gam (Ite b t e)       =
   typeCheck' gam b >>= λ
     { BoolT ->
@@ -26,8 +26,8 @@ typeCheck' gam (Ite b t e)       =
             if eqType tt te then (Just tt) else Nothing
     ; _ -> Nothing
     }
-typeCheck' gam (Const (NumC _))  = Just IntT
-typeCheck' gam (Const (BoolC _)) = Just BoolT
+typeCheck' _ (Const (NumC _))  = Just IntT
+typeCheck' _ (Const (BoolC _)) = Just BoolT
 typeCheck' gam (Var i)           = lookupMaybe i gam
 typeCheck' gam (Lam _ t e)       =
   typeCheck' (t ∷ gam) e >>= λ t' -> Just (Arrow t t')
@@ -86,7 +86,7 @@ typeCheck' gam (UnaryOp Not e) =
 
 {-# COMPILE AGDA2HS typeCheck' #-}
 
-typeCheck : Expr → Maybe Type
+typeCheck : Expr → Maybe TypeL
 typeCheck = typeCheck' []
 
 {-# COMPILE AGDA2HS typeCheck #-}
