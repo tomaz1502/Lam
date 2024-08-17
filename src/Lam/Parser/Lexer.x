@@ -6,7 +6,7 @@ module Lam.Parser.Lexer (Token(..), alexMonadScan, runAlex, Alex, unAlex, alexMo
 %wrapper "monad"
 
 $digit = 0-9
-@digits = \-?[1-9]$digit*
+@digits = \-?$digit+
 $alpha = [a-zA-Z_]
 @id = $alpha[$alpha$digit]*[']*
 @path = \"(((\.)?\/)?(@id\/)*)@id(\.@id)?\"
