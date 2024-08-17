@@ -79,8 +79,7 @@ prettyPrint = go []
                           , ")"
                           ]
         go ctx isUntyped (App e1 e2) =
-          let f e@(Var _) = go ctx isUntyped e
-              f e         = concat ["(", go ctx isUntyped e, ")"]
+           let f = go ctx isUntyped
            in unwords ["(", f e1, ".", f e2, ")"]
 
 untypedPrettyPrint, typedPrettyPrint :: Expr -> String
