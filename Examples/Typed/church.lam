@@ -1,8 +1,6 @@
 TYPEDEF SV := U => U;
 TYPEDEF Number := SV => U => U;
 DEFINE id    := lam x :: U -> x;
-DEFINE true  := lam x, y :: U -> x;
-DEFINE false := lam x, y :: U -> y;
 DEFINE ite   := lam b :: U => U => U -> lam x, y :: U -> b . x . y;
 DEFINE zero  := lam s :: SV -> lam z :: U -> z;
 DEFINE succ  := lam m :: Number -> lam s :: SV -> lam z :: U -> s . (m . s . z);
@@ -14,6 +12,6 @@ DEFINE three := succ . two;
 DEFINE four  := succ . three;
 DEFINE five  := succ . four;
 DEFINE six   := succ . five;
-DEFINE program := mul . two . three;
+DEFINE program := mul . three . three;
 EVAL: program;
 
