@@ -32,9 +32,9 @@ eqNat _ _         = false
 {-# COMPILE AGDA2HS eqNat #-}
 
 ltNat : Nat → Nat → Bool
+ltNat Z (S _) = true
 ltNat (S x) (S y) = ltNat x y
-ltNat Z _         = true
-ltNat (S _) Z     = false
+ltNat _ _     = false
 
 {-# COMPILE AGDA2HS ltNat #-}
 
