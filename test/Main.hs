@@ -4,9 +4,10 @@
 
 module Main where
 
-import Lam.Data ( Expr(..) , TypeL(..) )
-import Lam.Utils ( parseUntypedExpr, parseTypedExpr, typedPrettyPrint, toNat )
-import Lam.Evaluator ( eval )
+import Lam.Context (parseUntypedExpr, parseTypedExpr)
+import Lam.Data (Expr(..) , TypeL(..))
+import Lam.Utils (typedPrettyPrint, toNat )
+import Lam.Evaluator (eval)
 
 import Fixtures.ChurchNum ( encodeChurchE
                           , encodeChurchP

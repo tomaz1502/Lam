@@ -1,7 +1,5 @@
 name:                Lam
 version:             0.1.0.0
--- synopsis:
--- description:
 homepage:            https://github.com/githubuser/Lam#readme
 license:             BSD3
 license-file:        LICENSE
@@ -68,6 +66,4 @@ test-suite unit-test
     , QuickCheck
     , tasty-quickcheck
   default-language: Haskell2010
-
-
 
