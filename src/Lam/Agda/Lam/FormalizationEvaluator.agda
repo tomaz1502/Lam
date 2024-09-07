@@ -113,82 +113,38 @@ data ReducesTo : Expr → Expr → Set where
         ---------------------------
         → ReducesTo (Lam s ty L) (Lam s ty L')
 
-    r-add1 : ∀ {L L' M : Expr}
-        → ReducesTo L L'
-        --------------------------------
-        → ReducesTo (BinOp Add L M) (BinOp Add L' M)
+    r-binop1 : ∀ {L L' M : Expr} {o : BinOpT}
+      → ReducesTo L L'
+      ----------------------------------------
+      → ReducesTo (BinOp o L M) (BinOp o L' M)
 
-    r-add2 : ∀ {L M M' : Expr}
-        → Normal L
-        → ReducesTo M M'
-        --------------------------------
-        → ReducesTo (BinOp Add L M) (BinOp Add L M')
+    r-binop2 : ∀ {L M M' : Expr} {o : BinOpT}
+      → Normal L
+      → ReducesTo M M'
+      ----------------------------------------
+      → ReducesTo (BinOp o L M) (BinOp o L M')
 
-    r-add3 : ∀ {i1 i2 : Int}
+    r-add : ∀ {i1 i2 : Int}
         → ReducesTo (BinOp Add (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 + i2)))
 
-    r-sub1 : ∀ {L L' M : Expr}
-        → ReducesTo L L'
-        --------------------------------
-        → ReducesTo (BinOp Sub L M) (BinOp Sub L' M)
-
-    r-sub2 : ∀ {L M M' : Expr}
-        → Normal L
-        → ReducesTo M M'
-        --------------------------------
-        → ReducesTo (BinOp Sub L M) (BinOp Sub L M')
-
-    r-sub3 : ∀ {i1 i2 : Int}
+    r-sub : ∀ {i1 i2 : Int}
         → ReducesTo (BinOp Sub (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 - i2)))
 
-    r-mul1 : ∀ {L L' M : Expr}
-        → ReducesTo L L'
-        --------------------------------
-        → ReducesTo (BinOp Mul L M) (BinOp Mul L' M)
-
-    r-mul2 : ∀ {L M M' : Expr}
-        → Normal L
-        → ReducesTo M M'
-        --------------------------------
-        → ReducesTo (BinOp Mul L M) (BinOp Mul L M')
-
-    r-mul3 : ∀ {i1 i2 : Int}
+    r-mul : ∀ {i1 i2 : Int}
         → ReducesTo (BinOp Mul (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 * i2)))
 
-    r-and1 : ∀ {L L' M : Expr}
-        → ReducesTo L L'
-        --------------------------------
-        → ReducesTo (BinOp And L M) (BinOp And L' M)
-
-    r-and2 : ∀ {L M M' : Expr}
-        → Normal L
-        → ReducesTo M M'
-        --------------------------------
-        → ReducesTo (BinOp And L M) (BinOp And L M')
-
-    r-and3 : ∀ {i1 i2 : Bool}
+    r-and : ∀ {i1 i2 : Bool}
         → ReducesTo (BinOp And (Const (BoolC i1)) (Const (BoolC i2))) (Const (BoolC (i1 && i2)))
 
-    r-or1 : ∀ {L L' M : Expr}
-        → ReducesTo L L'
-        --------------------------------
-        → ReducesTo (BinOp Or L M) (BinOp Or L' M)
-
-    r-or2 : ∀ {L M M' : Expr}
-        → Normal L
-        → ReducesTo M M'
-        --------------------------------
-        → ReducesTo (BinOp Or L M) (BinOp Or L M')
-
-    r-or3 : ∀ {i1 i2 : Bool}
+    r-or : ∀ {i1 i2 : Bool}
         → ReducesTo (BinOp Or (Const (BoolC i1)) (Const (BoolC i2))) (Const (BoolC (i1 || i2)))
 
-    r-not1 : ∀ {L L' : Expr}
-        → ReducesTo L L'
-        ----------------------------
-        → ReducesTo (UnaryOp Not L) (UnaryOp Not L')
+    r-unop : ∀ {L L' : Expr} {o : UnaryOpT}
+      → ReducesTo L L'
+      ----------------------------------------
+      → ReducesTo (UnaryOp o L) (UnaryOp o L')
 
-    r-not2 : ∀ {b : Bool}
+    r-not : ∀ {b : Bool}
         ----------------------------------------------
         → ReducesTo (UnaryOp Not (Const (BoolC b))) (Const (BoolC (not b)))
 
@@ -330,59 +286,51 @@ step→red {Ite (Const (BoolC true))  M N} {E} h | Nothing rewrite sym (Just-inj
 step→red {Ite (Const (BoolC false)) M N} {E} h | Nothing rewrite sym (Just-injective h) = r-ite-false
 step→red {Ite L M N} {E} h                     | Just _ rewrite sym (Just-injective h) = r-ite (step→red eqL)
 step→red {BinOp Add L M} {N} h with smallStep L in eqL
-step→red {BinOp Add L M} {N} h | Just _ rewrite sym (Just-injective h) = r-add1 (step→red eqL)
+step→red {BinOp Add L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
 step→red {BinOp Add L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Add L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-add2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Add (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-add3
+step→red {BinOp Add L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Add (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-add
 step→red {BinOp Sub L M} {N} h with smallStep L in eqL
-step→red {BinOp Sub L M} {N} h | Just _ rewrite sym (Just-injective h) = r-sub1 (step→red eqL)
+step→red {BinOp Sub L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
 step→red {BinOp Sub L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Sub L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-sub2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Sub (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-sub3
+step→red {BinOp Sub L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Sub (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-sub
 step→red {BinOp Mul L M} {N} h with smallStep L in eqL
-step→red {BinOp Mul L M} {N} h | Just _ rewrite sym (Just-injective h) = r-mul1 (step→red eqL)
+step→red {BinOp Mul L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
 step→red {BinOp Mul L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Mul L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-mul2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Mul (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-mul3
+step→red {BinOp Mul L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Mul (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-mul
 step→red {BinOp And L M} {N} h with smallStep L in eqL
-step→red {BinOp And L M} {N} h | Just _ rewrite sym (Just-injective h) = r-and1 (step→red eqL)
+step→red {BinOp And L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
 step→red {BinOp And L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp And L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-and2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp And (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-and3
+step→red {BinOp And L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp And (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-and
 step→red {BinOp Or L M} {N} h with smallStep L in eqL
-step→red {BinOp Or L M} {N} h | Just _ rewrite sym (Just-injective h) = r-or1 (step→red eqL)
+step→red {BinOp Or L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
 step→red {BinOp Or L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Or L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-or2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Or (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-or3
+step→red {BinOp Or L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Or (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-or
 step→red {UnaryOp Not L} {M} h with smallStep L in eqL
-step→red {UnaryOp Not L} {M} h | Just _ rewrite sym (Just-injective h) = r-not1 (step→red eqL)
-step→red {UnaryOp Not (Const (BoolC x))} {M} h | Nothing rewrite sym (Just-injective h) = r-not2
+step→red {UnaryOp Not L} {M} h | Just _ rewrite sym (Just-injective h) = r-unop (step→red eqL)
+step→red {UnaryOp Not (Const (BoolC x))} {M} h | Nothing rewrite sym (Just-injective h) = r-not
 
 red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
 red→step (r-a h) rewrite red→step h = refl
 red→step (r-a' x h) rewrite normalStepNothing x | red→step h = refl
 red→step {App (Lam _ _ L) V} (r-l x h) rewrite normalStepNothing x | normalStepNothing h = refl
 red→step (r-l' h) rewrite red→step h = refl
-red→step (r-add1 h) rewrite red→step h = refl
-red→step (r-add2 x h) rewrite normalStepNothing x | red→step h = refl
-red→step r-add3 = refl
-red→step (r-sub1 h) rewrite red→step h = refl
-red→step (r-sub2 x h) rewrite normalStepNothing x | red→step h = refl
-red→step r-sub3 = refl
-red→step (r-mul1 h) rewrite red→step h = refl
-red→step (r-mul2 x h) rewrite normalStepNothing x | red→step h = refl
-red→step r-mul3 = refl
-red→step (r-and1 h) rewrite red→step h = refl
-red→step (r-and2 x h) rewrite normalStepNothing x | red→step h = refl
-red→step r-and3 = refl
-red→step (r-or1 h) rewrite red→step h = refl
-red→step (r-or2 x h) rewrite normalStepNothing x | red→step h = refl
-red→step r-or3 = refl
-red→step (r-not1 h) rewrite red→step h = refl
-red→step r-not2 = refl
+red→step r-add = refl
+red→step (r-binop1 h) rewrite red→step h = refl
+red→step (r-binop2 x h) rewrite normalStepNothing x | red→step h = refl
+red→step r-sub = refl
+red→step r-mul = refl
+red→step r-and = refl
+red→step r-or = refl
 red→step r-ite-true = refl
 red→step r-ite-false = refl
 red→step (r-ite h) rewrite red→step h = refl
+red→step (r-unop h) rewrite red→step h = refl
+red→step r-not = refl
 
 redIsDeterministic' : ∀ {M N1 N2 : Expr} → ReducesTo M N1 → ReducesTo M N2 → Just N1 ≡ Just N2
 redIsDeterministic' h1 h2 rewrite sym (red→step h1) | sym (red→step h2) = refl
