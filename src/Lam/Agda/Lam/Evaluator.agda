@@ -80,6 +80,8 @@ smallStepBinOp Sub (Const (NumC i1)) (Const (NumC i2)) Nothing Nothing = Just (C
 smallStepBinOp Mul (Const (NumC i1)) (Const (NumC i2)) Nothing Nothing = Just (Const (NumC (i1 * i2)))
 smallStepBinOp And (Const (BoolC i1)) (Const (BoolC i2)) Nothing Nothing = Just (Const (BoolC (i1 && i2)))
 smallStepBinOp Or  (Const (BoolC i1)) (Const (BoolC i2)) Nothing Nothing = Just (Const (BoolC (i1 || i2)))
+-- MkPair does not take step (maybe operation is a confusing name in this case - should be constructor)
+smallStepBinOp MkPair _ _ _ _ = Nothing
 smallStepBinOp _ _ _ _ _ = Nothing
 
 {-# COMPILE AGDA2HS smallStepBinOp #-}
@@ -87,6 +89,8 @@ smallStepBinOp _ _ _ _ _ = Nothing
 smallStepUnOp : UnaryOpT → Expr → Maybe Expr → Maybe Expr
 smallStepUnOp o _ (Just e') = Just (UnaryOp o e')
 smallStepUnOp Not (Const (BoolC i)) Nothing = Just (Const (BoolC (not i)))
+smallStepUnOp Proj1 (BinOp MkPair e1 _) Nothing = Just e1
+smallStepUnOp Proj2 (BinOp MkPair _ e2) Nothing = Just e2
 smallStepUnOp _ _ _ = Nothing
 
 {-# COMPILE AGDA2HS smallStepUnOp #-}

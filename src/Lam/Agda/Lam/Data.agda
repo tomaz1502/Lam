@@ -25,6 +25,7 @@ data RawTypeL : Set where
   RawBoolT : RawTypeL
   RawIntT  : RawTypeL
   RawU     : RawTypeL
+  RawProd  : RawTypeL → RawTypeL → RawTypeL
   RawArrow : RawTypeL → RawTypeL → RawTypeL
   FreeType : Id → RawTypeL
 
@@ -36,6 +37,7 @@ data TypeL : Set where
 -- U is an opaque type
   U     : TypeL
   Arrow : TypeL → TypeL → TypeL
+  Prod  : TypeL → TypeL → TypeL
 
 {-# COMPILE AGDA2HS TypeL deriving (Eq, Show) #-}
 
@@ -52,11 +54,12 @@ instance
   iEqConst ._==_ _ _ = false
 
 data BinOpT : Set where
-  Add : BinOpT
-  Sub : BinOpT
-  Mul : BinOpT
-  And : BinOpT
-  Or  : BinOpT
+  Add    : BinOpT
+  Sub    : BinOpT
+  Mul    : BinOpT
+  And    : BinOpT
+  Or     : BinOpT
+  MkPair : BinOpT
 
 {-# COMPILE AGDA2HS BinOpT deriving (Eq, Show) #-}
 
@@ -67,16 +70,22 @@ instance
   iEqBinOp ._==_ Mul Mul = true
   iEqBinOp ._==_ And And = true
   iEqBinOp ._==_ Or Or = true
+  iEqBinOp ._==_ MkPair MkPair = true
   iEqBinOp ._==_ _ _ = false
 
 data UnaryOpT : Set where
   Not : UnaryOpT
+  Proj1 : UnaryOpT
+  Proj2 : UnaryOpT
 
 {-# COMPILE AGDA2HS UnaryOpT deriving (Eq, Show) #-}
 
 instance
   iEqUnaryOp : Eq UnaryOpT
   iEqUnaryOp ._==_ Not Not = true
+  iEqUnaryOp ._==_ Proj1 Proj1 = true
+  iEqUnaryOp ._==_ Proj2 Proj2 = true
+  iEqUnaryOp ._==_ _ _ = false
 
 data RawExpr : Set where
   RawVar       : Id → RawExpr
