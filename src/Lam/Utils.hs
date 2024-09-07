@@ -26,9 +26,9 @@ prettyPrintType BoolT = "Bool"
 prettyPrintType IntT = "Int"
 prettyPrintType U = "U"
 prettyPrintType (Prod t1 t2) =
-  concat [ "(", prettyPrintType t1, "*", prettyPrintType t2, ")" ]
+  unwords [ "(", prettyPrintType t1, "*", prettyPrintType t2, ")" ]
 prettyPrintType (Arrow t1 t2) =
-  concat [ "(", prettyPrintType t1, ")  => ", prettyPrintType t2 ]
+  unwords [ "(", prettyPrintType t1, "=>", prettyPrintType t2, ")" ]
 
 -- print respecting Lam's syntax
 prettyPrint :: Bool -> Expr -> String
