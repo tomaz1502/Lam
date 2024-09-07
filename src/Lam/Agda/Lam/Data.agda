@@ -38,6 +38,7 @@ data TypeL : Set where
   U     : TypeL
   Arrow : TypeL → TypeL → TypeL
   Prod  : TypeL → TypeL → TypeL
+  Sum   : TypeL → TypeL → TypeL
 
 {-# COMPILE AGDA2HS TypeL deriving (Eq, Show) #-}
 
@@ -92,6 +93,9 @@ data RawExpr : Set where
   RawLam       : Id → RawTypeL → RawExpr → RawExpr
   RawApp       : RawExpr → RawExpr → RawExpr
   RawIte       : RawExpr → RawExpr → RawExpr → RawExpr
+  RawInl       : RawExpr → RawTypeL → RawExpr
+  RawInr       : RawExpr → RawTypeL → RawExpr
+  RawCase      : RawExpr → RawExpr → RawExpr → RawExpr
   RawConst     : ConstT → RawExpr
   RawBinOp     : BinOpT → RawExpr → RawExpr → RawExpr
   RawUnOp      : UnaryOpT → RawExpr → RawExpr
@@ -103,6 +107,9 @@ data Expr : Set where
   Lam     : Id → TypeL → Expr → Expr
   App     : Expr → Expr → Expr
   Ite     : Expr → Expr → Expr → Expr
+  Inl     : Expr → TypeL → Expr
+  Inr     : Expr → TypeL → Expr
+  Case    : Expr → Expr → Expr → Expr
   Const   : ConstT → Expr
   BinOp   : BinOpT → Expr → Expr → Expr
   UnaryOp : UnaryOpT → Expr → Expr

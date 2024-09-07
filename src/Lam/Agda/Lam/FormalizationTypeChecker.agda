@@ -92,7 +92,25 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
   ⊢mkPair : ∀ {Γ : TypingContext} {e1 e2 : Expr} {t1 t2 : TypeL}
     → Γ ⊢ e1 ∶ t1
     → Γ ⊢ e2 ∶ t2
+    -------------------------------------
     → Γ ⊢ BinOp MkPair e1 e2 ∶ Prod t1 t2
+
+  ⊢inl : ∀ {Γ : TypingContext} {e : Expr} {t te : TypeL}
+    → Γ ⊢ e ∶ te
+    ------------------------
+    → Γ ⊢ Inl e t ∶ Sum te t
+
+  ⊢inr : ∀ {Γ : TypingContext} {e : Expr} {t te : TypeL}
+    → Γ ⊢ e ∶ te
+    ------------------------
+    → Γ ⊢ Inr e t ∶ Sum t te
+
+  ⊢case : ∀ {Γ : TypingContext} {e1 e2 e3 : Expr} {t tl tr : TypeL}
+    → Γ ⊢ e1 ∶ Sum tl tr
+    → (tl ∷ Γ) ⊢ e2 ∶ t
+    → (tr ∷ Γ) ⊢ e3 ∶ t
+    -----------------------
+    → Γ ⊢ Case e1 e2 e3 ∶ t
 
 ⊢→tc : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
 ⊢→tc ⊢b  = refl
@@ -122,9 +140,12 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
   ∎
 ⊢→tc {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
   rewrite ⊢→tc {Γ} {f} {Arrow dom codom} wt₁ | ⊢→tc {Γ} {x} {dom} wt₂ | eqType-refl dom = refl
-⊢→tc {Γ} {BinOp MkPair e1 e2} {Prod t1 t2} (⊢mkPair ht1 ht2) rewrite ⊢→tc ht1 | ⊢→tc ht2 = refl
-⊢→tc {Γ} {UnaryOp Proj1 p} (⊢proj1 h) rewrite ⊢→tc h = refl
-⊢→tc {Γ} {UnaryOp Proj2 p} (⊢proj2 h) rewrite ⊢→tc h = refl
+⊢→tc (⊢mkPair ht1 ht2) rewrite ⊢→tc ht1 | ⊢→tc ht2 = refl
+⊢→tc (⊢proj1 h) rewrite ⊢→tc h = refl
+⊢→tc (⊢proj2 h) rewrite ⊢→tc h = refl
+⊢→tc (⊢inl h) rewrite ⊢→tc h = refl
+⊢→tc (⊢inr h) rewrite ⊢→tc h = refl
+⊢→tc (⊢case {t = t} h1 h2 h3) rewrite ⊢→tc h1 | ⊢→tc h2 | ⊢→tc h3 | eqType-refl t = refl
 
 tc→⊢ : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
 tc→⊢ {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
@@ -177,6 +198,14 @@ tc→⊢ {Γ} {UnaryOp Proj1 e} eq with typeCheck' Γ e in eqE
 ... | Just (Prod t1 t2) rewrite sym (Just-injective eq) = ⊢proj1 (tc→⊢ eqE)
 tc→⊢ {Γ} {UnaryOp Proj2 e} eq with typeCheck' Γ e in eqE
 ... | Just (Prod t1 t2) rewrite sym (Just-injective eq) = ⊢proj2 (tc→⊢ eqE)
+tc→⊢ {Γ} {Inl e t} eq with typeCheck' Γ e in eqE
+... | Just _ rewrite sym (Just-injective eq) = ⊢inl (tc→⊢ eqE)
+tc→⊢ {Γ} {Inr e t} eq with typeCheck' Γ e in eqE
+... | Just _ rewrite sym (Just-injective eq) = ⊢inr (tc→⊢ eqE)
+tc→⊢ {Γ} {Case e1 e2 e3} eq with typeCheck' Γ e1 in eqE1
+... | Just (Sum tl tr) with typeCheck' (tl ∷ Γ) e2 in eqE2 | typeCheck' (tr ∷ Γ) e3 in eqE3
+...   | Just t2 | Just t3 with iteAbs {b = eqType t2 t3} (λ()) eq
+...      | ⟨ x , y ⟩ rewrite eqType->≡ {t2} {t3} x | Just-injective y = ⊢case (tc→⊢ eqE1) (tc→⊢ eqE2) (tc→⊢ eqE3)
 
 module Examples where
 

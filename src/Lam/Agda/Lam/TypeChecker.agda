@@ -97,6 +97,18 @@ typeCheck' gam (BinOp MkPair e1 e2) =
   typeCheck' gam e1 >>= λ t1 ->
   typeCheck' gam e2 >>= λ t2 ->
   Just (Prod t1 t2)
+typeCheck' gam (Inl e t) =
+  typeCheck' gam e >>= λ te -> Just (Sum te t)
+typeCheck' gam (Inr e t) =
+  typeCheck' gam e >>= λ te -> Just (Sum t te)
+typeCheck' gam (Case e1 e2 e3) =
+  myCaseOf (typeCheck' gam e1) λ
+    { (Just (Sum tl tr)) ->
+        typeCheck' (tl ∷ gam) e2 >>= λ t2 ->
+        typeCheck' (tr ∷ gam) e3 >>= λ t3 ->
+        if eqType t2 t3 then Just t2 else Nothing
+    ; _ -> Nothing
+    }
 
 {-# COMPILE AGDA2HS typeCheck' #-}
 
