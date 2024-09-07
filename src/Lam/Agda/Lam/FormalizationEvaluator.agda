@@ -72,11 +72,29 @@ data Neutral where
         ---------------------
         → Neutral (BinOp Or L M)
 
+    noe-mkPair : ∀ {L M : Expr}
+        → Normal L
+        → Normal M
+        ----------------------------
+        → Neutral (BinOp MkPair L M)
+
     noe-not : ∀ {L : Expr}
         → Normal L
         → (∀ {i : Bool} → ¬ (L ≡ (Const (BoolC i))))
         -------------------
         → Neutral (UnaryOp Not L)
+
+    noe-proj1 : ∀ {L : Expr}
+        → Normal L
+        → (∀ {M N : Expr} → ¬ (L ≡ (BinOp MkPair M N)))
+        --------------------------
+        → Neutral (UnaryOp Proj1 L)
+
+    noe-proj2 : ∀ {L : Expr}
+        → Normal L
+        → (∀ {M N : Expr} → ¬ (L ≡ (BinOp MkPair M N)))
+        --------------------------
+        → Neutral (UnaryOp Proj2 L)
 
 data Normal where
     no-ne : ∀ {M : Expr}
@@ -147,6 +165,16 @@ data ReducesTo : Expr → Expr → Set where
     r-not : ∀ {b : Bool}
         ----------------------------------------------
         → ReducesTo (UnaryOp Not (Const (BoolC b))) (Const (BoolC (not b)))
+
+    r-proj1 : ∀ {L M : Expr}
+        → Normal L
+        → Normal M
+        → ReducesTo (UnaryOp Proj1 (BinOp MkPair L M)) L
+
+    r-proj2 : ∀ {L M : Expr}
+        → Normal L
+        → Normal M
+        → ReducesTo (UnaryOp Proj2 (BinOp MkPair L M)) M
 
     r-ite-true : ∀ {L M : Expr}
         --------------------------------------
@@ -219,11 +247,22 @@ stepNothingNormal {BinOp Or L M} eq | Nothing | Nothing =
   where
     orStepNothing : ∀ {i j} → smallStepBinOp Or L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (BoolC i)) × (M ≡ Const (BoolC j)))
     orStepNothing () ⟨ refl , refl ⟩
+stepNothingNormal {BinOp MkPair L M} eq | Nothing | Nothing = no-ne (noe-mkPair (stepNothingNormal eqL) (stepNothingNormal eqM))
 stepNothingNormal {UnaryOp Not V} eq with smallStep V in eqV
 ... | Nothing = no-ne (noe-not (stepNothingNormal eqV) (notStepNothing eq))
   where
     notStepNothing : ∀ {i} → smallStepUnOp Not V Nothing ≡ Nothing → ¬ (V ≡ Const (BoolC i))
     notStepNothing () refl
+stepNothingNormal {UnaryOp Proj1 V} eq with smallStep V in eqV
+... | Nothing = no-ne (noe-proj1 (stepNothingNormal eqV) (proj1StepNothing eq))
+  where
+    proj1StepNothing : ∀ {L M} → smallStepUnOp Proj1 V Nothing ≡ Nothing → ¬ (V ≡ BinOp MkPair L M)
+    proj1StepNothing () refl
+stepNothingNormal {UnaryOp Proj2 V} eq with smallStep V in eqV
+... | Nothing = no-ne (noe-proj2 (stepNothingNormal eqV) (proj1StepNothing eq))
+  where
+    proj1StepNothing : ∀ {L M} → smallStepUnOp Proj2 V Nothing ≡ Nothing → ¬ (V ≡ BinOp MkPair L M)
+    proj1StepNothing () refl
 
 normalStepNothing : ∀ {V : Expr} → Normal V → smallStep V ≡ Nothing
 neutralStepNothing : ∀ {V : Expr} → Neutral V → smallStep V ≡ Nothing
@@ -267,9 +306,17 @@ neutralStepNothing {BinOp Or L M} (noe-or h1 h2 h3)
        |  normalStepNothing h2 with smallStepBinOp Or L M Nothing Nothing in eq
 neutralStepNothing {BinOp Or L M} (noe-or h1 h2 h3) | Nothing = refl
 neutralStepNothing {BinOp Or (Const (BoolC L')) (Const (BoolC M'))} (noe-or h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {BinOp MkPair L M} (noe-mkPair h1 h2)
+  rewrite normalStepNothing h1 | normalStepNothing h2 = refl
 neutralStepNothing {UnaryOp Not L} (noe-not x h) rewrite normalStepNothing x with smallStepUnOp Not L Nothing in eq
 neutralStepNothing {UnaryOp Not L}                  (noe-not _ _) | Nothing = refl
 neutralStepNothing {UnaryOp Not (Const (BoolC L'))} (noe-not _ h) | Just _ = ⊥-elim (h {L'} refl)
+neutralStepNothing {UnaryOp Proj1 L} (noe-proj1 x h) rewrite normalStepNothing x with smallStepUnOp Proj1 L Nothing in eq
+neutralStepNothing {UnaryOp Proj1 L} (noe-proj1 x h) | Nothing = refl
+neutralStepNothing {UnaryOp Proj1 (BinOp MkPair M N)} (noe-proj1 x h) | Just _ = ⊥-elim (h {M} {N} refl)
+neutralStepNothing {UnaryOp Proj2 L} (noe-proj2 x h) rewrite normalStepNothing x with smallStepUnOp Proj2 L Nothing in eq
+neutralStepNothing {UnaryOp Proj2 L} (noe-proj2 x h) | Nothing = refl
+neutralStepNothing {UnaryOp Proj2 (BinOp MkPair M N)} (noe-proj2 x h) | Just _ = ⊥-elim (h {M} {N} refl)
 
 step→red : ∀ {M N : Expr} → smallStep M ≡ Just N → ReducesTo M N
 step→red {Lam _ _ L} {N} h with smallStep L in eqL
@@ -285,34 +332,31 @@ step→red {Ite L M N} {E} h with smallStep L in eqL
 step→red {Ite (Const (BoolC true))  M N} {E} h | Nothing rewrite sym (Just-injective h) = r-ite-true
 step→red {Ite (Const (BoolC false)) M N} {E} h | Nothing rewrite sym (Just-injective h) = r-ite-false
 step→red {Ite L M N} {E} h                     | Just _ rewrite sym (Just-injective h) = r-ite (step→red eqL)
-step→red {BinOp Add L M} {N} h with smallStep L in eqL
-step→red {BinOp Add L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
-step→red {BinOp Add L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Add L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Add (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-add
-step→red {BinOp Sub L M} {N} h with smallStep L in eqL
-step→red {BinOp Sub L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
-step→red {BinOp Sub L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Sub L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Sub (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-sub
-step→red {BinOp Mul L M} {N} h with smallStep L in eqL
-step→red {BinOp Mul L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
-step→red {BinOp Mul L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Mul L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Mul (Const (NumC i)) (Const (NumC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-mul
-step→red {BinOp And L M} {N} h with smallStep L in eqL
-step→red {BinOp And L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
-step→red {BinOp And L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp And L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp And (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-and
-step→red {BinOp Or L M} {N} h with smallStep L in eqL
-step→red {BinOp Or L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
-step→red {BinOp Or L M} {N} h | Nothing with smallStep M in eqM
-step→red {BinOp Or L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
-step→red {BinOp Or (Const (BoolC i)) (Const (BoolC j))} {N} h | Nothing | Nothing rewrite sym (Just-injective h) = r-or
+step→red {BinOp o L M} {N} h with smallStep L in eqL
+step→red {BinOp o L M} {N} h | Just _ rewrite sym (Just-injective h) = r-binop1 (step→red eqL)
+step→red {BinOp o L M} {N} h | Nothing with smallStep M in eqM
+step→red {BinOp o L M} {N} h | Nothing | Just _ rewrite sym (Just-injective h) = r-binop2 (stepNothingNormal eqL) (step→red eqM)
+step→red {BinOp Add (Const (NumC i)) M} {N} h | Nothing | Nothing with M
+... | Const (NumC j) rewrite sym (Just-injective h) = r-add
+step→red {BinOp Sub (Const (NumC i)) M} {N} h | Nothing | Nothing with M
+... | Const (NumC j) rewrite sym (Just-injective h) = r-sub
+step→red {BinOp Mul (Const (NumC i)) M} {N} h | Nothing | Nothing with M
+... | Const (NumC j) rewrite sym (Just-injective h) = r-mul
+step→red {BinOp And (Const (BoolC i)) M} {N} h | Nothing | Nothing with M
+... | Const (BoolC j) rewrite sym (Just-injective h) = r-and
+step→red {BinOp Or (Const (BoolC i)) M}  {N} h | Nothing | Nothing with M
+... | Const (BoolC j) rewrite sym (Just-injective h) = r-or
 step→red {UnaryOp Not L} {M} h with smallStep L in eqL
 step→red {UnaryOp Not L} {M} h | Just _ rewrite sym (Just-injective h) = r-unop (step→red eqL)
 step→red {UnaryOp Not (Const (BoolC x))} {M} h | Nothing rewrite sym (Just-injective h) = r-not
+step→red {UnaryOp Proj1 L} {M} h with smallStep L in eqL
+step→red {UnaryOp Proj1 (BinOp MkPair E1 E2)} {E3} h | Nothing with smallStep E1 in eqE1 | smallStep E2 in eqE2
+... | Nothing | Nothing rewrite sym (Just-injective h) = r-proj1 (stepNothingNormal eqE1) (stepNothingNormal eqE2)
+step→red {UnaryOp Proj1 L} {M} h | Just L' rewrite sym (Just-injective h) = r-unop (step→red eqL)
+step→red {UnaryOp Proj2 L} {M} h with smallStep L in eqL
+step→red {UnaryOp Proj2 (BinOp MkPair E1 E2)} {E3} h | Nothing with smallStep E1 in eqE1 | smallStep E2 in eqE2
+... | Nothing | Nothing rewrite sym (Just-injective h) = r-proj2 (stepNothingNormal eqE1) (stepNothingNormal eqE2)
+step→red {UnaryOp Proj2 L} {M} h | Just L' rewrite sym (Just-injective h) = r-unop (step→red eqL)
 
 red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
 red→step (r-a h) rewrite red→step h = refl
@@ -331,6 +375,8 @@ red→step r-ite-false = refl
 red→step (r-ite h) rewrite red→step h = refl
 red→step (r-unop h) rewrite red→step h = refl
 red→step r-not = refl
+red→step (r-proj1 h1 h2) rewrite normalStepNothing h1 | normalStepNothing h2 = refl
+red→step (r-proj2 h1 h2) rewrite normalStepNothing h1 | normalStepNothing h2 = refl
 
 redIsDeterministic' : ∀ {M N1 N2 : Expr} → ReducesTo M N1 → ReducesTo M N2 → Just N1 ≡ Just N2
 redIsDeterministic' h1 h2 rewrite sym (red→step h1) | sym (red→step h2) = refl
