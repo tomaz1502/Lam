@@ -28,6 +28,8 @@ import Lam.Parser.Lexer qualified as L
 %left "+" "-"
 %left "*"
 %right "!"
+%right "proj1"
+%right "proj2"
 
 %token
   "lam"     { L.Lam        }
@@ -62,6 +64,10 @@ import Lam.Parser.Lexer qualified as L
   "if"      { L.If         }
   "then"    { L.Then       }
   "else"    { L.Else       }
+  "proj1"   { L.Proj1      }
+  "proj2"   { L.Proj2      }
+  "<"       { L.LTTok      }
+  ">"       { L.GTTok      }
 %%
 
 
@@ -127,6 +133,9 @@ UntypedRawExpr :: { RawExpr }
   | UntypedRawExpr "||" UntypedRawExpr { RawBinOp Or $1 $3 }
   | "!" UntypedRawExpr { RawUnOp Not $2 }
   | "if" UntypedRawExpr "then" UntypedRawExpr "else" UntypedRawExpr { RawIte $2 $4 $6 }
+  | "proj1" UntypedRawExpr { RawUnOp Proj1 $2 }
+  | "proj2" UntypedRawExpr { RawUnOp Proj2 $2 }
+  | "<" UntypedRawExpr "," UntypedRawExpr ">" { RawBinOp MkPair $2 $4 }
   | UntypedParExpr { $1 }
 
 UntypedParExpr : "(" UntypedRawExpr ")" { $2 }
@@ -145,6 +154,9 @@ RawExpr :: { RawExpr }
   | RawExpr "||" RawExpr { RawBinOp Or $1 $3 }
   | "!" RawExpr { RawUnOp Not $2 }
   | "if" RawExpr "then" RawExpr "else" RawExpr { RawIte $2 $4 $6 }
+  | "proj1" RawExpr { RawUnOp Proj1 $2 }
+  | "proj2" RawExpr { RawUnOp Proj2 $2 }
+  | "<" RawExpr "," RawExpr ">" { RawBinOp MkPair $2 $4 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }
@@ -155,6 +167,7 @@ RawTypeL :: { RawTypeL }
   | "Int" { RawIntT }
   | "Bool" { RawBoolT }
   | var { FreeType $1 }
+  | RawTypeL "*" RawTypeL { RawProd $1 $3 }
   | ParType { $1 }
 
 ParType : "(" RawTypeL ")" { $2 }

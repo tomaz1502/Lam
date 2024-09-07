@@ -25,6 +25,8 @@ prettyPrintType :: TypeL -> String
 prettyPrintType BoolT = "Bool"
 prettyPrintType IntT = "Int"
 prettyPrintType U = "U"
+prettyPrintType (Prod t1 t2) =
+  concat [ "(", prettyPrintType t1, "*", prettyPrintType t2, ")" ]
 prettyPrintType (Arrow t1 t2) =
   concat [ "(", prettyPrintType t1, ")  => ", prettyPrintType t2 ]
 
@@ -36,11 +38,16 @@ prettyPrint = go []
         ppBinOp Mul = "*"
         ppBinOp And = "&&"
         ppBinOp Or = "||"
+        ppBinOp MkPair = undefined
         ppUnOp Not = "!"
+        ppUnOp Proj1 = "proj1"
+        ppUnOp Proj2 = "proj2"
         go :: [Id] -> Bool -> Expr -> String
         go ctx isUntyped (Ite b t e) =
           let f = go ctx isUntyped in
           unwords ["(", "if", f b, "then", f t, "else", f e, ")"]
+        go ctx isUntyped (BinOp MkPair e1 e2) = unwords
+          ["( <", go ctx isUntyped e1, ",", go ctx isUntyped e2, "> )"]
         go ctx isUntyped (BinOp op e1 e2)     = unwords
           ["(", go ctx isUntyped e1, ppBinOp op, go ctx isUntyped e2, ")"]
         go ctx isUntyped (UnaryOp op e)   = unwords
