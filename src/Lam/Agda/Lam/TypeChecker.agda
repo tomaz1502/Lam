@@ -83,6 +83,20 @@ typeCheck' gam (BinOp Or e1 e2) =
       }
 typeCheck' gam (UnaryOp Not e) =
   myCaseOf (typeCheck' gam e) λ { (Just BoolT) -> Just BoolT ; _ -> Nothing }
+typeCheck' gam (UnaryOp Proj1 e) =
+  myCaseOf (typeCheck' gam e) λ
+    { (Just (Prod t1 _)) -> Just t1
+    ; _ -> Nothing
+    }
+typeCheck' gam (UnaryOp Proj2 e) =
+  myCaseOf (typeCheck' gam e) λ
+    { (Just (Prod _ t2)) -> Just t2
+    ; _ -> Nothing
+    }
+typeCheck' gam (BinOp MkPair e1 e2) =
+  typeCheck' gam e1 >>= λ t1 ->
+  typeCheck' gam e2 >>= λ t2 ->
+  Just (Prod t1 t2)
 
 {-# COMPILE AGDA2HS typeCheck' #-}
 

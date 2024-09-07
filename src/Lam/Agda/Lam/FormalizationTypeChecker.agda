@@ -56,7 +56,6 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
     → Γ ⊢ M ∶ IntT
     → Γ ⊢ BinOp Mul L M ∶ IntT
 
-
   ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : TypeL}
     → Γ ⊢ b ∶ BoolT
     → Γ ⊢ t ∶ A
@@ -79,6 +78,21 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
     → Γ ⊢ x ∶ dom
     --------------------
     → Γ ⊢ App f x ∶ codom
+
+  ⊢proj1 : ∀ {Γ : TypingContext} {p : Expr} {t1 t2 : TypeL}
+    → Γ ⊢ p ∶ Prod t1 t2
+    -------------------------
+    → Γ ⊢ UnaryOp Proj1 p ∶ t1
+
+  ⊢proj2 : ∀ {Γ : TypingContext} {p : Expr} {t1 t2 : TypeL}
+    → Γ ⊢ p ∶ Prod t1 t2
+    -------------------------
+    → Γ ⊢ UnaryOp Proj2 p ∶ t2
+
+  ⊢mkPair : ∀ {Γ : TypingContext} {e1 e2 : Expr} {t1 t2 : TypeL}
+    → Γ ⊢ e1 ∶ t1
+    → Γ ⊢ e2 ∶ t2
+    → Γ ⊢ BinOp MkPair e1 e2 ∶ Prod t1 t2
 
 ⊢→tc : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
 ⊢→tc ⊢b  = refl
@@ -108,6 +122,9 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
   ∎
 ⊢→tc {Γ} {App f x} {codom} (⊢a {Γ} {f} {x} {dom} {codom} wt₁ wt₂)
   rewrite ⊢→tc {Γ} {f} {Arrow dom codom} wt₁ | ⊢→tc {Γ} {x} {dom} wt₂ | eqType-refl dom = refl
+⊢→tc {Γ} {BinOp MkPair e1 e2} {Prod t1 t2} (⊢mkPair ht1 ht2) rewrite ⊢→tc ht1 | ⊢→tc ht2 = refl
+⊢→tc {Γ} {UnaryOp Proj1 p} (⊢proj1 h) rewrite ⊢→tc h = refl
+⊢→tc {Γ} {UnaryOp Proj2 p} (⊢proj2 h) rewrite ⊢→tc h = refl
 
 tc→⊢ : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
 tc→⊢ {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
@@ -151,8 +168,15 @@ tc→⊢ {Γ} {BinOp And e1 e2} eq with typeCheck' Γ e1 in eqE1
 tc→⊢ {Γ} {BinOp Or e1 e2}  eq with typeCheck' Γ e1 in eqE1
 ... | Just BoolT with typeCheck' Γ e2 in eqE2
 ...   | Just BoolT rewrite sym (Just-injective eq) = ⊢|| (tc→⊢ eqE1) (tc→⊢ eqE2)
+tc→⊢ {Γ} {BinOp MkPair e1 e2} eq with typeCheck' Γ e1 in eqE1
+... | Just t1 with typeCheck' Γ e2 in eqE2
+...   | Just t2 rewrite sym (Just-injective eq) = ⊢mkPair (tc→⊢ eqE1) (tc→⊢ eqE2)
 tc→⊢ {Γ} {UnaryOp Not e} eq with typeCheck' Γ e in eqE
 ... | Just BoolT rewrite sym (Just-injective eq) = ⊢! (tc→⊢ eqE)
+tc→⊢ {Γ} {UnaryOp Proj1 e} eq with typeCheck' Γ e in eqE
+... | Just (Prod t1 t2) rewrite sym (Just-injective eq) = ⊢proj1 (tc→⊢ eqE)
+tc→⊢ {Γ} {UnaryOp Proj2 e} eq with typeCheck' Γ e in eqE
+... | Just (Prod t1 t2) rewrite sym (Just-injective eq) = ⊢proj2 (tc→⊢ eqE)
 
 module Examples where
 

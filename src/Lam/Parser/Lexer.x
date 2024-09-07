@@ -44,6 +44,10 @@ tokens :-
 <0> "if"      { tok If              }
 <0> "then"    { tok Then            }
 <0> "else"    { tok Else            }
+<0> "proj1"   { tok Proj1           }
+<0> "proj2"   { tok Proj2           }
+<0> "<"       { tok LTTok           }
+<0> ">"       { tok GTTok           }
 <0> @id       { tok (Var "")        }
 <0> @path     { tok (Path "")       }
 <0> @digits   { tok (NumVal 0)      }
@@ -83,6 +87,10 @@ data Token =
   | If
   | Then
   | Else
+  | Proj1
+  | Proj2
+  | LTTok
+  | GTTok
   | EOF
   deriving Show
 
