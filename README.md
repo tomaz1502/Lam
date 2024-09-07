@@ -23,7 +23,7 @@ Build with the `build.sh` script.
     + [x] Uninterpreted (opaque) Types
     + [x] Numbers, booleans, ITE
     + [ ] Equality, Strings
-    + [ ] Pairs
+    + [x] Pairs
     + [ ] Sums
     + [ ] General recursion
     + [ ] Pattern Matching
