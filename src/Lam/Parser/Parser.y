@@ -24,12 +24,14 @@ import Lam.Parser.Lexer qualified as L
 %right "else"
 %left "."
 %right "=>"
-%left "&&" "||"
-%left "+" "-"
-%left "*"
+%right "&&" "||"
+%right "+" "-" "+T"
+%right "*" "*T"
 %right "!"
 %right "proj1"
 %right "proj2"
+%right "inl"
+%right "inr"
 
 %token
   "lam"     { L.Lam        }
@@ -57,7 +59,7 @@ import Lam.Parser.Lexer qualified as L
   boolean   { L.BoolVal $$ }
   "+"       { L.Plus       }
   "-"       { L.Minus      }
-  "*"       { L.Mult       }
+  "*"       { L.Prod       }
   "&&"      { L.And        }
   "||"      { L.Or         }
   "!"       { L.Not        }
@@ -68,6 +70,14 @@ import Lam.Parser.Lexer qualified as L
   "proj2"   { L.Proj2      }
   "<"       { L.LTTok      }
   ">"       { L.GTTok      }
+  "inl"     { L.Inl        }
+  "inr"     { L.Inr        }
+  "case"    { L.Case       }
+  "of"      { L.Of         }
+  "|"       { L.Pipe       }
+  "as"      { L.As         }
+  "+T"      { L.PlusT      }
+  "*T"      { L.ProdT      }
 %%
 
 
@@ -157,6 +167,9 @@ RawExpr :: { RawExpr }
   | "proj1" RawExpr { RawUnOp Proj1 $2 }
   | "proj2" RawExpr { RawUnOp Proj2 $2 }
   | "<" RawExpr "," RawExpr ">" { RawBinOp MkPair $2 $4 }
+  | "inl" RawExpr "as" RawTypeL { RawInl $2 $4 }
+  | "inr" RawExpr "as" RawTypeL { RawInr $2 $4 }
+  | "case" RawExpr "of" "inl" var "=>" RawExpr "|" "inr" var "=>" RawExpr { RawCase $2 $5 $7 $10 $12 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }
@@ -167,7 +180,8 @@ RawTypeL :: { RawTypeL }
   | "Int" { RawIntT }
   | "Bool" { RawBoolT }
   | var { FreeType $1 }
-  | RawTypeL "*" RawTypeL { RawProd $1 $3 }
+  | RawTypeL "*T" RawTypeL { RawProd $1 $3 }
+  | RawTypeL "+T" RawTypeL { RawSum $1 $3 }
   | ParType { $1 }
 
 ParType : "(" RawTypeL ")" { $2 }

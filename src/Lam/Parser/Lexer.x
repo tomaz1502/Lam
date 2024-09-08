@@ -35,7 +35,7 @@ tokens :-
 <0> ")"       { tok RPar            }
 <0> "+"       { tok Plus            }
 <0> "-"       { tok Minus           }
-<0> "*"       { tok Mult            }
+<0> "*"       { tok Prod            }
 <0> "&&"      { tok And             }
 <0> "||"      { tok Or              }
 <0> "!"       { tok Not             }
@@ -48,6 +48,14 @@ tokens :-
 <0> "proj2"   { tok Proj2           }
 <0> "<"       { tok LTTok           }
 <0> ">"       { tok GTTok           }
+<0> "inl"     { tok Inl             }
+<0> "inr"     { tok Inr             }
+<0> "case"    { tok Case            }
+<0> "of"      { tok Of              }
+<0> "|"       { tok Pipe            }
+<0> "as"      { tok As              }
+<0> "+T"      { tok PlusT           }
+<0> "*T"      { tok ProdT           }
 <0> @id       { tok (Var "")        }
 <0> @path     { tok (Path "")       }
 <0> @digits   { tok (NumVal 0)      }
@@ -80,7 +88,7 @@ data Token =
   | BoolVal Bool
   | Plus
   | Minus
-  | Mult
+  | Prod
   | And
   | Or
   | Not
@@ -91,6 +99,14 @@ data Token =
   | Proj2
   | LTTok
   | GTTok
+  | Inl
+  | Inr
+  | Case
+  | Of
+  | Pipe
+  | As
+  | ProdT
+  | PlusT
   | EOF
   deriving Show
 

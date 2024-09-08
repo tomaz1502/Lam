@@ -26,7 +26,9 @@ prettyPrintType BoolT = "Bool"
 prettyPrintType IntT = "Int"
 prettyPrintType U = "U"
 prettyPrintType (Prod t1 t2) =
-  unwords [ "(", prettyPrintType t1, "*", prettyPrintType t2, ")" ]
+  unwords [ "(", prettyPrintType t1, "*T", prettyPrintType t2, ")" ]
+prettyPrintType (Sum t1 t2) =
+  unwords [ "(", prettyPrintType t1, "+T", prettyPrintType t2, ")" ]
 prettyPrintType (Arrow t1 t2) =
   unwords [ "(", prettyPrintType t1, "=>", prettyPrintType t2, ")" ]
 
@@ -52,6 +54,25 @@ prettyPrint = go []
           ["(", go ctx isUntyped e1, ppBinOp op, go ctx isUntyped e2, ")"]
         go ctx isUntyped (UnaryOp op e)   = unwords
           ["(", ppUnOp op, go ctx isUntyped e, ")"]
+        go ctx isUntyped (Inl e t)   =
+          if isUntyped then unwords ["inl", go ctx isUntyped e] else
+            unwords ["inl", go ctx isUntyped e, "as", prettyPrintType t ]
+        go ctx isUntyped (Inr e t)   =
+          if isUntyped then unwords ["inr", go ctx isUntyped e] else
+            unwords ["inr", go ctx isUntyped e, "as", prettyPrintType t ]
+        go ctx isUntyped (Case e1 id2 e2 id3 e3) =
+            unwords [ "( case"
+                    , go ctx isUntyped e1
+                    , "of inl"
+                    , id2
+                    , "=>"
+                    , go (id2 : ctx) isUntyped e2
+                    , "| inr"
+                    , id3
+                    , "=>"
+                    , go (id3 : ctx) isUntyped e3
+                    , ")"
+                    ]
         go _ _ (Const (NumC z))      = show z
         go _ _ (Const (BoolC True))  = "true"
         go _ _ (Const (BoolC False)) = "false"

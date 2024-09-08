@@ -56,6 +56,7 @@ eqType IntT         IntT        = True
 eqType U            U           = True
 eqType (Arrow t11 t12)  (Arrow t21 t22) = (eqType t11 t21) && (eqType t12 t22)
 eqType (Prod t11 t12)  (Prod t21 t22) = (eqType t11 t21) && (eqType t12 t22)
+eqType (Sum t11 t12)  (Sum t21 t22) = (eqType t11 t21) && (eqType t12 t22)
 eqType _            _           = False
 
 {-# COMPILE AGDA2HS eqType #-}
@@ -82,6 +83,8 @@ eqType->≡ {Arrow t t₁} {Arrow t' t''} h with &&to× h
 ... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Arrow (eqType->≡ t==t') (eqType->≡ t₁==t'')
 eqType->≡ {Prod t t₁} {Prod t' t''} h with &&to× h
 ... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Prod (eqType->≡ t==t') (eqType->≡ t₁==t'')
+eqType->≡ {Sum t t₁} {Sum t' t''} h with &&to× h
+... | ⟨ t==t' , t₁==t'' ⟩ = cong₂ Sum (eqType->≡ t==t') (eqType->≡ t₁==t'')
 
 eqType-refl : (t : TypeL) → eqType t t ≡ True
 eqType-refl BoolT = refl
@@ -90,6 +93,8 @@ eqType-refl U = refl
 eqType-refl (Arrow dom codom) =
   trans (cong (λ x → x && eqType codom codom) (eqType-refl dom)) (cong (λ x → True && x) (eqType-refl codom))
 eqType-refl (Prod t1 t2) =
+  trans (cong (λ x → x && eqType t2 t2) (eqType-refl t1)) (cong (λ x → True && x) (eqType-refl t2))
+eqType-refl (Sum t1 t2) =
   trans (cong (λ x → x && eqType t2 t2) (eqType-refl t1)) (cong (λ x → True && x) (eqType-refl t2))
 
 injection-maybe : ∀ {t : Set} {a : t} → ¬ (Nothing ≡ Just a)
