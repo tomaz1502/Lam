@@ -49,19 +49,45 @@ shiftDown = shiftDown' Z
 
 {-# COMPILE AGDA2HS shiftDown #-}
 
-substitute : Nat → Expr → Expr → Expr
-substitute i s (App e1 e2) = App (substitute i s e1) (substitute i s e2)
-substitute i s (Lam n t e) = Lam n t (substitute (S i) (shiftUp s) e)
-substitute i s (Var x)     = if eqNat i x then s else Var x
-substitute i s (Ite b t e) = Ite b' t' e'
-  where b' = substitute i s b
-        t' = substitute i s t
-        e' = substitute i s e
-substitute i s (BinOp o e1 e2) = BinOp o (substitute i s e1) (substitute i s e2)
-substitute i s (UnaryOp o e) = UnaryOp o (substitute i s e)
-substitute _ _ e = e
+substitute' : Nat → Expr → Expr → Expr
+substitute' i s (App e1 e2) = App (substitute' i s e1) (substitute' i s e2)
+substitute' i s (Lam n t e) = Lam n t (substitute' (S i) (shiftUp s) e)
+substitute' i s (Var x)     = if eqNat i x then s else Var x
+substitute' i s (Ite b t e) = Ite b' t' e'
+  where b' = substitute' i s b
+        t' = substitute' i s t
+        e' = substitute' i s e
+substitute' i s (BinOp o e1 e2) = BinOp o (substitute' i s e1) (substitute' i s e2)
+substitute' i s (UnaryOp o e) = UnaryOp o (substitute' i s e)
+substitute' _ _ e = e
+
+{-# COMPILE AGDA2HS substitute' #-}
+
+-- Changes `Var 0` by e2 in e1, also decrease all other variables
+substitute : Expr → Expr → Expr
+substitute e1 e2 = shiftDown (substitute' Z (shiftUp e2) e1)
 
 {-# COMPILE AGDA2HS substitute #-}
+
+smallStepCase : Expr → Expr → Expr → Maybe Expr → Maybe Expr
+smallStepCase e1        e2 e3 (Just e1') = Just (Case e1' e2 e3)
+smallStepCase (Inl x _) e2 e3 Nothing    = Just (substitute x e2)
+smallStepCase (Inr x _) e2 e3 Nothing    = Just (substitute x e3)
+smallStepCase _         e2 e3 Nothing    = Nothing
+
+{-# COMPILE AGDA2HS smallStepCase #-}
+
+smallStepInl : Expr → TypeL → Maybe Expr → Maybe Expr
+smallStepInl e t Nothing = Nothing
+smallStepInl e t (Just e') = Just (Inl e' t)
+
+{-# COMPILE AGDA2HS smallStepInl #-}
+
+smallStepInr : Expr → TypeL → Maybe Expr → Maybe Expr
+smallStepInr e t Nothing = Nothing
+smallStepInr e t (Just e') = Just (Inr e' t)
+
+{-# COMPILE AGDA2HS smallStepInr #-}
 
 -- Lambda Lifting so the proofs work
 
@@ -95,22 +121,22 @@ smallStepUnOp _ _ _ = Nothing
 
 {-# COMPILE AGDA2HS smallStepUnOp #-}
 
+smallStepApp : Expr → Expr → Maybe Expr → Maybe Expr → Maybe Expr
+smallStepApp e1 e2 (Just e1') _          = Just (App e1' e2)
+smallStepApp e1 _  Nothing    (Just e2') = Just (App e1 e2')
+smallStepApp (Lam _ _ e) e2 Nothing Nothing = Just (substitute e e2)
+smallStepApp _ _ Nothing Nothing = Nothing
+
 smallStep : Expr → Maybe Expr
 smallStep (Var _) = Nothing
 smallStep (Lam n t e) = smallStep e >>= λ e' -> Just (Lam n t e')
-smallStep (App e1 e2) =
-  myCaseOf (smallStep e1) λ
-    { (Just e1') -> Just (App e1' e2)
-    ; Nothing ->
-        myCaseOf (smallStep e2) λ
-          { (Just e2') -> Just (App e1 e2')
-          ; Nothing ->
-              myCaseOf e1 λ
-                { (Lam _ _ e) -> Just (shiftDown (substitute Z (shiftUp e2) e))
-                ; _ -> Nothing }}}
+smallStep (App e1 e2) = smallStepApp e1 e2 (smallStep e1) (smallStep e2)
 smallStep (BinOp o e1 e2) = smallStepBinOp o e1 e2 (smallStep e1) (smallStep e2)
 smallStep (UnaryOp o e) = smallStepUnOp o e (smallStep e)
 smallStep (Ite b t e) = smallStepIte b t e (smallStep b)
+smallStep (Inl e t) = smallStepInl e t  (smallStep e)
+smallStep (Inr e t) = smallStepInr e t  (smallStep e)
+smallStep (Case e1 e2 e3) = smallStepCase e1 e2 e3 (smallStep e1)
 smallStep (Const _) = Nothing
 
 {-# COMPILE AGDA2HS smallStep #-}
