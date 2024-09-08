@@ -18,6 +18,10 @@ emptyContext :: GlobalContext
 emptyContext = GlobalContext M.empty M.empty
 
 expandType :: GlobalContext -> RawTypeL -> Either String TypeL
+expandType gctx (RawSum t1 t2) =
+  expandType gctx t1 >>= \t1' ->
+  expandType gctx t2 >>= \t2' ->
+  Right (Sum t1' t2')
 expandType gctx (RawProd t1 t2) =
   expandType gctx t1 >>= \t1' ->
   expandType gctx t2 >>= \t2' ->
@@ -56,14 +60,27 @@ eraseNames = go []
                      Just e  -> Right e
                      Nothing -> Left $ "Free variable: " <> s <> "."
     go lctx gctx (RawApp e1 e2) =
-        go lctx gctx e1 >>= \e1' ->
-        go lctx gctx e2 >>= \e2' ->
-        Right $ App e1' e2'
+      go lctx gctx e1 >>= \e1' ->
+      go lctx gctx e2 >>= \e2' ->
+      Right $ App e1' e2'
     go lctx gctx (RawLam s ty e) =
-        go (s : lctx) gctx e >>= \e' ->
-        expandType gctx ty >>= \ty' ->
-        Right $ Lam s ty' e'
+      go (s : lctx) gctx e >>= \e' ->
+      expandType gctx ty >>= \ty' ->
+      Right (Lam s ty' e')
     go _ _ (RawConst c) = Right (Const c)
+    go lctx gctx (RawInl e ty)  =
+      go lctx gctx e >>= \e' ->
+      expandType gctx ty >>= \ty' ->
+      Right (Inl e' ty')
+    go lctx gctx (RawInr e ty)  =
+      go lctx gctx e >>= \e' ->
+      expandType gctx ty >>= \ty' ->
+      Right (Inr e' ty')
+    go lctx gctx (RawCase e1 id2 e2 id3 e3) =
+      go lctx gctx e1 >>= \e1' ->
+      go (id2 : lctx) gctx e2 >>= \e2' ->
+      go (id3 : lctx) gctx e3 >>= \e3' ->
+      Right (Case e1' id2 e2' id3 e3')
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =

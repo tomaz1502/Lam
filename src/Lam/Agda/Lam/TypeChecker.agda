@@ -98,10 +98,16 @@ typeCheck' gam (BinOp MkPair e1 e2) =
   typeCheck' gam e2 >>= λ t2 ->
   Just (Prod t1 t2)
 typeCheck' gam (Inl e t) =
-  typeCheck' gam e >>= λ te -> Just (Sum te t)
+  myCaseOf t λ
+    { (Sum tl tr) -> typeCheck' gam e >>= λ te -> if eqType tl te then Just (Sum tl tr) else Nothing
+    ; _ -> Nothing
+    }
 typeCheck' gam (Inr e t) =
-  typeCheck' gam e >>= λ te -> Just (Sum t te)
-typeCheck' gam (Case e1 e2 e3) =
+  myCaseOf t λ
+    { (Sum tl tr) -> typeCheck' gam e >>= λ te -> if eqType tr te then Just (Sum tl tr) else Nothing
+    ; _ -> Nothing
+    }
+typeCheck' gam (Case e1 _ e2 _ e3) =
   myCaseOf (typeCheck' gam e1) λ
     { (Just (Sum tl tr)) ->
         typeCheck' (tl ∷ gam) e2 >>= λ t2 ->

@@ -106,12 +106,12 @@ data Neutral where
     -------------------
     → Neutral (Inr L T)
 
-  noe-case : ∀ {L M N : Expr}
+  noe-case : ∀ {L M N : Expr} {id2 id3 : Id}
     → Normal L
     → (∀ {L' T} → ¬ (L ≡ Inl L' T))
     → (∀ {L' T} → ¬ (L ≡ Inr L' T))
     ----------------------
-    → Neutral (Case L M N)
+    → Neutral (Case L id2 M id3 N)
 
 data Normal where
   no-ne : ∀ {M : Expr}
@@ -215,20 +215,20 @@ data ReducesTo : Expr → Expr → Set where
     -------------------------------
     → ReducesTo (Inr L T) (Inr L' T)
 
-  r-case1 : ∀ {L L' M N : Expr}
+  r-case1 : ∀ {L L' M N : Expr} {id2 id3 : Id}
     → ReducesTo L L'
     -------------------------------------
-    → ReducesTo (Case L M N) (Case L' M N)
+    → ReducesTo (Case L id2 M id3 N) (Case L' id2 M id3 N)
 
-  r-case2 : ∀ {L M N : Expr} {T : TypeL}
+  r-case2 : ∀ {L M N : Expr} {T : TypeL} {id2 id3 : Id}
     → Normal L
     -------------------------------------------------
-    → ReducesTo (Case (Inl L T) M N) (substitute L M)
+    → ReducesTo (Case (Inl L T) id2 M id3 N) (substitute L M)
 
-  r-case3 : ∀ {L M N : Expr} {T : TypeL}
+  r-case3 : ∀ {L M N : Expr} {T : TypeL} {id2 id3 : Id}
     → Normal L
     -------------------------------------------------
-    → ReducesTo (Case (Inr L T) M N) (substitute L N)
+    → ReducesTo (Case (Inr L T) id2 M id3 N) (substitute L N)
 
 normalImpliesNeutralIte : ∀ {L M N : Expr} → Normal (Ite L M N) → Neutral (Ite L M N)
 normalImpliesNeutralIte (no-ne h) = h
@@ -248,7 +248,7 @@ normalImpliesNeutralInl (no-ne h) = h
 normalImpliesNeutralInr : ∀ {L : Expr} {T : TypeL} → Normal (Inr L T) → Neutral (Inr L T)
 normalImpliesNeutralInr (no-ne h) = h
 
-normalImpliesNeutralCase : ∀ {L M N : Expr} → Normal (Case L M N) → Neutral (Case L M N)
+normalImpliesNeutralCase : ∀ {L M N : Expr} {id2 id3 : Id} → Normal (Case L id2 M id3 N) → Neutral (Case L id2 M id3 N)
 normalImpliesNeutralCase (no-ne h) = h
 
 stepNothingNormal : ∀ {V : Expr} → smallStep V ≡ Nothing → Normal V
@@ -266,7 +266,7 @@ stepNothingNormal {App L M} eq with smallStep L in eqL
 ...     | UnaryOp _ _ = no-ne (ne-a (normalImpliesNeutralUnOp (stepNothingNormal eqL)) (stepNothingNormal eqM))
 ...     | Inl _ _ = no-ne (ne-a (normalImpliesNeutralInl (stepNothingNormal eqL)) (stepNothingNormal eqM))
 ...     | Inr _ _ = no-ne (ne-a (normalImpliesNeutralInr (stepNothingNormal eqL)) (stepNothingNormal eqM))
-...     | Case _ _ _ = no-ne (ne-a (normalImpliesNeutralCase (stepNothingNormal eqL)) (stepNothingNormal eqM))
+...     | Case _ _ _ _ _ = no-ne (ne-a (normalImpliesNeutralCase (stepNothingNormal eqL)) (stepNothingNormal eqM))
 stepNothingNormal {Ite L M N} eq with smallStep L in eqL
 ... | Nothing = no-ne (noe-ite (stepNothingNormal eqL) (iteStepNothing eq))
   where
@@ -320,16 +320,16 @@ stepNothingNormal {Inl V _} eq with smallStep V in eqV
 ... | Nothing = no-ne (noe-inl (stepNothingNormal eqV))
 stepNothingNormal {Inr V _} eq with smallStep V in eqV
 ... | Nothing = no-ne (noe-inr (stepNothingNormal eqV))
-stepNothingNormal {Case L M N} eq with smallStep L in eqL
+stepNothingNormal {Case L _ M _ N} eq with smallStep L in eqL
 ... | Nothing = no-ne (noe-case (stepNothingNormal eqL) (caseStepNothingL eq) (caseStepNothingR eq))
   where
-    caseStepNothingL : ∀ {L M N x T} → smallStepCase L M N Nothing ≡ Nothing → ¬ (L ≡ Inl x T)
+    caseStepNothingL : ∀ {L M N x T id2 id3} → smallStepCase L id2 M id3 N Nothing ≡ Nothing → ¬ (L ≡ Inl x T)
     caseStepNothingL () refl
-    caseStepNothingR : ∀ {L M N x T} → smallStepCase L M N Nothing ≡ Nothing → ¬ (L ≡ Inr x T)
+    caseStepNothingR : ∀ {L M N x T id2 id3} → smallStepCase L id2 M id3 N Nothing ≡ Nothing → ¬ (L ≡ Inr x T)
     caseStepNothingR () refl
 
 
-caseStepNothing₂ : ∀ {L M N x} → smallStepCase L M N Nothing ≡ Just x → (∃[ e1 ] ∃[ T1 ] (L ≡ Inl e1 T1)) ⊎ (∃[ e2 ] ∃[ T2 ] (L ≡ Inr e2 T2))
+caseStepNothing₂ : ∀ {L M N x id2 id3} → smallStepCase L id2 M id3 N Nothing ≡ Just x → (∃[ e1 ] ∃[ T1 ] (L ≡ Inl e1 T1)) ⊎ (∃[ e2 ] ∃[ T2 ] (L ≡ Inr e2 T2))
 caseStepNothing₂ {Inl L x₁} {M} {N} {x} eq = inj₁ ⟨ L , ⟨ x₁ , refl ⟩ ⟩
 caseStepNothing₂ {Inr L x₁} {M} {N} {x} eq = inj₂ ⟨ L , ⟨ x₁ , refl ⟩ ⟩
 
@@ -348,7 +348,7 @@ neutralStepNothing {App (BinOp _ _ _) _} (ne-a h x) rewrite neutralStepNothing h
 neutralStepNothing {App (UnaryOp _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
 neutralStepNothing {App (Inl _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
 neutralStepNothing {App (Inr _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
-neutralStepNothing {App (Case _ _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
+neutralStepNothing {App (Case _ _ _ _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
 neutralStepNothing noe-const = refl
 neutralStepNothing {Ite L M N} (noe-ite h1 h2) rewrite normalStepNothing h1 with smallStepIte L M N Nothing in eq
 ... | Nothing = refl
@@ -391,9 +391,9 @@ neutralStepNothing {UnaryOp Proj2 L} (noe-proj2 x h) | Nothing = refl
 neutralStepNothing {UnaryOp Proj2 (BinOp MkPair M N)} (noe-proj2 x h) | Just _ = ⊥-elim (h {M} {N} refl)
 neutralStepNothing {Inl _ _} (noe-inl h) rewrite normalStepNothing h = refl
 neutralStepNothing {Inr _ _} (noe-inr h) rewrite normalStepNothing h = refl
-neutralStepNothing {Case L M N} (noe-case h1 h2 h3) rewrite normalStepNothing h1 with smallStepCase L M N Nothing in eq
-neutralStepNothing {Case L M N} (noe-case h1 h2 h3) | Nothing = refl
-neutralStepNothing {Case L M N} (noe-case h1 h2 h3) | Just _ with caseStepNothing₂ eq
+neutralStepNothing {Case L id2 M id3 N} (noe-case h1 h2 h3) rewrite normalStepNothing h1 with smallStepCase L id2 M id3 N Nothing in eq
+neutralStepNothing {Case L _ M _ N} (noe-case h1 h2 h3) | Nothing = refl
+neutralStepNothing {Case L _ M _ N} (noe-case h1 h2 h3) | Just _ with caseStepNothing₂ eq
 ... | inj₁ ⟨ e , ⟨ T , h ⟩ ⟩ = ⊥-elim (h2 {e} {T} h)
 ... | inj₂ ⟨ e , ⟨ T , h ⟩ ⟩ = ⊥-elim (h3 {e} {T} h)
 
@@ -440,12 +440,12 @@ step→red {Inl L T} {M} h with smallStep L in eqL
 ... | Just L' rewrite sym (Just-injective h) = r-inl (step→red eqL)
 step→red {Inr L T} {M} h with smallStep L in eqL
 ... | Just L' rewrite sym (Just-injective h) = r-inr (step→red eqL)
-step→red {Case L M N} {M'} h with smallStep L in eqL
-step→red {Case (Inl L' x) M N} {M'} h | Nothing with smallStep L' in eqL'
+step→red {Case L _ M _ N} {M'} h with smallStep L in eqL
+step→red {Case (Inl L' x) _ M _ N} {M'} h | Nothing with smallStep L' in eqL'
 ... | Nothing rewrite sym (Just-injective h) = r-case2 (stepNothingNormal eqL')
-step→red {Case (Inr L' x) M N} {M'} h | Nothing with smallStep L' in eqL'
+step→red {Case (Inr L' x) _ M _ N} {M'} h | Nothing with smallStep L' in eqL'
 ... | Nothing rewrite sym (Just-injective h) = r-case3 (stepNothingNormal eqL')
-step→red {Case L M N} {M'} h | Just L' rewrite sym (Just-injective h) = r-case1 (step→red eqL)
+step→red {Case L _ M _ N} {M'} h | Just L' rewrite sym (Just-injective h) = r-case1 (step→red eqL)
 
 red→step : ∀ {M N : Expr} → ReducesTo M N → smallStep M ≡ Just N
 red→step (r-a h) rewrite red→step h = refl

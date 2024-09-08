@@ -26,6 +26,7 @@ data RawTypeL : Set where
   RawIntT  : RawTypeL
   RawU     : RawTypeL
   RawProd  : RawTypeL → RawTypeL → RawTypeL
+  RawSum   : RawTypeL → RawTypeL → RawTypeL
   RawArrow : RawTypeL → RawTypeL → RawTypeL
   FreeType : Id → RawTypeL
 
@@ -95,7 +96,7 @@ data RawExpr : Set where
   RawIte       : RawExpr → RawExpr → RawExpr → RawExpr
   RawInl       : RawExpr → RawTypeL → RawExpr
   RawInr       : RawExpr → RawTypeL → RawExpr
-  RawCase      : RawExpr → RawExpr → RawExpr → RawExpr
+  RawCase      : RawExpr → Id → RawExpr → Id → RawExpr → RawExpr
   RawConst     : ConstT → RawExpr
   RawBinOp     : BinOpT → RawExpr → RawExpr → RawExpr
   RawUnOp      : UnaryOpT → RawExpr → RawExpr
@@ -109,7 +110,7 @@ data Expr : Set where
   Ite     : Expr → Expr → Expr → Expr
   Inl     : Expr → TypeL → Expr
   Inr     : Expr → TypeL → Expr
-  Case    : Expr → Expr → Expr → Expr
+  Case    : Expr → Id → Expr → Id → Expr → Expr
   Const   : ConstT → Expr
   BinOp   : BinOpT → Expr → Expr → Expr
   UnaryOp : UnaryOpT → Expr → Expr
