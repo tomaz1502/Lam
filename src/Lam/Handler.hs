@@ -49,7 +49,6 @@ handleEval :: RawExpr -> Result ()
 handleEval rExpr = do
   gctx    <- get
   expr    <- liftEither (eraseNames gctx rExpr)
-  liftIO (putStrLnFlush (show expr))
   isUntyped <- askUntyped
   if isUntyped then
     liftIO (putStrLnFlush (untypedPrettyPrint (eval expr)))

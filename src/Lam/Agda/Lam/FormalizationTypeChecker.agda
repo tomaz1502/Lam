@@ -56,6 +56,11 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
     → Γ ⊢ M ∶ IntT
     → Γ ⊢ BinOp Mul L M ∶ IntT
 
+  ⊢< : ∀ {L M : Expr} {Γ : TypingContext}
+    → Γ ⊢ L ∶ IntT
+    → Γ ⊢ M ∶ IntT
+    → Γ ⊢ BinOp LtInt L M ∶ BoolT
+
   ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : TypeL}
     → Γ ⊢ b ∶ BoolT
     → Γ ⊢ t ∶ A
@@ -121,6 +126,7 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
 ⊢→tc (⊢+  h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
 ⊢→tc (⊢-  h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
 ⊢→tc (⊢*  h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
+⊢→tc (⊢<  h1 h2) rewrite ⊢→tc h1 | ⊢→tc h2 = refl
 ⊢→tc {Γ} {Ite b t e} {ty} (⊢ite tb tt te)
   rewrite
     ⊢→tc {Γ} {b} {BoolT} tb
@@ -183,6 +189,9 @@ tc→⊢ {Γ} {BinOp Mul e1 e2} eq with typeCheck' Γ e1 in eqE1
 tc→⊢ {Γ} {BinOp Sub e1 e2} eq with typeCheck' Γ e1 in eqE1
 ... | Just IntT with typeCheck' Γ e2 in eqE2
 ...   | Just IntT rewrite sym (Just-injective eq) = ⊢- (tc→⊢ eqE1) (tc→⊢ eqE2)
+tc→⊢ {Γ} {BinOp LtInt e1 e2} eq with typeCheck' Γ e1 in eqE1
+... | Just IntT with typeCheck' Γ e2 in eqE2
+...   | Just IntT rewrite sym (Just-injective eq) = ⊢< (tc→⊢ eqE1) (tc→⊢ eqE2)
 tc→⊢ {Γ} {BinOp And e1 e2} eq with typeCheck' Γ e1 in eqE1
 ... | Just BoolT with typeCheck' Γ e2 in eqE2
 ...   | Just BoolT rewrite sym (Just-injective eq) = ⊢&& (tc→⊢ eqE1) (tc→⊢ eqE2)

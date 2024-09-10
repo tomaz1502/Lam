@@ -117,6 +117,7 @@ smallStepBinOp o e1 _ Nothing (Just e2') = Just (BinOp o e1 e2')
 smallStepBinOp Add (Const (NumC i1)) (Const (NumC i2)) Nothing Nothing = Just (Const (NumC (i1 + i2)))
 smallStepBinOp Sub (Const (NumC i1)) (Const (NumC i2)) Nothing Nothing = Just (Const (NumC (i1 - i2)))
 smallStepBinOp Mul (Const (NumC i1)) (Const (NumC i2)) Nothing Nothing = Just (Const (NumC (i1 * i2)))
+smallStepBinOp LtInt (Const (NumC i1)) (Const (NumC i2)) Nothing Nothing = Just (Const (BoolC (i1 < i2)))
 smallStepBinOp And (Const (BoolC i1)) (Const (BoolC i2)) Nothing Nothing = Just (Const (BoolC (i1 && i2)))
 smallStepBinOp Or  (Const (BoolC i1)) (Const (BoolC i2)) Nothing Nothing = Just (Const (BoolC (i1 || i2)))
 smallStepBinOp _ _ _ _ _ = Nothing

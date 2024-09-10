@@ -63,6 +63,15 @@ typeCheck' gam (BinOp Mul e1 e2) =
                }
       ; _ -> Nothing
       }
+typeCheck' gam (BinOp LtInt e1 e2) =
+  myCaseOf (typeCheck' gam e1)
+    λ { (Just IntT) ->
+           myCaseOf (typeCheck' gam e2)
+             λ { (Just IntT) -> Just BoolT
+               ; _ -> Nothing
+               }
+      ; _ -> Nothing
+      }
 typeCheck' gam (BinOp And e1 e2) =
   myCaseOf (typeCheck' gam e1)
     λ { (Just BoolT) ->

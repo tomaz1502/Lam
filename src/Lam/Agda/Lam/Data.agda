@@ -61,6 +61,7 @@ data BinOpT : Set where
   Mul    : BinOpT
   And    : BinOpT
   Or     : BinOpT
+  LtInt  : BinOpT
   MkPair : BinOpT
 
 {-# COMPILE AGDA2HS BinOpT deriving (Eq, Show) #-}
@@ -72,6 +73,7 @@ instance
   iEqBinOp ._==_ Mul Mul = true
   iEqBinOp ._==_ And And = true
   iEqBinOp ._==_ Or Or = true
+  iEqBinOp ._==_ LtInt LtInt = true
   iEqBinOp ._==_ MkPair MkPair = true
   iEqBinOp ._==_ _ _ = false
 

@@ -24,14 +24,17 @@ import Lam.Parser.Lexer qualified as L
 %right "else"
 %left "."
 %right "=>"
-%right "&&" "||"
-%right "+" "-" "+T"
-%right "*" "*T"
-%right "!"
-%right "proj1"
-%right "proj2"
-%right "inl"
-%right "inr"
+%left "<" ">"
+%left "&&" "||"
+%left "+" "-"
+%right "+T"
+%left "*"
+%right "*T"
+%left "!"
+%left "proj1"
+%left "proj2"
+%left "inl"
+%left "inr"
 
 %token
   "lam"     { L.Lam        }
@@ -162,6 +165,7 @@ RawExpr :: { RawExpr }
   | RawExpr "*" RawExpr { RawBinOp Mul $1 $3 }
   | RawExpr "&&" RawExpr { RawBinOp And $1 $3 }
   | RawExpr "||" RawExpr { RawBinOp Or $1 $3 }
+  | RawExpr "<" RawExpr { RawBinOp LtInt $1 $3 }
   | "!" RawExpr { RawUnOp Not $2 }
   | "if" RawExpr "then" RawExpr "else" RawExpr { RawIte $2 $4 $6 }
   | "proj1" RawExpr { RawUnOp Proj1 $2 }

@@ -40,6 +40,7 @@ prettyPrint = go []
         ppBinOp Mul = "*"
         ppBinOp And = "&&"
         ppBinOp Or = "||"
+        ppBinOp LtInt = "<"
         ppBinOp MkPair = undefined
         ppUnOp Not = "!"
         ppUnOp Proj1 = "proj1"

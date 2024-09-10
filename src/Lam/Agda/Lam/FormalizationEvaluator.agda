@@ -4,7 +4,7 @@ open import Lam.Data
 open import Lam.Evaluator
 open import Lam.UtilsAgda
 
-open import Haskell.Prelude                       using (Just; Nothing; Int; Bool; _+_; _-_; _*_; _&&_; _||_; not)
+open import Haskell.Prelude                       using (Just; Nothing; Int; Bool; _+_; _-_; _*_; _&&_; _||_; not; _<_)
 
 open import Data.Bool                             using (true; false)
 open import Data.Empty                            using (⊥-elim; ⊥)
@@ -57,6 +57,13 @@ data Neutral where
     → (∀ {i j : Int} → ¬ (L ≡ (Const (NumC i)) × M ≡ (Const (NumC j))))
     ---------------------
     → Neutral (BinOp Mul L M)
+
+  noe-ltInt : ∀ {L M : Expr}
+    → Normal L
+    → Normal M
+    → (∀ {i j : Int} → ¬ (L ≡ (Const (NumC i)) × M ≡ (Const (NumC j))))
+    ---------------------
+    → Neutral (BinOp LtInt L M)
 
   noe-and : ∀ {L M : Expr}
     → Normal L
@@ -140,7 +147,7 @@ data ReducesTo : Expr → Expr → Set where
     → Normal V1
     → Normal V2
     ---------------------------
-    → ReducesTo (App (Lam s ty V1) V2) (substitute V1 V2)
+    → ReducesTo (App (Lam s ty V1) V2) (substitute V2 V1)
     -- using a predicate to specify substitution here gets pretty ugly
 
   r-l' : ∀ {s : Id} {ty : TypeL} {L L' : Expr}
@@ -167,6 +174,9 @@ data ReducesTo : Expr → Expr → Set where
 
   r-mul : ∀ {i1 i2 : Int}
     → ReducesTo (BinOp Mul (Const (NumC i1)) (Const (NumC i2))) (Const (NumC (i1 * i2)))
+
+  r-ltInt : ∀ {i1 i2 : Int}
+    → ReducesTo (BinOp LtInt (Const (NumC i1)) (Const (NumC i2))) (Const (BoolC (i1 < i2)))
 
   r-and : ∀ {i1 i2 : Bool}
     → ReducesTo (BinOp And (Const (BoolC i1)) (Const (BoolC i2))) (Const (BoolC (i1 && i2)))
@@ -290,6 +300,11 @@ stepNothingNormal {BinOp Mul L M} eq | Nothing | Nothing =
   where
     mulStepNothing : ∀ {i j} → smallStepBinOp Mul L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (NumC i)) × (M ≡ Const (NumC j)))
     mulStepNothing () ⟨ refl , refl ⟩
+stepNothingNormal {BinOp LtInt L M} eq | Nothing | Nothing =
+  no-ne (noe-ltInt (stepNothingNormal eqL) (stepNothingNormal eqM) (ltStepNothing eq))
+  where
+    ltStepNothing : ∀ {i j} → smallStepBinOp LtInt L M Nothing Nothing ≡ Nothing → ¬ ((L ≡ Const (NumC i)) × (M ≡ Const (NumC j)))
+    ltStepNothing () ⟨ refl , refl ⟩
 stepNothingNormal {BinOp And L M} eq | Nothing | Nothing =
   no-ne (noe-and (stepNothingNormal eqL) (stepNothingNormal eqM) (andStepNothing eq))
   where
@@ -368,6 +383,11 @@ neutralStepNothing {BinOp Mul L M} (noe-mul h1 h2 h3)
        |  normalStepNothing h2 with smallStepBinOp Mul L M Nothing Nothing in eq
 neutralStepNothing {BinOp Mul L M} (noe-mul h1 h2 h3) | Nothing = refl
 neutralStepNothing {BinOp Mul (Const (NumC L')) (Const (NumC M'))} (noe-mul h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
+neutralStepNothing {BinOp LtInt L M} (noe-ltInt h1 h2 h3)
+  rewrite normalStepNothing h1
+       |  normalStepNothing h2 with smallStepBinOp LtInt L M Nothing Nothing in eq
+neutralStepNothing {BinOp LtInt L M} (noe-ltInt h1 h2 h3) | Nothing = refl
+neutralStepNothing {BinOp LtInt (Const (NumC L')) (Const (NumC M'))} (noe-ltInt h1 h2 h3) | Just V' = ⊥-elim (h3 {L'} {M'} ⟨ refl , refl ⟩)
 neutralStepNothing {BinOp And L M} (noe-and h1 h2 h3)
   rewrite normalStepNothing h1
        |  normalStepNothing h2 with smallStepBinOp And L M Nothing Nothing in eq
@@ -421,6 +441,8 @@ step→red {BinOp Sub (Const (NumC i)) M} {N} h | Nothing | Nothing with M
 ... | Const (NumC j) rewrite sym (Just-injective h) = r-sub
 step→red {BinOp Mul (Const (NumC i)) M} {N} h | Nothing | Nothing with M
 ... | Const (NumC j) rewrite sym (Just-injective h) = r-mul
+step→red {BinOp LtInt (Const (NumC i)) M} {N} h | Nothing | Nothing with M
+... | Const (NumC j) rewrite sym (Just-injective h) = r-ltInt
 step→red {BinOp And (Const (BoolC i)) M} {N} h | Nothing | Nothing with M
 ... | Const (BoolC j) rewrite sym (Just-injective h) = r-and
 step→red {BinOp Or (Const (BoolC i)) M}  {N} h | Nothing | Nothing with M
@@ -457,6 +479,7 @@ red→step (r-binop1 h) rewrite red→step h = refl
 red→step (r-binop2 x h) rewrite normalStepNothing x | red→step h = refl
 red→step r-sub = refl
 red→step r-mul = refl
+red→step r-ltInt = refl
 red→step r-and = refl
 red→step r-or = refl
 red→step r-ite-true = refl
