@@ -31,8 +31,14 @@ genIdentifier = listOf1 genLetter `suchThat` notForbidden
         notForbidden "then" = False
         notForbidden "else" = False
         notForbidden "lam" = False
+        notForbidden "inl" = False
+        notForbidden "inr" = False
+        notForbidden "proj1" = False
+        notForbidden "proj2" = False
+        notForbidden "case" = False
+        notForbidden "of" = False
+        notForbidden "as" = False
         notForbidden _ = True
- 
 
 instance Arbitrary TypeL where
   arbitrary = frequency
