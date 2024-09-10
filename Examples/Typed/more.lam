@@ -1,0 +1,17 @@
+TYPEDEF PII := Int *T Int;
+DEFINE sum := lam x :: PII -> proj1 x + proj2 x;
+EVAL : sum . < 2, 3 >;
+
+TYPEDEF triple := Int *T Int *T Int;
+DEFINE sum3 := lam x :: triple -> proj1 x + (proj1 (proj2 x)) + (proj2 (proj2 x));
+EVAL : sum3 . < 3, <4, 5> >;
+
+DEFINE eqInt := lam x, y :: Int -> !(x < y) && !(y < x);
+EVAL: eqInt . 1 . 2;
+EVAL: eqInt . 2 . 2;
+EVAL: eqInt . 3 . 2;
+EVAL: eqInt . -10 . (0 - 1 - 9);
+
+TYPEDEF EitherIntFun := Int +T (Int => Int);
+DEFINE foo := lam x :: EitherIntFun -> case x of inl i => i | inr f => (f . 42);
+EVAL: foo . (inr (lam x :: Int -> x * 2) as EitherIntFun);
