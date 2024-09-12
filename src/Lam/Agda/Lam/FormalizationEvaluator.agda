@@ -366,7 +366,7 @@ neutralStepNothing {App (Inr _ _) _} (ne-a h x) rewrite neutralStepNothing h | n
 neutralStepNothing {App (Case _ _ _ _ _) _} (ne-a h x) rewrite neutralStepNothing h | normalStepNothing x = refl
 neutralStepNothing noe-const = refl
 neutralStepNothing {Ite L M N} (noe-ite h1 h2) rewrite normalStepNothing h1 with smallStepIte L M N Nothing in eq
-... | Nothing = refl
+neutralStepNothing {Ite L M N} (noe-ite h1 h2) | Nothing = refl
 neutralStepNothing {Ite (Const (BoolC L')) M N} (noe-ite h1 h2) | Just _ = ⊥-elim (h2 {L'} refl)
 neutralStepNothing {BinOp Add L M} (noe-add h1 h2 h3)
   rewrite normalStepNothing h1
