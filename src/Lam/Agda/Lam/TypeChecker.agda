@@ -5,6 +5,7 @@ open import Data.List using (List)
 open import Haskell.Prelude
 
 open import Lam.Data
+open import Lam.Nat
 open import Lam.UtilsAgda
 
 TypingContext : Set

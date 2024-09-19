@@ -2,6 +2,7 @@ module Lam.FormalizationEvaluator where
 
 open import Lam.Data
 open import Lam.Evaluator
+open import Lam.Nat hiding (_<_)
 open import Lam.UtilsAgda
 
 open import Haskell.Prelude                       using (Just; Nothing; Int; Bool; _+_; _-_; _*_; _&&_; _||_; not; _<_)

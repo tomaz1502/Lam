@@ -1,5 +1,7 @@
 module Lam.Data where
 
+open import Lam.Nat
+
 open import Data.Bool using (true; false)
 
 open import Haskell.Prelude using (Int; Bool; String; _×_; Eq; _==_; _&&_)
@@ -8,18 +10,6 @@ Id : Set
 Id = String
 
 {-# COMPILE AGDA2HS Id #-}
-
-data Nat : Set where
-  Z : Nat
-  S : Nat → Nat
-
-instance
-  iEqNat : Eq Nat
-  iEqNat ._==_ Z Z = true
-  iEqNat ._==_ (S x) (S y) = x == y
-  iEqNat ._==_ _ _ = false
-
-{-# COMPILE AGDA2HS Nat deriving (Eq, Show) #-}
 
 data RawTypeL : Set where
   RawBoolT : RawTypeL

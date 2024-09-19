@@ -1,6 +1,7 @@
 module Fixtures.Misc where
 
-import Lam.Data ( Expr(..), TypeL(..), Nat(..) )
+import Lam.Data ( Expr(..), TypeL(..) )
+import Lam.Nat
 
 import Fixtures.Common ( SourceCode )
 

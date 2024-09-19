@@ -1,11 +1,12 @@
 module Fixtures.ChurchNum where
 
-import Lam.Data ( Expr(..), TypeL(..), Nat(..) )
+import Lam.Data ( Expr(..), TypeL(..) )
+import Lam.Nat
 
 import Fixtures.Common ( SourceCode )
 
 applyN :: Int -> (a -> a) -> a -> a
-applyN 0 f a = a
+applyN 0 _ a = a
 applyN n f a = f (applyN (n - 1) f a)
 
 encodeChurchP :: Int -> SourceCode

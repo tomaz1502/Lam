@@ -2,9 +2,7 @@
 
 module Lam.FormalizationTypeChecker where
 
-open import Data.Fin.Base         using (fromℕ<)
-open import Data.List
-open import Data.Nat              using (ℕ; _<_)
+open import Data.List             hiding (length; lookup)
 open import Data.Product          using (_×_) renaming (_,_ to ⟨_,_⟩)
 open import Function.Base         using (id)
 open import Relation.Binary.PropositionalEquality using
@@ -16,6 +14,7 @@ open import Haskell.Prelude using
   (Bool; Int; Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe; _==_)
 
 open import Lam.Data
+open import Lam.Nat
 open import Lam.TypeChecker
 open import Lam.UtilsAgda
 
@@ -69,9 +68,9 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
     → Γ ⊢ Ite b t e ∶ A
 
   ⊢v : ∀ {Γ : TypingContext} {i : Nat}
-    → {h : natToℕ i < length Γ}
+    → {h : i < length Γ}
     --------------------------------
-    → Γ ⊢ Var i ∶ lookup Γ (fromℕ< h)
+    → Γ ⊢ Var i ∶ lookup Γ i h
 
   ⊢l : ∀ {Γ : TypingContext} {name : Id} {body : Expr} {dom codom : TypeL}
     → (dom ∷ Γ) ⊢ body ∶ codom

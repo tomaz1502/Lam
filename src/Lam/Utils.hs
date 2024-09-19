@@ -3,7 +3,7 @@
 module Lam.Utils where
 
 import Lam.Data
-import Lam.UtilsAgda
+import Lam.Nat
 
 import Data.Maybe (fromJust)
 import System.IO (hFlush, stdout)

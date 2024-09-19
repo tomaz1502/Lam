@@ -5,6 +5,7 @@ open import Haskell.Prelude hiding (Nat)
 open import Data.Bool using (Bool; true; false)
 
 open import Lam.Data
+open import Lam.Nat hiding (_<_)
 open import Lam.UtilsAgda
 
 shiftUp' : Nat → Expr → Expr
@@ -62,7 +63,7 @@ shiftDown = shiftDown' Z
 substitute' : Nat → Expr → Expr → Expr
 substitute' i s (App e1 e2) = App (substitute' i s e1) (substitute' i s e2)
 substitute' i s (Lam n t e) = Lam n t (substitute' (S i) (shiftUp s) e)
-substitute' i s (Var x)     = if eqNat i x then s else Var x
+substitute' i s (Var x)     = if i == x then s else Var x
 substitute' i s (Ite b t e) = Ite b' t' e'
   where b' = substitute' i s b
         t' = substitute' i s t
