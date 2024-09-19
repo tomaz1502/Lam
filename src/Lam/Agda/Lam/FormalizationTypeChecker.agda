@@ -9,7 +9,6 @@ open import Relation.Binary.PropositionalEquality using
   (_≡_; refl; sym; trans; cong; subst)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
-open import Data.Char using (Char)
 open import Haskell.Prelude using
   (Bool; Int; Maybe; Just; Nothing; _>>=_; case_of_; if_then_else_; maybe; _==_)
 
