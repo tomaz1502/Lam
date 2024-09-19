@@ -4,14 +4,13 @@ open import Haskell.Prelude using (True; False; if_then_else_)
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; _≢_; refl; sym)
 open import Data.Empty using (⊥-elim; ⊥)
-open import Data.List
-open import Data.Nat
-open import Data.Nat.Properties
+open import Data.List hiding (length; lookup)
 
 open import Data.Fin.Base hiding (_≤_; _<_; _+_)
-open import Lam.Data
-open import Lam.Evaluator
 
+open import Lam.Data
+open import Lam.Nat
+open import Lam.Evaluator
 open import Lam.TypeChecker
 open import Lam.FormalizationEvaluator
 open import Lam.FormalizationTypeChecker
@@ -22,19 +21,20 @@ data Prefix {T : Set} : List T → List T → Set where
   cons : ∀ {xs ys} (x : T) → Prefix xs ys → Prefix (x ∷ xs) (x ∷ ys)
 
 prefIncsLength : ∀ {A : Set} {xs ys : List A} → Prefix xs ys → (length xs) ≤ (length ys)
-prefIncsLength nil = z≤n
+prefIncsLength nil = z≤
 prefIncsLength (cons _ p) = s≤s (prefIncsLength p)
 
 <≤-trans : ∀ {n m o} → n < m → m ≤ o → n < o
 <≤-trans (s≤s h1) (s≤s h2) = s≤s (≤-trans h1 h2)
 
 lookupPref : ∀ {A : Set} {Γ Δ : List A} {i : Nat}
-  → (h : natToℕ i < length Γ)
+  → (h1 : i < length Γ)
+  → (h2 : i < length Δ)
   → (p : Prefix Γ Δ)
   -------------------------------------------------------
-  → lookup Γ (fromℕ< h) ≡ lookup Δ (fromℕ< (<≤-trans h (prefIncsLength p)))
-lookupPref {i = Z} (s≤s h) (cons x p) = refl
-lookupPref {i = S i} (s≤s h) (cons x p) = lookupPref h p
+  → lookup Γ i h1 ≡ lookup Δ i h2
+lookupPref {i = Z} h1 h2 (cons x p) = refl
+lookupPref {i = S i} (s≤s h1) (s≤s h2) (cons x p) = lookupPref h1 h2 p
 
 weaken : ∀ {Γ Δ M T}
   → Prefix Γ Δ
@@ -43,7 +43,7 @@ weaken : ∀ {Γ Δ M T}
   → Δ ⊢ M ∶ T
 weaken p ⊢b = ⊢b
 weaken p ⊢n = ⊢n
-weaken p (⊢v {h = h}) rewrite lookupPref h p = ⊢v {h = <≤-trans h (prefIncsLength p)}
+weaken p (⊢v {h = h}) rewrite lookupPref h (<≤-trans h (prefIncsLength p)) p = ⊢v {h = <≤-trans h (prefIncsLength p)}
 weaken p (⊢|| h1 h2) = ⊢|| (weaken p h1) (weaken p h2)
 weaken p (⊢&& h1 h2) = ⊢&& (weaken p h1) (weaken p h2)
 weaken p (⊢! h) = ⊢! (weaken p h)
@@ -65,7 +65,6 @@ weaken' : ∀ {Γ M T}
   → [] ⊢ M ∶ T
   → Γ ⊢ M ∶ T
 weaken' wt = weaken nil wt
-
 
 ltSuc : ∀ (x y : Nat) → ltNat x y ≡ False → ltNat (S x) y ≡ False
 ltSuc Z Z h = refl
@@ -96,18 +95,14 @@ p' {V} rewrite p Z V = refl
 p'' : ∀ {i : Nat} {V : Expr} → substitute V (Var (S i)) ≡ (Var i)
 p'' {V} = refl
 
-insert : Nat → TypeL → TypingContext → TypingContext
-insert Z t g = t ∷ g
-insert (S i) t [] = t ∷ []
-insert (S i) t (x ∷ g) = insert i t g
+insertEq1 : ∀ {A : TypeL} {Γ : TypingContext} {i j : Nat} {h1 : i < length Γ} {h2 : i < length (insert j A Γ)} → i < j → lookup Γ i h1 ≡ lookup (insert j A Γ) i h2
+insertEq1 {A} {x ∷ Γ} {Z} {S j} {h1} {h2} i<j = refl
+insertEq1 {A} {x ∷ Γ} {S i} {S j} {s≤s h1} {s≤s h2} (s≤s i<j) = insertEq1 i<j
 
-data LT : Nat → Nat → Set where
-  z< : ∀ {i} → LT Z (S i)
-  s< : ∀ {i j} → LT i j → LT (S i) (S j)
-
-insertEq1 : ∀ {A : TypeL} {Γ : TypingContext} {i j : Nat} {h : natToℕ i < length Γ} {hj : natToℕ j < length (insert j A Γ)} → LT i j → lookup Γ (fromℕ< h) ≡ lookup (insert j A Γ) (fromℕ< hj)
-insertEq1 {i = Z} {j = j} i<j = {!!}
-insertEq1 {i = S i} {j = S j} {h = h} {hj = hj} i<j = {!!}
+insertEq2 : ∀ {A : TypeL} (Γ : TypingContext) (i j : Nat) (h1 : i < length Γ) (h2 : S i < length (insert j A Γ)) → j ≤ i → lookup Γ i h1 ≡ lookup (insert j A Γ) (S i) h2
+insertEq2 (x ∷ Γ) Z (.Z) (s≤s h1) (s≤s h2) z≤ = refl
+insertEq2 (x ∷ Γ) (S i) (.Z) (s≤s h1) (s≤s h2) z≤ = insertEq2 Γ i Z h1 h2 z≤
+insertEq2 (x ∷ Γ) (S i) (S j) (s≤s h1) (s≤s h2) (s≤s j≤i) = insertEq2 Γ i j h1 h2 j≤i
 
 shiftUpPreserve : ∀ {Γ : TypingContext} {V : Expr} {A T : TypeL} {i : Nat}
   → Γ ⊢ V ∶ T
@@ -122,15 +117,17 @@ shiftUpPreserve (⊢- wt2 wt3) = ⊢- (shiftUpPreserve wt2) (shiftUpPreserve wt3
 shiftUpPreserve (⊢* wt2 wt3) = ⊢* (shiftUpPreserve wt2) (shiftUpPreserve wt3)
 shiftUpPreserve (⊢< wt2 wt3) = ⊢< (shiftUpPreserve wt2) (shiftUpPreserve wt3)
 shiftUpPreserve (⊢ite wt2 wt3 wt4) = ⊢ite (shiftUpPreserve wt2) (shiftUpPreserve wt3) (shiftUpPreserve wt4)
-shiftUpPreserve {A = A} (⊢v {Γ} {i} {h})  = {!!}
-shiftUpPreserve (⊢l wt) = {!!}
+shiftUpPreserve {Γ} {V} {A} {T} {i} (⊢v {Γ} {j} {h}) with ltNat j i in r
+... | True rewrite r | insertEq1 {A} {Γ} {j} {i} {h} {<-trans h insertIncLength} (lt->< r) = ⊢v
+... | False rewrite r | insertEq2 {A} Γ j i h (<≤-trans (s< h) insertIncLength) (lt->≤ r) = ⊢v
+shiftUpPreserve (⊢l wt) = ⊢l (shiftUpPreserve wt)
 shiftUpPreserve (⊢a wt2 wt3) = ⊢a (shiftUpPreserve wt2) (shiftUpPreserve wt3)
 shiftUpPreserve (⊢proj1 wt2) = ⊢proj1 (shiftUpPreserve wt2)
 shiftUpPreserve (⊢proj2 wt2) = ⊢proj2 (shiftUpPreserve wt2)
 shiftUpPreserve (⊢mkPair wt2 wt3) = ⊢mkPair (shiftUpPreserve wt2) (shiftUpPreserve wt3)
 shiftUpPreserve (⊢inl wt2) = ⊢inl (shiftUpPreserve wt2)
 shiftUpPreserve (⊢inr wt2) = ⊢inr (shiftUpPreserve wt2)
-shiftUpPreserve (⊢case wt2 wt3 wt4) = {!!}
+shiftUpPreserve (⊢case wt2 wt3 wt4) = ⊢case (shiftUpPreserve wt2) (shiftUpPreserve wt3) (shiftUpPreserve wt4)
 
 substPreserve' : ∀ {Γ : TypingContext} {V N : Expr} {A B dom : TypeL}
   → Γ ⊢ V ∶ A
