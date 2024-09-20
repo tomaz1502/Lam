@@ -5,6 +5,7 @@ import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; _≢_; refl; sym)
 open import Data.Empty using (⊥-elim; ⊥)
 open import Data.List hiding (length; lookup)
+open import Data.Sum using (inj₁; inj₂)
 
 open import Data.Fin.Base hiding (_≤_; _<_; _+_)
 
@@ -23,9 +24,6 @@ data Prefix {T : Set} : List T → List T → Set where
 prefIncsLength : ∀ {A : Set} {xs ys : List A} → Prefix xs ys → (length xs) ≤ (length ys)
 prefIncsLength nil = z≤
 prefIncsLength (cons _ p) = s≤s (prefIncsLength p)
-
-<≤-trans : ∀ {n m o} → n < m → m ≤ o → n < o
-<≤-trans (s≤s h1) (s≤s h2) = s≤s (≤-trans h1 h2)
 
 lookupPref : ∀ {A : Set} {Γ Δ : List A} {i : Nat}
   → (h1 : i < length Γ)
@@ -92,9 +90,6 @@ p i (UnaryOp x E) rewrite p i E = refl
 p' : ∀ {V : Expr} → substitute V (Var Z) ≡ V
 p' {V} rewrite p Z V = refl
 
-p'' : ∀ {i : Nat} {V : Expr} → substitute V (Var (S i)) ≡ (Var i)
-p'' {V} = refl
-
 insertEq1 : ∀ {A : TypeL} {Γ : TypingContext} {i j : Nat} {h1 : i < length Γ} {h2 : i < length (insert j A Γ)} → i < j → lookup Γ i h1 ≡ lookup (insert j A Γ) i h2
 insertEq1 {A} {x ∷ Γ} {Z} {S j} {h1} {h2} i<j = refl
 insertEq1 {A} {x ∷ Γ} {S i} {S j} {s≤s h1} {s≤s h2} (s≤s i<j) = insertEq1 i<j
@@ -104,8 +99,46 @@ insertEq2 (x ∷ Γ) Z (.Z) (s≤s h1) (s≤s h2) z≤ = refl
 insertEq2 (x ∷ Γ) (S i) (.Z) (s≤s h1) (s≤s h2) z≤ = insertEq2 Γ i Z h1 h2 z≤
 insertEq2 (x ∷ Γ) (S i) (S j) (s≤s h1) (s≤s h2) (s≤s j≤i) = insertEq2 Γ i j h1 h2 j≤i
 
+isIt? : ∀ {Γ : TypingContext} {i j : Nat} → i < length Γ → i < j → i < length (remove j Γ)
+isIt? {Γ} {i} {j} h1 h2 with decideLE (length Γ) j
+... | (inj₁ jBig) rewrite removeLargeId j Γ jBig = h1
+... | (inj₂ jSmall) = <≤-trans h2 (<s (<≤-trans (notLE->LT jSmall) (removeLength j Γ)))
+
+removeEq1 : ∀ (Γ : TypingContext) (i j : Nat) (h1 : i < length Γ) (h2 : i < length (remove j Γ)) → i < j → lookup Γ i h1 ≡ lookup (remove j Γ) i h2
+removeEq1 (x ∷ Γ) Z (S j) (s≤s h1) (s≤s h2) h = refl
+removeEq1 (x ∷ Γ) (S i) (S j) (s≤s h1) (s≤s h2) (s≤s i<j) = removeEq1 Γ i j h1 h2 i<j
+
+piLookup : ∀ (Γ : TypingContext) (i : Nat) (h1 : i < length Γ) (h2 : i < length Γ) → lookup Γ i h1 ≡ lookup Γ i h2
+piLookup (x ∷ g) Z h1 h2 = refl
+piLookup (x ∷ g) (S i) (s≤s h1) (s≤s h2) = piLookup g i h1 h2
+
+
+-- g = [0; 1; 2; 3; 4]
+-- i = 3
+-- j = 3
+-- lookup (S i) = 3
+-- lookup i (remove j) = 3
+
+-- g = [0; 1; 2; 3; 4]
+-- i = 3
+-- j = 4
+-- lookup (S i) = 3
+-- lookup i (remove j) = 2
+
+removeEq2 : ∀ (Γ : TypingContext) (i j : Nat) (h1 : S i < length Γ) (h2 : i < length (remove j Γ)) → (j ≤ i) → lookup Γ (S i) h1 ≡ lookup (remove j Γ) i h2
+removeEq2 (x ∷ []) Z Z (s≤s ()) h2 j≤i
+removeEq2 (x ∷ y ∷ g) Z Z (s≤s h1) h2 j≤i = refl
+removeEq2 (x ∷ g) (S i) Z (s≤s h1) h2 z≤ = piLookup g (S i) h1 h2
+removeEq2 (x ∷ g) (S i) (S j) (s≤s h1) (s≤s h2) (s≤s h3) = removeEq2 g i j h1 h2 h3
+
+-- I know h : S i < length L
+-- I know h2 : length L ≤ S (length (remove L))
+-- by transitivity: S i < S (length (remove L))
+-- I wanna conclude i < length (remove L)
+
 shiftUpPreserve : ∀ {Γ : TypingContext} {V : Expr} {A T : TypeL} {i : Nat}
   → Γ ⊢ V ∶ T
+  ----------------------------------
   → (insert i A Γ) ⊢ shiftUp' i V ∶ T
 shiftUpPreserve ⊢b = ⊢b
 shiftUpPreserve ⊢n = ⊢n
@@ -129,6 +162,36 @@ shiftUpPreserve (⊢inl wt2) = ⊢inl (shiftUpPreserve wt2)
 shiftUpPreserve (⊢inr wt2) = ⊢inr (shiftUpPreserve wt2)
 shiftUpPreserve (⊢case wt2 wt3 wt4) = ⊢case (shiftUpPreserve wt2) (shiftUpPreserve wt3) (shiftUpPreserve wt4)
 
+shiftDownPreserve : ∀ {Γ : TypingContext} {V : Expr} {T : TypeL} {i : Nat}
+  → Γ ⊢ V ∶ T
+  ----------------------------------
+  → (remove (S i) Γ) ⊢ shiftDown' (S i) V ∶ T
+shiftDownPreserve ⊢b = ⊢b
+shiftDownPreserve ⊢n = ⊢n
+shiftDownPreserve (⊢|| wt2 wt3) = ⊢|| (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢&& wt2 wt3) = ⊢&& (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢! wt2) = ⊢! (shiftDownPreserve wt2)
+shiftDownPreserve (⊢+ wt2 wt3) = ⊢+ (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢- wt2 wt3) = ⊢- (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢* wt2 wt3) = ⊢* (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢< wt2 wt3) = ⊢< (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢ite wt2 wt3 wt4) = ⊢ite (shiftDownPreserve wt2) (shiftDownPreserve wt3) (shiftDownPreserve wt4)
+shiftDownPreserve {Γ} {V} {T} {i} (⊢v {Γ} {j} {h}) with ltNat j (S i) in r
+... | True rewrite r | removeEq1 Γ j (S i) h (isIt? h (lt->< r)) (lt->< r) = ⊢v
+shiftDownPreserve {Γ} {Var (S j')} {.(lookup Γ (S j') h)} {i} (⊢v {Γ} {S j'} {h}) | False
+  rewrite r = {!removeEq2 Γ j' (S i) h (sucLT (<≤-trans h (removeLength (S i) Γ)))!}
+--  rewrite r | removeEq2 Γ j (S i) h (sucLT (<≤-trans h (removeLength (S i) Γ))) (lt->≤ {j} {i} r)  = {!!}
+-- ... | True rewrite r | insertEq1 {A} {Γ} {j} {i} {h} {<-trans h insertIncLength} (lt->< r) = ⊢v
+-- ... | False rewrite r | insertEq2 {A} Γ j i h (<≤-trans (s< h) insertIncLength) (lt->≤ r) = ⊢v
+shiftDownPreserve (⊢l wt) = ⊢l (shiftDownPreserve wt)
+shiftDownPreserve (⊢a wt2 wt3) = ⊢a (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢proj1 wt2) = ⊢proj1 (shiftDownPreserve wt2)
+shiftDownPreserve (⊢proj2 wt2) = ⊢proj2 (shiftDownPreserve wt2)
+shiftDownPreserve (⊢mkPair wt2 wt3) = ⊢mkPair (shiftDownPreserve wt2) (shiftDownPreserve wt3)
+shiftDownPreserve (⊢inl wt2) = ⊢inl (shiftDownPreserve wt2)
+shiftDownPreserve (⊢inr wt2) = ⊢inr (shiftDownPreserve wt2)
+shiftDownPreserve (⊢case wt2 wt3 wt4) = ⊢case (shiftDownPreserve wt2) (shiftDownPreserve wt3) (shiftDownPreserve wt4)
+
 substPreserve' : ∀ {Γ : TypingContext} {V N : Expr} {A B dom : TypeL}
   → Γ ⊢ V ∶ A
   → (dom ∷ (A ∷ Γ)) ⊢ N ∶ B
@@ -151,7 +214,7 @@ substPreserve wt1 (⊢* wt2 wt3) = ⊢* (substPreserve wt1 wt2) (substPreserve w
 substPreserve wt1 (⊢< wt2 wt3) = ⊢< (substPreserve wt1 wt2) (substPreserve wt1 wt3)
 substPreserve wt1 (⊢ite wt2 wt3 wt4) = ⊢ite (substPreserve wt1 wt2) (substPreserve wt1 wt3) (substPreserve wt1 wt4)
 substPreserve {V = V} {Var Z} wt1 ⊢v rewrite p' {V} = wt1
-substPreserve {V = V} {Var (S i')} _ (⊢v {_ ∷ Γ} {.(S i')} {h = s≤s h}) rewrite p'' {i'} {V} = ⊢v {Γ} {i'} {h}
+substPreserve {V = V} {Var (S i')} _ (⊢v {_ ∷ Γ} {.(S i')} {h = s≤s h}) = ⊢v {Γ} {i'} {h}
 substPreserve {Γ} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) = ⊢l (substPreserve' {Γ} {shiftUp V} {body} {A} {codom} {dom} {!!} wt2)
 -- substPreserve {Γ} {Lam n dom body} {V} {A} {Arrow dom2 codom} wt1 (⊢l {A ∷ Γ} {n2} {body2} {dom2} {codom} wt2) = {!!}
   -- rewrite ppp {V} {n} {dom} {body} | wtShiftUp wt1 | wtShiftUp wt1 = ⊢l {!!}
