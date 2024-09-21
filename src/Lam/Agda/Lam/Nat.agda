@@ -35,6 +35,9 @@ dec (S x) = x
 
 {-# COMPILE AGDA2HS dec #-}
 
+eqSuc : ∀ {i j : Nat} → i ≡ j → S i ≡ S j
+eqSuc refl = refl
+
 length : {A : Set} → List A -> Nat
 length [] = Z
 length (_ ∷ xs) = S (length xs)
@@ -120,6 +123,14 @@ sucLE (s≤s h) = h
 sucLT : ∀ {i j : Nat} → S i < S j → i < j
 sucLT (s≤s h) = h
 
+sucLT2 : ∀ {i j : Nat} → S i < j → i < j
+sucLT2 {Z} {.(S _)} (s≤s h) = s≤s z≤
+sucLT2 {S i} {.(S _)} (s≤s h) = s≤s (sucLT2 h)
+
+sucLT3 : ∀ {i : Nat} → i < S i
+sucLT3 {Z} = s≤s z≤
+sucLT3 {S i} = s≤s sucLT3
+
 decideLE : ∀ (i j : Nat) → (i ≤ j) ⊎ (¬ (i ≤ j))
 decideLE Z Z = inj₁ z≤
 decideLE Z (S j) = inj₁ z≤
@@ -127,6 +138,17 @@ decideLE (S i) Z = inj₂ (λ ())
 decideLE (S i) (S j) with decideLE i j
 ... | inj₁ h = inj₁ (s≤s h)
 ... | inj₂ h = inj₂ (λ abs -> h (sucLE abs))
+
+sucEQ : ∀ {i j : Nat} → S i ≡ S j → i ≡ j
+sucEQ refl = refl
+
+decideEQ : ∀ (i j : Nat) → (i ≡ j) ⊎ (¬ (i ≡ j))
+decideEQ Z Z = inj₁ refl
+decideEQ Z (S j) = inj₂ (λ ())
+decideEQ (S i) Z = inj₂ (λ ())
+decideEQ (S i) (S j) with decideEQ i j
+... | inj₁ refl = inj₁ refl
+... | inj₂ neq = inj₂ (λ abs -> neq (sucEQ abs))
 
 notLE->LT : ∀ {i j : Nat} → ¬ (i ≤ j) → j < i
 notLE->LT {Z} {Z} h = ⊥-elim (h ≤-refl)
@@ -145,6 +167,15 @@ removeLength2 Z [] = z≤
 removeLength2 Z (x ∷ L) = s≤Self (length L)
 removeLength2 (S i) [] = z≤
 removeLength2 (S i) (x ∷ L) = s≤s (removeLength2 i L)
+
+-- i <= j
+-- i != j
+-- ? i + 1 <= j ?
+
+almostTrichotomy : ∀ (i j : Nat) → i ≤ j → (¬ (i ≡ j)) → i < j
+almostTrichotomy Z Z z≤ h2 = ⊥-elim (h2 refl)
+almostTrichotomy Z (S j) z≤ h2 = s≤s z≤
+almostTrichotomy (S i) (S j) (s≤s h1) h2 = s≤s (almostTrichotomy i j h1 λ eq -> h2 (eqSuc eq))
 
 -- I know h: i < length L
 -- I want to conclude i < S length (remove L)

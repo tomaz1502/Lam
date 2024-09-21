@@ -6,6 +6,7 @@ open Eq using (_≡_; _≢_; refl; sym)
 open import Data.Empty using (⊥-elim; ⊥)
 open import Data.List hiding (length; lookup)
 open import Data.Sum using (inj₁; inj₂)
+open import Relation.Nullary using (¬_)
 
 open import Data.Fin.Base hiding (_≤_; _<_; _+_)
 
@@ -162,35 +163,51 @@ shiftUpPreserve (⊢inl wt2) = ⊢inl (shiftUpPreserve wt2)
 shiftUpPreserve (⊢inr wt2) = ⊢inr (shiftUpPreserve wt2)
 shiftUpPreserve (⊢case wt2 wt3 wt4) = ⊢case (shiftUpPreserve wt2) (shiftUpPreserve wt3) (shiftUpPreserve wt4)
 
+data VarNotContained : Nat → Expr → Set where
+  vn-v : ∀ {i c} → VarNotContained i (Const c)
+  vn-binop : ∀ {i o e1 e2} → VarNotContained i e1 → VarNotContained i e2 → VarNotContained i (BinOp o e1 e2)
+  vn-unop : ∀ {i o e} → VarNotContained i e → VarNotContained i (UnaryOp o e)
+  vn-app : ∀ {i e1 e2} → VarNotContained i e1 → VarNotContained i e2 → VarNotContained i (App e1 e2)
+  vn-ite : ∀ {i e1 e2 e3} → VarNotContained i e1 → VarNotContained i e2 → VarNotContained i e3 → VarNotContained i (Ite e1 e2 e3)
+  vn-inl : ∀ {i e T} → VarNotContained i e → VarNotContained i (Inl e T)
+  vn-inr : ∀ {i e T} → VarNotContained i e → VarNotContained i (Inr e T)
+  vn-lam : ∀ {n ty body i} → VarNotContained (S i) body → VarNotContained i (Lam n ty body)
+  vn-case : ∀ {n2 n3 e1 e2 e3 i} → VarNotContained i e1 → VarNotContained (S i) e2 → VarNotContained (S i) e3 → VarNotContained i (Case e1 n2 e2 n3 e3)
+  vn-var : ∀ {i j} → (¬ (i ≡ j)) → VarNotContained i (Var j)
+
+sucNeq : ∀ {i j : Nat} → ¬ (S i ≡ S j) → ¬ (i ≡ j)
+sucNeq h1 refl = ⊥-elim (h1 refl)
+
 shiftDownPreserve : ∀ {Γ : TypingContext} {V : Expr} {T : TypeL} {i : Nat}
   → Γ ⊢ V ∶ T
+  → VarNotContained (S i) V
   ----------------------------------
   → (remove (S i) Γ) ⊢ shiftDown' (S i) V ∶ T
-shiftDownPreserve ⊢b = ⊢b
-shiftDownPreserve ⊢n = ⊢n
-shiftDownPreserve (⊢|| wt2 wt3) = ⊢|| (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢&& wt2 wt3) = ⊢&& (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢! wt2) = ⊢! (shiftDownPreserve wt2)
-shiftDownPreserve (⊢+ wt2 wt3) = ⊢+ (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢- wt2 wt3) = ⊢- (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢* wt2 wt3) = ⊢* (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢< wt2 wt3) = ⊢< (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢ite wt2 wt3 wt4) = ⊢ite (shiftDownPreserve wt2) (shiftDownPreserve wt3) (shiftDownPreserve wt4)
-shiftDownPreserve {Γ} {V} {T} {i} (⊢v {Γ} {j} {h}) with ltNat j (S i) in r
-... | True rewrite r | removeEq1 Γ j (S i) h (isIt? h (lt->< r)) (lt->< r) = ⊢v
-shiftDownPreserve {Γ} {Var (S j')} {.(lookup Γ (S j') h)} {i} (⊢v {Γ} {S j'} {h}) | False
-  rewrite r = {!removeEq2 Γ j' (S i) h (sucLT (<≤-trans h (removeLength (S i) Γ)))!}
---  rewrite r | removeEq2 Γ j (S i) h (sucLT (<≤-trans h (removeLength (S i) Γ))) (lt->≤ {j} {i} r)  = {!!}
--- ... | True rewrite r | insertEq1 {A} {Γ} {j} {i} {h} {<-trans h insertIncLength} (lt->< r) = ⊢v
--- ... | False rewrite r | insertEq2 {A} Γ j i h (<≤-trans (s< h) insertIncLength) (lt->≤ r) = ⊢v
-shiftDownPreserve (⊢l wt) = ⊢l (shiftDownPreserve wt)
-shiftDownPreserve (⊢a wt2 wt3) = ⊢a (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢proj1 wt2) = ⊢proj1 (shiftDownPreserve wt2)
-shiftDownPreserve (⊢proj2 wt2) = ⊢proj2 (shiftDownPreserve wt2)
-shiftDownPreserve (⊢mkPair wt2 wt3) = ⊢mkPair (shiftDownPreserve wt2) (shiftDownPreserve wt3)
-shiftDownPreserve (⊢inl wt2) = ⊢inl (shiftDownPreserve wt2)
-shiftDownPreserve (⊢inr wt2) = ⊢inr (shiftDownPreserve wt2)
-shiftDownPreserve (⊢case wt2 wt3 wt4) = ⊢case (shiftDownPreserve wt2) (shiftDownPreserve wt3) (shiftDownPreserve wt4)
+shiftDownPreserve ⊢b h = ⊢b
+shiftDownPreserve ⊢n h = ⊢n
+shiftDownPreserve (⊢|| wt2 wt3) (vn-binop vn1 vn2) = ⊢|| (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢&& wt2 wt3) (vn-binop vn1 vn2) = ⊢&& (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢! wt2) (vn-unop vn) = ⊢! (shiftDownPreserve wt2 vn)
+shiftDownPreserve (⊢+ wt2 wt3) (vn-binop vn1 vn2) = ⊢+ (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢- wt2 wt3) (vn-binop vn1 vn2) = ⊢- (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢* wt2 wt3) (vn-binop vn1 vn2) = ⊢* (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢< wt2 wt3) (vn-binop vn1 vn2) = ⊢< (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢ite wt2 wt3 wt4) (vn-ite vn1 vn2 vn3) = ⊢ite (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2) (shiftDownPreserve wt4 vn3)
+shiftDownPreserve {Γ} {V} {T} {i} (⊢v {Γ} {j} {h}) (vn-var vn) with ltNat j (S i) in r
+shiftDownPreserve {Γ} {.(Var (S j'))} {.(lookup Γ (S j') h)} {i} (⊢v {Γ} {S j'} {h}) (vn-var vn) | False
+  rewrite r | removeEq2 Γ j' (S i) h (sucLT (<≤-trans h (removeLength (S i) Γ))) (almostTrichotomy i j' (lt->≤ r) (sucNeq vn)) = ⊢v
+... | True rewrite removeEq1 Γ j (S i) h (isIt? h (lt->< r)) (lt->< r) = ⊢v
+shiftDownPreserve (⊢l wt) (vn-lam vn) = ⊢l (shiftDownPreserve wt vn)
+shiftDownPreserve (⊢a wt2 wt3) (vn-app vn1 vn2) = ⊢a (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢proj1 wt2) (vn-unop vn) = ⊢proj1 (shiftDownPreserve wt2 vn)
+shiftDownPreserve (⊢proj2 wt2) (vn-unop vn) = ⊢proj2 (shiftDownPreserve wt2 vn)
+shiftDownPreserve (⊢mkPair wt2 wt3) (vn-binop vn1 vn2) = ⊢mkPair (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
+shiftDownPreserve (⊢inl wt2) (vn-inl vn) = ⊢inl (shiftDownPreserve wt2 vn)
+shiftDownPreserve (⊢inr wt2) (vn-inr vn) = ⊢inr (shiftDownPreserve wt2 vn)
+shiftDownPreserve (⊢case wt2 wt3 wt4) (vn-case vn1 vn2 vn3) = ⊢case (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2) (shiftDownPreserve wt4 vn3)
+
+pr : ∀ {V body : Expr} {dom : TypeL} {n : Id} → substitute V (Lam n dom body) ≡ Lam n dom (shiftDown' (S Z) (substitute' (S Z) (shiftUp (shiftUp V)) body))
+pr = refl
 
 substPreserve' : ∀ {Γ : TypingContext} {V N : Expr} {A B dom : TypeL}
   → Γ ⊢ V ∶ A
@@ -215,7 +232,8 @@ substPreserve wt1 (⊢< wt2 wt3) = ⊢< (substPreserve wt1 wt2) (substPreserve w
 substPreserve wt1 (⊢ite wt2 wt3 wt4) = ⊢ite (substPreserve wt1 wt2) (substPreserve wt1 wt3) (substPreserve wt1 wt4)
 substPreserve {V = V} {Var Z} wt1 ⊢v rewrite p' {V} = wt1
 substPreserve {V = V} {Var (S i')} _ (⊢v {_ ∷ Γ} {.(S i')} {h = s≤s h}) = ⊢v {Γ} {i'} {h}
-substPreserve {Γ} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) = ⊢l (substPreserve' {Γ} {shiftUp V} {body} {A} {codom} {dom} {!!} wt2)
+substPreserve {Γ} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) = ⊢l {!!}
+-- substPreserve {Γ} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) = ⊢l (substPreserve' {Γ} {shiftUp V} {body} {A} {codom} {dom} {!!} wt2)
 -- substPreserve {Γ} {Lam n dom body} {V} {A} {Arrow dom2 codom} wt1 (⊢l {A ∷ Γ} {n2} {body2} {dom2} {codom} wt2) = {!!}
   -- rewrite ppp {V} {n} {dom} {body} | wtShiftUp wt1 | wtShiftUp wt1 = ⊢l {!!}
 substPreserve wt1 (⊢a wt2 wt3) = ⊢a (substPreserve wt1 wt2) (substPreserve wt1 wt3)
@@ -225,8 +243,6 @@ substPreserve wt1 (⊢mkPair wt2 wt3) = ⊢mkPair (substPreserve wt1 wt2) (subst
 substPreserve wt1 (⊢inl wt2) = ⊢inl (substPreserve wt1 wt2)
 substPreserve wt1 (⊢inr wt2) = ⊢inr (substPreserve wt1 wt2)
 substPreserve wt1 (⊢case wt2 wt3 wt4) = {!!}
-
-
 
 preservation : ∀ {Γ : TypingContext} {L M : Expr} {T : TypeL}
   → Γ ⊢ L ∶ T
