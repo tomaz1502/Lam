@@ -1,6 +1,6 @@
 module Lam.Nat where
 
-open import Haskell.Prelude hiding (Nat; iEqNat; length; _<_; lookup)
+open import Haskell.Prelude hiding (Nat; iEqNat; length; _<_; lookup; _+_)
 open import Relation.Nullary using (¬_)
 open import Data.Empty                            using (⊥-elim; ⊥)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -15,12 +15,21 @@ instance
   iEqNat ._==_ (S x) (S y) = x == y
   iEqNat ._==_ _ _ = False
 
+eq->≡ : ∀ {i j : Nat} → ((i == j) ≡ True) → i ≡ j
+eq->≡ {Z} {Z} h = refl
+eq->≡ {S i} {S j} h = cong S (eq->≡ {i} {j} h)
+
 {-# COMPILE AGDA2HS Nat deriving (Eq, Show) #-}
 
 ltNat : Nat → Nat → Bool
 ltNat Z (S _) = True
 ltNat (S x) (S y) = ltNat x y
 ltNat _ _     = False
+
+ltNatSuc : ∀ (i j : Nat) → ltNat i j ≡ False → ltNat (S i) j ≡ False
+ltNatSuc Z Z h = refl
+ltNatSuc (S i) Z h = refl
+ltNatSuc (S i) (S j) h = ltNatSuc i j h
 
 {-# COMPILE AGDA2HS ltNat #-}
 
@@ -34,6 +43,19 @@ dec Z = Z
 dec (S x) = x
 
 {-# COMPILE AGDA2HS dec #-}
+
+add : Nat → Nat → Nat
+add Z j = j
+add (S i) j = inc (add i j)
+
+addZero : ∀ (i : Nat) → add i Z ≡ i
+addZero Z = refl
+addZero (S i) = cong S (addZero i)
+
+addSuc : ∀ (i j : Nat) → add i (S j) ≡ S (add i j)
+addSuc Z j = refl
+addSuc (S i) j = cong S (addSuc i j)
+
 
 eqSuc : ∀ {i j : Nat} → i ≡ j → S i ≡ S j
 eqSuc refl = refl
@@ -49,6 +71,10 @@ data _≤_ : Nat → Nat → Set where
 _<_ : Nat -> Nat -> Set
 i < j = S i ≤ j
 
+
+not<Self : ∀ (i : Nat) → ¬ (i < i)
+not<Self (S i) (s≤s h) = not<Self i h
+
 <s : ∀ {i j : Nat} → i < S j → i ≤ j
 <s (s≤s h) = h
 
@@ -60,10 +86,21 @@ s≤Self : ∀ (i : Nat) → i ≤ S i
 s≤Self Z = z≤
 s≤Self (S i) = s≤s (s≤Self i)
 
+
+s<Self : ∀ (i : Nat) → i < S i
+s<Self Z = s≤s z≤
+s<Self (S i) = s≤s (s<Self i)
+
 ≤-trans : ∀ {i j k : Nat} → i ≤ j → j ≤ k → i ≤ k
 ≤-trans z≤ z≤ = z≤
 ≤-trans z≤ (s≤s h2) = z≤
 ≤-trans (s≤s h1) (s≤s h2) = s≤s (≤-trans h1 h2)
+
+addInc : ∀ (i j : Nat) → j ≤ add i j
+addInc Z Z = z≤
+addInc Z (S j) = s≤s (addInc Z j)
+addInc (S i) Z = z≤
+addInc (S i) (S j) = s≤s (≤-trans (s≤Self j) (addInc i (S j)))
 
 <-trans : ∀ {i j k : Nat} → i < j → j < k → i < k
 <-trans {Z} {.(S _)} {.(S _)} (s≤s h1) (s≤s h2) = s≤s z≤
@@ -71,6 +108,10 @@ s≤Self (S i) = s≤s (s≤Self i)
 
 <≤-trans : ∀ {i j k : Nat} → i < j → j ≤ k → i < k
 <≤-trans (s≤s h1) (s≤s h2) = s≤s (≤-trans h1 h2)
+
+≤<-trans : ∀ {i j k : Nat} → i ≤ j → j < k → i < k
+≤<-trans z≤ (s≤s h2) = s≤s z≤
+≤<-trans (s≤s h1) (s≤s h2) = s≤s (≤<-trans h1 h2)
 
 lt->< : ∀ {i j : Nat} → ltNat i j ≡ True → i < j
 lt->< {Z} {S j} h = s≤s z≤
@@ -168,15 +209,7 @@ removeLength2 Z (x ∷ L) = s≤Self (length L)
 removeLength2 (S i) [] = z≤
 removeLength2 (S i) (x ∷ L) = s≤s (removeLength2 i L)
 
--- i <= j
--- i != j
--- ? i + 1 <= j ?
-
 almostTrichotomy : ∀ (i j : Nat) → i ≤ j → (¬ (i ≡ j)) → i < j
 almostTrichotomy Z Z z≤ h2 = ⊥-elim (h2 refl)
 almostTrichotomy Z (S j) z≤ h2 = s≤s z≤
 almostTrichotomy (S i) (S j) (s≤s h1) h2 = s≤s (almostTrichotomy i j h1 λ eq -> h2 (eqSuc eq))
-
--- I know h: i < length L
--- I want to conclude i < S length (remove L)
--- ≤<-trans h removeLength
