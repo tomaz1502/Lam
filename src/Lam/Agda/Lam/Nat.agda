@@ -56,13 +56,12 @@ addSuc : ∀ (i j : Nat) → add i (S j) ≡ S (add i j)
 addSuc Z j = refl
 addSuc (S i) j = cong S (addSuc i j)
 
-
-eqSuc : ∀ {i j : Nat} → i ≡ j → S i ≡ S j
-eqSuc refl = refl
-
 length : {A : Set} → List A -> Nat
 length [] = Z
 length (_ ∷ xs) = S (length xs)
+
+eqSuc : ∀ {i j : Nat} → S i ≡ S j → i ≡ j
+eqSuc {i} {.i} refl = refl
 
 data _≤_ : Nat → Nat → Set where
   z≤ : ∀ {i} → Z ≤ i
@@ -70,7 +69,6 @@ data _≤_ : Nat → Nat → Set where
 
 _<_ : Nat -> Nat -> Set
 i < j = S i ≤ j
-
 
 not<Self : ∀ (i : Nat) → ¬ (i < i)
 not<Self (S i) (s≤s h) = not<Self i h
@@ -212,4 +210,4 @@ removeLength2 (S i) (x ∷ L) = s≤s (removeLength2 i L)
 almostTrichotomy : ∀ (i j : Nat) → i ≤ j → (¬ (i ≡ j)) → i < j
 almostTrichotomy Z Z z≤ h2 = ⊥-elim (h2 refl)
 almostTrichotomy Z (S j) z≤ h2 = s≤s z≤
-almostTrichotomy (S i) (S j) (s≤s h1) h2 = s≤s (almostTrichotomy i j h1 λ eq -> h2 (eqSuc eq))
+almostTrichotomy (S i) (S j) (s≤s h1) h2 = s≤s (almostTrichotomy i j h1 λ eq -> h2 (cong S eq))

@@ -18,53 +18,6 @@ open import Lam.FormalizationEvaluator
 open import Lam.FormalizationTypeChecker
 open import Lam.UtilsAgda
 
-data Prefix {T : Set} : List T → List T → Set where
-  nil : ∀ {xs} → Prefix [] xs
-  cons : ∀ {xs ys} (x : T) → Prefix xs ys → Prefix (x ∷ xs) (x ∷ ys)
-
-prefIncsLength : ∀ {A : Set} {xs ys : List A} → Prefix xs ys → (length xs) ≤ (length ys)
-prefIncsLength nil = z≤
-prefIncsLength (cons _ p) = s≤s (prefIncsLength p)
-
-lookupPref : ∀ {A : Set} {Γ Δ : List A} {i : Nat}
-  → (h1 : i < length Γ)
-  → (h2 : i < length Δ)
-  → (p : Prefix Γ Δ)
-  -------------------------------------------------------
-  → lookup Γ i h1 ≡ lookup Δ i h2
-lookupPref {i = Z} h1 h2 (cons x p) = refl
-lookupPref {i = S i} (s≤s h1) (s≤s h2) (cons x p) = lookupPref h1 h2 p
-
-weaken : ∀ {Γ Δ M T}
-  → Prefix Γ Δ
-  → Γ ⊢ M ∶ T
-  -----------
-  → Δ ⊢ M ∶ T
-weaken p ⊢b = ⊢b
-weaken p ⊢n = ⊢n
-weaken p (⊢v {h = h}) rewrite lookupPref h (<≤-trans h (prefIncsLength p)) p = ⊢v {h = <≤-trans h (prefIncsLength p)}
-weaken p (⊢|| h1 h2) = ⊢|| (weaken p h1) (weaken p h2)
-weaken p (⊢&& h1 h2) = ⊢&& (weaken p h1) (weaken p h2)
-weaken p (⊢! h) = ⊢! (weaken p h)
-weaken p (⊢+ h1 h2) = ⊢+ (weaken p h1) (weaken p h2)
-weaken p (⊢- h1 h2) = ⊢- (weaken p h1) (weaken p h2)
-weaken p (⊢* h1 h2) = ⊢* (weaken p h1) (weaken p h2)
-weaken p (⊢< h1 h2) = ⊢< (weaken p h1) (weaken p h2)
-weaken p (⊢ite h1 h2 h3) = ⊢ite (weaken p h1) (weaken p h2) (weaken p h3)
-weaken p (⊢l h) = ⊢l (weaken (cons _ p) h)
-weaken p (⊢a h1 h2) = ⊢a (weaken p h1) (weaken p h2)
-weaken p (⊢proj1 h) = ⊢proj1 (weaken p h)
-weaken p (⊢proj2 h) = ⊢proj2 (weaken p h)
-weaken p (⊢mkPair h1 h2) = ⊢mkPair (weaken p h1) (weaken p h2)
-weaken p (⊢inl h) = ⊢inl (weaken p h)
-weaken p (⊢inr h) = ⊢inr (weaken p h)
-weaken p (⊢case h1 h2 h3) = ⊢case (weaken p h1) ((weaken (cons _ p) h2)) (weaken (cons _ p) h3)
-
-weaken' : ∀ {Γ M T}
-  → [] ⊢ M ∶ T
-  → Γ ⊢ M ∶ T
-weaken' wt = weaken nil wt
-
 ltSuc : ∀ (x y : Nat) → ltNat x y ≡ False → ltNat (S x) y ≡ False
 ltSuc Z Z h = refl
 ltSuc (S x) Z h = refl
@@ -91,39 +44,6 @@ p i (UnaryOp x E) rewrite p i E = refl
 p' : ∀ {V : Expr} → substitute V (Var Z) ≡ V
 p' {V} rewrite p Z V = refl
 
-shiftUpClose : ∀ {Γ} {V : Expr} {T : TypeL} {i : Nat}
-  → Γ ⊢ V ∶ T
-  → length Γ ≤ i
-  ------------------
-  → shiftUp' i V ≡ V
-shiftUpClose ⊢b _ = refl
-shiftUpClose ⊢n _ = refl
-shiftUpClose {i = i} (⊢|| wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢&& wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢+ wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢- wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢* wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢< wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢! wt) h rewrite shiftUpClose {i = i} wt h = refl
-shiftUpClose {i = i} (⊢ite wt1 wt2 wt3) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h | shiftUpClose {i = i} wt3 h = refl
-shiftUpClose {i = i} (⊢l wt) h rewrite shiftUpClose {i = S i} wt (s≤s h) = refl
-shiftUpClose {i = i} (⊢a wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢proj1 wt) h rewrite shiftUpClose {i = i} wt h = refl
-shiftUpClose {i = i} (⊢proj2 wt) h rewrite shiftUpClose {i = i} wt h = refl
-shiftUpClose {i = i} (⊢mkPair wt1 wt2) h rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = i} wt2 h = refl
-shiftUpClose {i = i} (⊢inl wt) h rewrite shiftUpClose {i = i} wt h = refl
-shiftUpClose {i = i} (⊢inr wt) h rewrite shiftUpClose {i = i} wt h = refl
-shiftUpClose {i = i} (⊢case wt1 wt2 wt3) h
-  rewrite shiftUpClose {i = i} wt1 h | shiftUpClose {i = S i} wt2 (s≤s h) | shiftUpClose {i = S i} wt3 (s≤s h) = refl
-shiftUpClose {Γ} {i = i} (⊢v {Γ} {j} {h'}) h with ltNat j i in r
-... | True rewrite r = refl
-... | False =
-  let h1 = ≤-trans h' h in
-  let h2 = lt->≤ {j} {i} r in
-  let h3 = ≤<-trans h2 (s<Self j) in
-  let h4 = <≤-trans h3 h1 in
-  ⊥-elim (not<Self i h4)
-
 insertEq1 : ∀ {A : TypeL} {Γ : TypingContext} {i j : Nat} {h1 : i < length Γ} {h2 : i < length (insert j A Γ)} → i < j → lookup Γ i h1 ≡ lookup (insert j A Γ) i h2
 insertEq1 {A} {x ∷ Γ} {Z} {S j} {h1} {h2} i<j = refl
 insertEq1 {A} {x ∷ Γ} {S i} {S j} {s≤s h1} {s≤s h2} (s≤s i<j) = insertEq1 i<j
@@ -146,29 +66,11 @@ piLookup : ∀ {A : Set} (Γ : List A) (i : Nat) (h1 : i < length Γ) (h2 : i < 
 piLookup (x ∷ g) Z h1 h2 = refl
 piLookup (x ∷ g) (S i) (s≤s h1) (s≤s h2) = piLookup g i h1 h2
 
-
--- g = [0; 1; 2; 3; 4]
--- i = 3
--- j = 3
--- lookup (S i) = 3
--- lookup i (remove j) = 3
-
--- g = [0; 1; 2; 3; 4]
--- i = 3
--- j = 4
--- lookup (S i) = 3
--- lookup i (remove j) = 2
-
 removeEq2 : ∀ (Γ : TypingContext) (i j : Nat) (h1 : S i < length Γ) (h2 : i < length (remove j Γ)) → (j ≤ i) → lookup Γ (S i) h1 ≡ lookup (remove j Γ) i h2
 removeEq2 (x ∷ []) Z Z (s≤s ()) h2 j≤i
 removeEq2 (x ∷ y ∷ g) Z Z (s≤s h1) h2 j≤i = refl
 removeEq2 (x ∷ g) (S i) Z (s≤s h1) h2 z≤ = piLookup g (S i) h1 h2
 removeEq2 (x ∷ g) (S i) (S j) (s≤s h1) (s≤s h2) (s≤s h3) = removeEq2 g i j h1 h2 h3
-
--- I know h : S i < length L
--- I know h2 : length L ≤ S (length (remove L))
--- by transitivity: S i < S (length (remove L))
--- I wanna conclude i < length (remove L)
 
 shiftUpPreserve : ∀ {Γ : TypingContext} {V : Expr} {A T : TypeL} {i : Nat}
   → Γ ⊢ V ∶ T
@@ -208,6 +110,73 @@ data VarNotContained : Nat → Expr → Set where
   vn-case : ∀ {n2 n3 e1 e2 e3 i} → VarNotContained i e1 → VarNotContained (S i) e2 → VarNotContained (S i) e3 → VarNotContained i (Case e1 n2 e2 n3 e3)
   vn-var : ∀ {i j} → (¬ (i ≡ j)) → VarNotContained i (Var j)
 
+
+t : ∀ {i j k : Nat} → i < j → j ≡ k → i < k
+t h refl = h
+
+varNotContainedShiftUp : ∀ (E : Expr) (j : Nat) → VarNotContained j (shiftUp' j E)
+varNotContainedShiftUp (Var x) j with ltNat x j in r
+... | True rewrite r = vn-var λ z -> not<Self x (t (lt->< r) z)
+... | False rewrite r = vn-var λ z -> not<Self j (t (≤<-trans (lt->≤ r) sucLT3) (sym z))
+varNotContainedShiftUp (Lam x x₁ E) j = vn-lam (varNotContainedShiftUp E (S j))
+varNotContainedShiftUp (App E E₁) j = vn-app (varNotContainedShiftUp E j) (varNotContainedShiftUp E₁ j)
+varNotContainedShiftUp (Ite E E₁ E₂) j = vn-ite (varNotContainedShiftUp E j) (varNotContainedShiftUp E₁ j)
+                                          (varNotContainedShiftUp E₂ j)
+varNotContainedShiftUp (Inl E x) j = vn-inl (varNotContainedShiftUp E j)
+varNotContainedShiftUp (Inr E x) j = vn-inr (varNotContainedShiftUp E j)
+varNotContainedShiftUp (Case E x E₁ x₁ E₂) j = vn-case (varNotContainedShiftUp E j)
+                                                (varNotContainedShiftUp E₁ (S j)) (varNotContainedShiftUp E₂ (S j))
+varNotContainedShiftUp (Const x) j = vn-v
+varNotContainedShiftUp (BinOp x E E₁) j = vn-binop (varNotContainedShiftUp E j) (varNotContainedShiftUp E₁ j)
+varNotContainedShiftUp (UnaryOp x E) j = vn-unop (varNotContainedShiftUp E j)
+
+varNotContainedImplies : ∀ (E : Expr) (i : Nat) → VarNotContained i E → (VarNotContained (S i) (shiftUp' i E))
+varNotContainedImplies (Var x) i (vn-var h) with ltNat x i in r
+... | True rewrite r = vn-var λ z -> not<Self x (<-trans (lt->< r) (t sucLT3 z))
+... | False rewrite r = vn-var λ z -> h (eqSuc z)
+varNotContainedImplies (Lam x x₁ E) i (vn-lam h) = vn-lam (varNotContainedImplies E (S i) h)
+varNotContainedImplies (App E E₁) i (vn-app h h₁) = vn-app (varNotContainedImplies E i h)
+                                                     (varNotContainedImplies E₁ i h₁)
+varNotContainedImplies (Ite E E₁ E₂) i (vn-ite h h₁ h₂) = vn-ite (varNotContainedImplies E i h)
+                                                           (varNotContainedImplies E₁ i h₁) (varNotContainedImplies E₂ i h₂)
+varNotContainedImplies (Inl E x) i (vn-inl h) = vn-inl (varNotContainedImplies E i h)
+varNotContainedImplies (Inr E x) i (vn-inr h) = vn-inr (varNotContainedImplies E i h)
+varNotContainedImplies (Case E x E₁ x₁ E₂) i (vn-case h h₁ h₂) = vn-case (varNotContainedImplies E i h)
+                                                                  (varNotContainedImplies E₁ (S i) h₁)
+                                                                  (varNotContainedImplies E₂ (S i) h₂)
+varNotContainedImplies (Const x) i h = vn-v
+varNotContainedImplies (BinOp x E E₁) i (vn-binop h h₁) = vn-binop (varNotContainedImplies E i h)
+                                                           (varNotContainedImplies E₁ i h₁)
+varNotContainedImplies (UnaryOp x E) i (vn-unop h) = vn-unop (varNotContainedImplies E i h)
+
+varNotContainedImplies2 : ∀ (E : Expr) (i j : Nat) → j ≤ S i → VarNotContained i E → (VarNotContained (S i) (shiftUp' j E))
+varNotContainedImplies2 (Const _) i j h1 vn-v = vn-v
+varNotContainedImplies2 (BinOp _ e1 e2) i j h1 (vn-binop h2 h3) = vn-binop (varNotContainedImplies2 e1 i j h1 h2)
+                                                                  (varNotContainedImplies2 e2 i j h1 h3)
+varNotContainedImplies2 (UnaryOp o e) i j h1 (vn-unop h2) = vn-unop (varNotContainedImplies2 e i j h1 h2)
+varNotContainedImplies2 (App e1 e2) i j h1 (vn-app h2 h3) = vn-app (varNotContainedImplies2 e1 i j h1 h2)
+                                                             (varNotContainedImplies2 e2 i j h1 h3)
+varNotContainedImplies2 (Ite b t e) i j h1 (vn-ite h2 h3 h4) = vn-ite (varNotContainedImplies2 b i j h1 h2)
+                                                                (varNotContainedImplies2 t i j h1 h3)
+                                                                (varNotContainedImplies2 e i j h1 h4)
+varNotContainedImplies2 (Inl e t) i j h1 (vn-inl h2) = vn-inl (varNotContainedImplies2 e i j h1 h2)
+varNotContainedImplies2 (Inr e t) i j h1 (vn-inr h2) = vn-inr (varNotContainedImplies2 e i j h1 h2)
+varNotContainedImplies2 (Lam _ _ E) i j h1 (vn-lam h2) = vn-lam (varNotContainedImplies2 E (S i) (S j) (s≤s h1) h2)
+varNotContainedImplies2 (Case e1 _ e2 _ e3) i j h1 (vn-case h2 h3 h4) = vn-case (varNotContainedImplies2 e1 i j h1 h2)
+                                                                         (varNotContainedImplies2 e2 (S i) (S j) (s≤s h1) h3)
+                                                                         (varNotContainedImplies2 e3 (S i) (S j) (s≤s h1) h4)
+varNotContainedImplies2 (Var k) i j h1 (vn-var x) with ltNat k j in r
+... | True rewrite r = vn-var (λ z -> not<Self k (t (<≤-trans (lt->< r) h1) z))
+... | False rewrite r = vn-var (λ z -> ⊥-elim (x (eqSuc z)))
+
+iterShiftUp : Nat → Nat → Expr → Expr
+iterShiftUp j Z e = e
+iterShiftUp j (S i) e = iterShiftUp j i (shiftUp' j e)
+
+iterShiftUpSuc : ∀ {V : Expr} {j : Nat} → shiftUp (iterShiftUp Z j (V)) ≡ iterShiftUp Z (S j) V
+iterShiftUpSuc {V} {Z} = refl
+iterShiftUpSuc {V} {S j} rewrite iterShiftUpSuc {shiftUp V} {j} = refl
+
 sucNeq : ∀ {i j : Nat} → ¬ (S i ≡ S j) → ¬ (i ≡ j)
 sucNeq h1 refl = ⊥-elim (h1 refl)
 
@@ -239,17 +208,10 @@ shiftDownPreserve (⊢inl wt2) (vn-inl vn) = ⊢inl (shiftDownPreserve wt2 vn)
 shiftDownPreserve (⊢inr wt2) (vn-inr vn) = ⊢inr (shiftDownPreserve wt2 vn)
 shiftDownPreserve (⊢case wt2 wt3 wt4) (vn-case vn1 vn2 vn3) = ⊢case (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2) (shiftDownPreserve wt4 vn3)
 
-pr : ∀ {V body : Expr} {dom : TypeL} {n : Id} → substitute V (Lam n dom body) ≡ Lam n dom (shiftDown' (S Z) (substitute' (S Z) (shiftUp (shiftUp V)) body))
-pr = refl
-
 drop : {A : Set} → Nat → List A → List A
 drop Z l = l
 drop (S i) [] = []
 drop (S i) (x ∷ l) = drop i l
-
-iterShiftUp : Nat → Nat → Expr → Expr
-iterShiftUp j Z e = e
-iterShiftUp j (S i) e = iterShiftUp j i (shiftUp' j e)
 
 iterShiftUpConst : ∀ {c : ConstT} {i j : Nat} → iterShiftUp j i (Const c) ≡ (Const c)
 iterShiftUpConst {i = Z} = refl
@@ -287,6 +249,14 @@ iterShiftUpVar2 : ∀ {i j k : Nat} → ltNat k j ≡ False →  iterShiftUp j i
 iterShiftUpVar2 {Z} h = refl
 iterShiftUpVar2 {S i} {j} {k} h rewrite h | iterShiftUpVar2 {i} {j} {k} h | sym (addSuc i k) = iterShiftUpVar2 {i} {j} {S k} (ltNatSuc k j h)
 
+iterShiftUpLam : ∀ {i j : Nat} {e : Expr} {T : TypeL} {n : Id} → iterShiftUp j i (Lam n T e) ≡ Lam n T (iterShiftUp (S j) i e)
+iterShiftUpLam {i = Z} = refl
+iterShiftUpLam {i = S i} {j} {e} {T} {n} rewrite iterShiftUpLam {i} {j} {shiftUp' (S j) e} {T} {n} = refl
+
+iterShiftUpCase : ∀ {i j : Nat} {e1 e2 e3 : Expr} {n2 n3 : Id} → iterShiftUp j i (Case e1 n2 e2 n3 e3) ≡ Case (iterShiftUp j i e1) n2 (iterShiftUp (S j) i e2) n3 (iterShiftUp (S j) i e3)
+iterShiftUpCase {i = Z} = refl
+iterShiftUpCase {i = S i} {j} {e1} {e2} {e3} {n2} {n3} rewrite iterShiftUpCase {i} {j} {shiftUp' j e1} {shiftUp' (S j) e2} {shiftUp' (S j) e3} {n2} {n3} = refl
+
 dropLookup : ∀ {A : Set} (L : List A) (i j : Nat) (h1 : j < length (drop i L)) (h2 : add i j < length L) → lookup (drop i L) j h1 ≡ lookup L (add i j) h2
 dropLookup (x ∷ L) Z Z _ _ = refl
 dropLookup (x ∷ L) Z (S j) h1 h2 = piLookup (x ∷ L) (S j) h1 h2
@@ -306,16 +276,34 @@ lookupDrop : ∀ {A : Set} (L : List A) (i : Nat) (h1 : i < length L) (h2 : Z < 
 lookupDrop (x ∷ L) Z (s≤s h1) h2 = refl
 lookupDrop (x ∷ L) (S i) (s≤s h1) h2 = lookupDrop L i h1 h2
 
-concat-[] : ∀ {A : Set} (L : List A) → L ++ [] ≡ L
-concat-[] [] = refl
-concat-[] (x ∷ L) = Eq.cong (λ z -> x ∷ z) (concat-[] L)
-
 o : {A : Set} (L1 L2 : List A) (x : A) → S (length (L1 ++ L2)) ≡ length (L1 ++ x ∷ L2)
 o [] L2 x = refl
 o (x₁ ∷ L1) L2 x rewrite o L1 L2 x = refl
 
-t : ∀ {i j k : Nat} → i < j → j ≡ k → i < k
-t h refl = h
+q : ∀ {A : Set} (x : A) (L1 L2 : List A) → length (L1 ++ x ∷ L2) ≡ S (length (L1 ++ L2))
+q x [] L2 = refl
+q x (x₁ ∷ L1) L2 rewrite q x L1 L2 = refl
+
+concat-[] : ∀ {A : Set} (L : List A) → L ++ [] ≡ L
+concat-[] [] = refl
+concat-[] (x ∷ L) = Eq.cong (λ z -> x ∷ z) (concat-[] L)
+
+u : ∀ {A : Set} (x : A) (i k : Nat) (L1 L2 : List A) → i < length L2 → k ≤ length (L1 ++ drop i L2) → k < length (L1 ++ drop i (x ∷ L2))
+u x Z k L1 (x₁ ∷ L2) h1 h2 rewrite q x L1 (x₁ ∷ L2) = s≤s h2
+u x (S i) k L1 (x₁ ∷ L2) (s≤s h1) h2 = u x₁ i k L1 L2 h1 h2
+
+lengthConcatDrop : ∀ {A : Set} (i k : Nat) (L1 L2 : List A) → add i k < length (L1 ++ L2) → k < length (L1 ++ (drop i L2))
+lengthConcatDrop Z Z [] (x ∷ L2) (s≤s h) = s≤s h
+lengthConcatDrop Z (S k) [] (x ∷ L2) (s≤s h) = s≤s h
+lengthConcatDrop Z k (x ∷ L1) L2 (s≤s h) = s≤s h
+lengthConcatDrop (S i) k (x ∷ L1) [] (s≤s h) rewrite concat-[] (x ∷ L1) | concat-[] L1 = s≤s (≤-trans (≤-trans (addInc i k) (s≤Self (add i k))) h)
+lengthConcatDrop (S i) k L1 (x₁ ∷ L2) h = lengthConcatDrop i k L1 L2 (sucLT (t h (q x₁ L1 L2)))
+
+lengthConcatDrop2 : ∀ {A : Set} (i k : Nat) (L1 L2 : List A) → i < length L2 → k < length (L1 ++ (drop i L2)) → add i k < length (L1 ++ L2)
+lengthConcatDrop2 Z k L1 L2 _ h = h
+lengthConcatDrop2 (S i) k [] L2 _ h = dropLength (S i) k L2 h
+lengthConcatDrop2 (S i) k (x ∷ L1) (x₁ ∷ L2) (s≤s h) (s≤s h2) =
+  (s≤s (lengthConcatDrop2 i k L1 (x₁ ∷ L2) (<-trans h (s<Self (length L2))) (u x₁ i k L1 L2 h h2)))
 
 l : {A : Set} (x : A) (L1 L2 : List A) (i : Nat) (h1 : length L1 ≤ i) (h2 : S i < length (L1 ++ x ∷ L2)) (h3 : i < length (L1 ++ L2)) → lookup (L1 ++ x ∷ L2) (S i) h2 ≡ lookup (L1 ++ L2) i h3
 l x [] [] Z h1 h2 ()
@@ -340,6 +328,22 @@ lookupConcat2 L1 (x ∷ L2) (S i) (S k) h1 h2 h3 rewrite l x L1 L2 (add i (S k))
 ++-length [] L2 = z≤
 ++-length (x ∷ L1) L2 = s≤s (++-length L1 L2)
 
+v2 : ∀ {A : Set} (i k : Nat) (L1 L2 : List A) → length L1 ≤ k → S k ≤ length (L1 ++ drop i L2) → ¬ (drop i L2 ≡ [])
+v2 Z k L1 [] h1 h2 refl rewrite concat-[] L1 = not<Self (length L1) (<≤-trans (≤<-trans h1 (s<Self k)) h2)
+v2 (S i) k L1 [] h1 h2 h3 rewrite concat-[] L1 = not<Self (length L1) (<≤-trans (≤<-trans h1 (s<Self k)) h2)
+v2 (S i) k L1 (x ∷ L2) h1 h2 h3 rewrite h3 | concat-[] L1 = not<Self (length L1) (<≤-trans (≤<-trans h1 (s<Self k)) h2)
+
+v3 : ∀ {A : Set} (i : Nat) (L : List A) → ¬ (drop i L ≡ []) → i < length L
+v3 Z [] h = ⊥-elim (h refl)
+v3 Z (x ∷ L) h = s≤s z≤
+v3 (S i) [] h = ⊥-elim (h refl)
+v3 (S i) (x ∷ L) h = s≤s (v3 i L h)
+
+v : ∀ {A : Set} (i k : Nat) (L1 L2 : List A) → length L1 ≤ k → S k ≤ length (L1 ++ drop i L2) → i < length L2
+v i k L1 L2 h1 h2 =
+  let z = v2 i k L1 L2 h1 h2 in
+  v3 i L2 z
+
 dropIterWt : ∀ {Γ Δ : TypingContext} {i j : Nat} {E : Expr} {T : TypeL} {h : j ≡ length Δ} →
   (Δ ++ (drop i Γ)) ⊢ E ∶ T → (Δ ++ Γ) ⊢ iterShiftUp j i E ∶ T
 dropIterWt {i = i} {j = j} (⊢b {b = b}) rewrite iterShiftUpConst {BoolC b} {i} {j} = ⊢b
@@ -355,15 +359,16 @@ dropIterWt {i = i} {j = j} {h = h} (⊢ite {b = b} {t = t} {e = e} wt1 wt2 wt3) 
   ⊢ite (dropIterWt {i = i} {j = j} {h = h} wt1) (dropIterWt {i = i} {j = j} {h = h} wt2) (dropIterWt {i = i} {j = j} {h = h} wt3)
 dropIterWt {Γ} {Δ} {i} {j} {Var k} {T} {h} (⊢v {.(Δ ++ drop i Γ)} {k} {h2}) with ltNat k j in r
 ... | True rewrite iterShiftUpVar1 {i} {j} {k} r | h | piLookup (Δ ++ drop i Γ) k h2 (<≤-trans (lt->< r) (++-length Δ (drop i Γ))) | sym (lookupConcat Δ Γ (drop i Γ) k (lt->< r) (<≤-trans (lt->< r) (++-length Δ Γ)) (<≤-trans (lt->< r) (++-length Δ (drop i Γ)))) = ⊢v
-... | False rewrite iterShiftUpVar2 {i} {j} {k} r rewrite h = {!lookupConcat2 Δ Γ i k (lt->≤ r)!}
-dropIterWt (⊢l wt) = {!!}
+... | False rewrite iterShiftUpVar2 {i} {j} {k} r rewrite h | sym (lookupConcat2 Δ Γ i k (lt->≤ r) (lengthConcatDrop2 i k Δ Γ (v i k Δ Γ (lt->≤ r) h2) h2) h2) = ⊢v
+dropIterWt {i = i} {j = j} {h = h} (⊢l {_} {n} {e} {dom} {codom} wt) rewrite iterShiftUpLam {i} {j} {e} {dom} {n} = ⊢l (dropIterWt {i = i} {j = (S j)} {h = Eq.cong S h} wt)
 dropIterWt {i = i} {j = j} {h = h} (⊢a {f = f} {x = x} wt1 wt2) rewrite iterShiftUpApp {f} {x} {i} {j} = ⊢a (dropIterWt {i = i} {j = j} {h = h} wt1) (dropIterWt {i = i} {j = j} {h = h} wt2)
 dropIterWt {i = i} {j = j} {h = h} (⊢proj1 {p = p} wt) rewrite iterShiftUpUnaryOp {Proj1} {p} {i} {j} = ⊢proj1 (dropIterWt {i = i} {j = j} {h = h} wt)
 dropIterWt {i = i} {j = j} {h = h} (⊢proj2 {p = p} wt) rewrite iterShiftUpUnaryOp {Proj2} {p} {i} {j} = ⊢proj2 (dropIterWt {i = i} {j = j} {h = h} wt)
 dropIterWt {i = i} {j = j} {h = h} (⊢mkPair {e1 = e1} {e2 = e2} wt1 wt2) rewrite iterShiftUpBinOp {MkPair} {e1} {e2} {i} {j} = ⊢mkPair (dropIterWt {i = i} {j = j} {h = h} wt1) (dropIterWt {i = i} {j = j} {h = h} wt2)
 dropIterWt {i = i} {j = j} {h = h} (⊢inl {_} {e} {t} {te} wt) rewrite iterShiftUpInl {e} {i} {j} {Sum te t} = ⊢inl (dropIterWt {i = i} {j = j} {h = h} wt)
 dropIterWt {i = i} {j = j} {h = h} (⊢inr {_} {e} {t} {te} wt) rewrite iterShiftUpInr {e} {i} {j} {Sum t te} = ⊢inr (dropIterWt {i = i} {j = j} {h = h} wt)
-dropIterWt (⊢case wt wt₁ wt₂) = {!!}
+dropIterWt {i = i} {j = j} {h = h} (⊢case {_} {e1} {e2} {e3} {t} {tl} {tr} {id2} {id3} wt1 wt2 wt3)
+  rewrite iterShiftUpCase {i} {j} {e1} {e2} {e3} {id2} {id3} = ⊢case (dropIterWt {i = i} {j = j} {h = h} wt1) (dropIterWt {i = i} {j = (S j)} {h = Eq.cong S h} wt2) (dropIterWt {i = i} {j = (S j)} {h = Eq.cong S h} wt3)
 
 substPreserve' : ∀ {Γ : TypingContext} {V N : Expr} {A B : TypeL} {i j : Nat} {h : i < length Γ}
   → (drop j Γ) ⊢ V ∶ A
@@ -383,19 +388,65 @@ substPreserve' {j = j} wtv ih (⊢< wtn wtn₁) = ⊢< (substPreserve' {j = j} w
 substPreserve' {j = j} wtv ih (⊢ite wtn wtn₁ wtn₂) =
   ⊢ite (substPreserve' {j = j} wtv ih wtn) (substPreserve' {j = j} wtv ih wtn₁) (substPreserve' {j = j} wtv ih wtn₂)
 substPreserve' {Γ} {V} {Var k} {A} {B} {i} {j} {h} wtv ih (⊢v {Γ} {k} {hk}) with (i == k) in r
-... | True rewrite r | eq->≡ {i} {k} r | piLookup Γ k h hk | ih = {!!} -- dropIterWt {i = j} wtv
+... | True rewrite r | eq->≡ {i} {k} r | piLookup Γ k h hk | ih = dropIterWt {i = j} {h = refl} wtv
 ... | False rewrite r = ⊢v
-substPreserve' {Γ} {V} {N} {A} {B} {i} {j} {h} wtv ih (⊢l {Γ} {n} {body} {dom} {codom} wtn) = {!!}
---  ⊢l (substPreserve' {dom ∷ Γ} {shiftUp V} {body} {A} {codom} {S i} {s≤s h} (shiftUpPreserve wtv) ih wtn)
+substPreserve' {Γ} {V} {N} {A} {B} {i} {j} {h} wtv ih (⊢l {Γ} {n} {body} {dom} {codom} wtn) rewrite iterShiftUpSuc {V} {j} =
+  ⊢l (substPreserve' {dom ∷ Γ} {V} {body} {A} {codom} {S i} {S j} {s≤s h} wtv ih wtn)
 substPreserve' {j = j} wtv ih (⊢a wtn wtn₁) = ⊢a (substPreserve' {j = j} wtv ih wtn) (substPreserve' {j = j} wtv ih wtn₁)
 substPreserve' {j = j} wtv ih (⊢proj1 wtn) = ⊢proj1 (substPreserve' {j = j} wtv ih wtn)
 substPreserve' {j = j} wtv ih (⊢proj2 wtn) = ⊢proj2 (substPreserve' {j = j} wtv ih wtn)
 substPreserve' {j = j} wtv ih (⊢mkPair wtn wtn₁) = ⊢mkPair (substPreserve' {j = j} wtv ih wtn) (substPreserve' {j = j} wtv ih wtn₁)
 substPreserve' {j = j} wtv ih (⊢inl wtn) = ⊢inl (substPreserve' {j = j} wtv ih wtn)
 substPreserve' {j = j} wtv ih (⊢inr wtn) = ⊢inr (substPreserve' {j = j} wtv ih wtn)
-substPreserve' {Γ} {V} {N} {A} {B} {i} {j} {h} wtv ih (⊢case {Γ} {e1} {e2} {e3} {t} {tl} {tr} wt1 wt2 wt3) = {!!}
---  ⊢case (substPreserve' wtv ih wt1) (substPreserve' {tl ∷ Γ} {shiftUp V} {e2} {A} {B} {S i} {s≤s h} (shiftUpPreserve wtv) ih wt2)
---    (substPreserve' {tr ∷ Γ} {shiftUp V} {e3} {A} {B} {S i} {s≤s h} (shiftUpPreserve wtv) ih wt3)
+substPreserve' {Γ} {V} {N} {A} {B} {i} {j} {h} wtv ih (⊢case {Γ} {e1} {e2} {e3} {t} {tl} {tr} wt1 wt2 wt3) rewrite iterShiftUpSuc {V} {j} =
+  ⊢case (substPreserve' {j = j} wtv ih wt1) (substPreserve' {tl ∷ Γ} {V} {e2} {A} {t} {S i} {S j} {s≤s h} wtv ih wt2) (substPreserve' {tr ∷ Γ} {V} {e3} {A} {t} {S i} {S j} {s≤s h} wtv ih wt3)
+
+le : ∀ (V : Expr) → VarNotContained (S Z) (iterShiftUp Z (S (S Z)) V)
+le V rewrite iterShiftUpSuc {V} {S Z} = varNotContainedImplies (shiftUp V) Z (varNotContainedShiftUp V Z)
+
+eqSelf : ∀ (i : Nat) → (i == i) ≡ True
+eqSelf Z = refl
+eqSelf (S i) = eqSelf i
+
+abs : ¬ (True ≡ False)
+abs ()
+
+eq->not≡ : ∀ (i j : Nat) → ((i == j) ≡ False) → ¬ (i ≡ j)
+eq->not≡ i .i h refl = abs (Eq.trans (sym (eqSelf i)) h)
+
+le2 : ∀ (V N : Expr) (i : Nat) → VarNotContained i V → VarNotContained i (substitute' i V N)
+le2 V (Var x) i h with (i == x) in r
+... | True rewrite r = h
+... | False rewrite r = vn-var λ z -> eq->not≡ i x r z
+le2 (Var y) (Lam x x₁ N) i (vn-var x₂) rewrite ltZ {y} = vn-lam (le2 (Var (S y)) N (S i) (vn-var λ z -> x₂ (eqSuc z)))
+le2 (Lam x₂ x₃ V) (Lam x x₁ N) i (vn-lam h) = vn-lam (le2 (shiftUp (Lam x₂ x₃ V)) N (S i) (vn-lam (varNotContainedImplies2 V (S i) (S Z) (s≤s z≤) h)))
+le2 (App V V₁) (Lam x x₁ N) i h = vn-lam (le2 (shiftUp (App V V₁)) N (S i) (varNotContainedImplies2 (App V V₁) i Z z≤ h))
+le2 (Ite V V₁ V₂) (Lam x x₁ N) i h = vn-lam (le2 (shiftUp (Ite V V₁ V₂)) N (S i) (varNotContainedImplies2 (Ite V V₁ V₂) i Z z≤ h))
+le2 (Inl V x₂) (Lam x x₁ N) i h = vn-lam (le2 (shiftUp (Inl V x₂)) N (S i) (varNotContainedImplies2 (Inl V x₂) i Z z≤ h))
+le2 (Inr V x₂) (Lam x x₁ N) i h = vn-lam (le2 (shiftUp (Inr V x₂)) N (S i) (varNotContainedImplies2 (Inr V x₂) i Z z≤ h))
+le2 (Case V x₂ V₁ x₃ V₂) (Lam x x₁ N) i (vn-case h1 h2 h3) = vn-lam (le2 (shiftUp (Case V x₂ V₁ x₃ V₂)) N (S i) (vn-case (varNotContainedImplies2 V i Z z≤ h1) (varNotContainedImplies2 V₁ (S i) (S Z) (s≤s z≤) h2) (varNotContainedImplies2 V₂ (S i) (S Z) (s≤s z≤) h3)))
+le2 (Const x₂) (Lam x x₁ N) i vn-v = vn-lam (le2 (Const x₂) N (S i) vn-v)
+le2 (BinOp x₂ V V₁) (Lam x x₁ N) i h = vn-lam (le2 (shiftUp (BinOp x₂ V V₁)) N (S i) (varNotContainedImplies2 (BinOp x₂ V V₁) i Z z≤ h))
+le2 (UnaryOp x₂ V) (Lam x x₁ N) i (vn-unop h) = vn-lam (le2 (shiftUp (UnaryOp x₂ V)) N (S i) (varNotContainedImplies2 (UnaryOp x₂ V) i Z z≤ (vn-unop h)))
+le2 V (App N N₁) i h = vn-app (le2 V N i h) (le2 V N₁ i h)
+le2 V (Ite N N₁ N₂) i h = vn-ite (le2 V N i h) (le2 V N₁ i h) (le2 V N₂ i h)
+le2 V (Inl N x) i h = vn-inl (le2 V N i h)
+le2 V (Inr N x) i h = vn-inr (le2 V N i h)
+le2 (Const x₂) (Case N x N₁ x₁ N₂) i vn-v = vn-case (le2 (Const x₂) N i vn-v) (le2 (shiftUp (Const x₂)) N₁ (S i) vn-v) ((le2 (shiftUp (Const x₂)) N₂ (S i) vn-v))
+le2 (BinOp o e1 e2) (Case N x N₁ x₁ N₂) i h = vn-case (le2 (BinOp o e1 e2) N i h) (le2 (shiftUp (BinOp o e1 e2)) N₁ (S i) (varNotContainedImplies2 (BinOp o e1 e2) i Z z≤ h)) ((le2 (shiftUp (BinOp o e1 e2)) N₂ (S i) (varNotContainedImplies2 (BinOp o e1 e2) i Z z≤ h)))
+le2 (UnaryOp o e) (Case N x N₁ x₁ N₂) i (vn-unop h) = vn-case (le2 (UnaryOp o e) N i (vn-unop h)) (le2 (shiftUp (UnaryOp o e)) N₁ (S i) (varNotContainedImplies2 (UnaryOp o e) i Z z≤ (vn-unop h))) ((le2 (shiftUp (UnaryOp o e)) N₂ (S i) (varNotContainedImplies2 (UnaryOp o e) i Z z≤ (vn-unop h))))
+le2 (App e1 e2) (Case N x N₁ x₁ N₂) i h = vn-case (le2 (App e1 e2) N i h) (le2 (shiftUp (App e1 e2)) N₁ (S i) (varNotContainedImplies2 (App e1 e2) i Z z≤ h)) ((le2 (shiftUp (App e1 e2)) N₂ (S i) (varNotContainedImplies2 (App e1 e2) i Z z≤ h)))
+le2 (Ite e1 e2 e3) (Case N x N₁ x₁ N₂) i h = vn-case (le2 (Ite e1 e2 e3) N i h) (le2 (shiftUp (Ite e1 e2 e3)) N₁ (S i) (varNotContainedImplies2 (Ite e1 e2 e3) i Z z≤ h)) ((le2 (shiftUp (Ite e1 e2 e3)) N₂ (S i) (varNotContainedImplies2 (Ite e1 e2 e3) i Z z≤ h)))
+le2 (Inl e t) (Case N x N₁ x₁ N₂) i h = vn-case (le2 (Inl e t) N i h) (le2 (shiftUp (Inl e t)) N₁ (S i) (varNotContainedImplies2 (Inl e t) i Z z≤ h)) ((le2 (shiftUp (Inl e t)) N₂ (S i) (varNotContainedImplies2 (Inl e t) i Z z≤ h)))
+le2 (Inr e t) (Case N x N₁ x₁ N₂) i h = vn-case (le2 (Inr e t) N i h) (le2 (shiftUp (Inr e t)) N₁ (S i) (varNotContainedImplies2 (Inr e t) i Z z≤ h)) ((le2 (shiftUp (Inr e t)) N₂ (S i) (varNotContainedImplies2 (Inr e t) i Z z≤ h)))
+le2 (Lam n ty b) (Case N x N₁ x₁ N₂) i h = vn-case (le2 (Lam n ty b) N i h) (le2 (shiftUp (Lam n ty b)) N₁ (S i) (varNotContainedImplies2 (Lam n ty b) i Z z≤ h)) ((le2 (shiftUp (Lam n ty b)) N₂ (S i) (varNotContainedImplies2 (Lam n ty b) i Z z≤ h)))
+le2 (Case E1 id2 E2 id3 E3) (Case N x N₁ x₁ N₂) i h = vn-case (le2 (Case E1 id2 E2 id3 E3) N i h) (le2 (shiftUp (Case E1 id2 E2 id3 E3)) N₁ (S i) (varNotContainedImplies2 (Case E1 id2 E2 id3 E3) i Z z≤ h)) ((le2 (shiftUp (Case E1 id2 E2 id3 E3)) N₂ (S i) (varNotContainedImplies2 (Case E1 id2 E2 id3 E3) i Z z≤ h)))
+le2 (Var z) (Case N x N₁ x₁ N₂) i (vn-var x₂) with (i == z) in r
+... | True rewrite r | ltZ {z} = ⊥-elim (x₂ (eq->≡ r))
+... | False rewrite ltZ {z} = vn-case (le2 (Var z) N i (vn-var x₂)) (le2 (Var (S z)) N₁ (S i) (vn-var λ z -> x₂ (eqSuc z))) ((le2 (Var (S z)) N₂ (S i) (vn-var λ z -> x₂ (eqSuc z))))
+le2 V (Const x) i h = vn-v
+le2 V (BinOp x N N₁) i h = vn-binop (le2 V N i h) (le2 V N₁ i h)
+le2 V (UnaryOp x N) i h = vn-unop (le2 V N i h)
 
 substPreserve : ∀ {Γ : TypingContext} {V N : Expr} {A B : TypeL}
   → Γ ⊢ V ∶ A
@@ -414,16 +465,20 @@ substPreserve wt1 (⊢< wt2 wt3) = ⊢< (substPreserve wt1 wt2) (substPreserve w
 substPreserve wt1 (⊢ite wt2 wt3 wt4) = ⊢ite (substPreserve wt1 wt2) (substPreserve wt1 wt3) (substPreserve wt1 wt4)
 substPreserve {V = V} {Var Z} wt1 ⊢v rewrite p' {V} = wt1
 substPreserve {V = V} {Var (S i')} _ (⊢v {_ ∷ Γ} {.(S i')} {h = s≤s h}) = ⊢v {Γ} {i'} {h}
-substPreserve {g} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) = ⊢l {!!}
--- substPreserve {[]} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) rewrite shiftUpClose {i = Z} wt1 z≤ | shiftUpClose {i = Z} wt1 z≤  = ⊢l {!!}
--- substPreserve {x ∷ g} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) = ⊢l {!!}
+substPreserve {g} {V} {Lam n dom body} {A} {Arrow dom codom} wt1 (⊢l wt2) =
+  let key = substPreserve' {dom ∷ A ∷ g} {V} {body} {A} {codom} {S Z} {S (S Z)} {s≤s (s≤s z≤)} wt1 refl wt2 in
+  ⊢l (shiftDownPreserve {i = Z} key (le2 (iterShiftUp Z (S (S Z)) V) body (S Z) (le V)))
 substPreserve wt1 (⊢a wt2 wt3) = ⊢a (substPreserve wt1 wt2) (substPreserve wt1 wt3)
 substPreserve wt1 (⊢proj1 wt2) = ⊢proj1 (substPreserve wt1 wt2)
 substPreserve wt1 (⊢proj2 wt2) = ⊢proj2 (substPreserve wt1 wt2)
 substPreserve wt1 (⊢mkPair wt2 wt3) = ⊢mkPair (substPreserve wt1 wt2) (substPreserve wt1 wt3)
 substPreserve wt1 (⊢inl wt2) = ⊢inl (substPreserve wt1 wt2)
 substPreserve wt1 (⊢inr wt2) = ⊢inr (substPreserve wt1 wt2)
-substPreserve wt1 (⊢case wt2 wt3 wt4) = {!!}
+substPreserve {g} {V} {Case e1 id2 e2 id3 e3} {A} {B} wt1 (⊢case {tl = tl} {tr = tr} wt2 wt3 wt4) =
+  let keyL = substPreserve' {tl ∷ A ∷ g} {V} {e2} {A} {B} {S Z} {S (S Z)} {s≤s (s≤s z≤)} wt1 refl wt3 in
+  let keyR = substPreserve' {tr ∷ A ∷ g} {V} {e3} {A} {B} {S Z} {S (S Z)} {s≤s (s≤s z≤)} wt1 refl wt4 in
+  ⊢case {tl = tl} {tr = tr} (substPreserve wt1 wt2) (shiftDownPreserve {i = Z} keyL (le2 (iterShiftUp Z (S (S Z)) V) e2 (S Z) (le V))) ((shiftDownPreserve {i = Z} keyR (le2 (iterShiftUp Z (S (S Z)) V) e3 (S Z) (le V))))
+
 
 preservation : ∀ {Γ : TypingContext} {L M : Expr} {T : TypeL}
   → Γ ⊢ L ∶ T
@@ -465,161 +520,6 @@ preservation (⊢mkPair wt1 wt2) (r-binop2 _ red) = ⊢mkPair wt1 (preservation 
 preservation (⊢inl wt) (r-inl red) = ⊢inl (preservation wt red)
 preservation (⊢inr wt) (r-inr red) = ⊢inr (preservation wt red)
 preservation (⊢case wt1 wt2 wt3) (r-case1 red) = ⊢case (preservation wt1 red) wt2 wt3
-preservation (⊢case wt1 wt2 wt3) (r-case2 x) = {!!}
-preservation (⊢case wt1 wt2 wt3) (r-case3 x) = {!!}
+preservation {Γ} {Case (Inl x (Sum tl tr)) id2 e2 id3 e3} {.(substitute x e2)} {T1} (⊢case (⊢inl wt1) wt2 wt3) (r-case2 red) = substPreserve {V = x} {N = e2} {A = tl} wt1 wt2
+preservation {Γ} {Case (Inr x (Sum tl tr)) id2 e2 id3 e3} {.(substitute x e3)} {T1} (⊢case (⊢inr wt1) wt2 wt3) (r-case3 red) = substPreserve {V = x} {N = e3} {A = tr} wt1 wt3
 preservation (⊢l wt) (r-l' red) = ⊢l (preservation wt red)
-
-
--- p : ∀ (i : Nat) (E : Expr) → shiftDown' i (shiftUp' i E) ≡ E
--- p i (Var x) with ltNat x i in r
--- ... | False rewrite ltSuc x i r = refl
--- ... | True rewrite r = refl
--- p i (Lam _ _ E) rewrite p (S i) E = refl
--- p i (App L M) rewrite p i L | p i M = refl
--- p i (Ite L M N) rewrite p i L | p i M | p i N = refl
--- p i (Inl E _) rewrite p i E = refl
--- p i (Inr E _) rewrite p i E = refl
--- p i (Case L _ M _ N) rewrite p i L | p (S i) M | p (S i) N = refl
--- p i (Const x) = refl
--- p i (BinOp x L M) rewrite p i L | p i M = refl
--- p i (UnaryOp x E) rewrite p i E = refl
-
--- ff : ∀ {Γ : TypingContext} {i : Nat} → 2 + (natToℕ i) ≤ suc (length Γ) → 1 + (natToℕ i) ≤ length Γ
--- ff (s≤s h) = h
-
--- pp : ∀ {V n ty body} → substitute V (Lam n ty body) ≡ shiftDown (substitute' Z (shiftUp V) (Lam n ty body))
--- pp = refl
-
--- ppp : ∀ {V n ty body} → substitute V (Lam n ty body) ≡ shiftDown (Lam n ty (substitute' (S Z) (shiftUp (shiftUp V)) body))
--- ppp = refl
-
--- data LT : Nat → Nat → Set where
---   z< : ∀ {i} → LT Z (S i)
---   s< : ∀ {i j} → LT i j → LT (S i) (S j)
-
--- data FV : Expr → Nat → Set where
---   m-a : ∀ {L M n} → FV L n → FV M n → FV (App L M) n
---   m-unop : ∀ {M n o} → FV M n → FV (UnaryOp o M) n
---   m-binop : ∀ {L M n o} → FV L n → FV M n → FV (BinOp o L M) n
---   m-inl : ∀ {ty M n} → FV M n → FV (Inl M ty) n
---   m-inr : ∀ {ty M n} → FV M n → FV (Inr M ty) n
---   m-const : ∀ {c i} → FV (Const c) i
---   m-ite : ∀ {L M N n} → FV L n → FV M n → FV N n → FV (Ite L M N) n
---   m-v : ∀ {i j} → LT i j → FV (Var i) j
---   m-l : ∀ {L i n ty} → FV L (S i) → FV (Lam n ty L) i
---   m-case : ∀ {id1 id2 L M N n} → FV L n → FV M (S n) → FV N (S n) → FV (Case L id1 M id2 N) n
-
-
--- gz : ∀ {i j} → ltNat i (ℕToNat j) ≡ False → suc (natToℕ i) ≤ j → ⊥
--- gz {Z} {zero} h1 ()
--- gz {Z} {suc j} () (s≤s h2)
--- gz {S i} {suc j} h1 (s≤s h2) = gz h1 h2
-
--- g3 : ∀ {i} → shiftUp (Var i) ≡ Var (S i)
--- g3 {i} rewrite gg {i} = refl
-
--- g2 : ∀ {i j} → LT i j → LT i (S j)
--- g2 z< = z<
--- g2 (s< h) = s< (g2 h)
-
--- g : ∀ {M i j} → FV M i → FV (shiftUp' j M) (S i)
--- g (m-a m m₁) = m-a (g m) (g m₁)
--- g (m-unop m) = m-unop (g m)
--- g (m-binop m m₁) = m-binop (g m) (g m₁)
--- g (m-inl m) = m-inl (g m)
--- g (m-inr m) = m-inr (g m)
--- g m-const = m-const
--- g (m-ite m m₁ m₂) = m-ite (g m) (g m₁) (g m₂)
--- g {Var i} {j} {k} (m-v x) rewrite g3 {i} with ltNat i k
--- ... | True = m-v (g2 x)
--- ... | False = m-v (s< x)
--- g (m-l m) = m-l (g m)
--- g (m-case h1 h2 h3) = m-case (g h1) (g h2) (g h3)
-
--- eqNotLT : ∀ {i j} → LT i j → eqNat j i ≢ True
--- eqNotLT {.Z} {.(S _)} z< = λ ()
--- eqNotLT {.(S _)} {.(S _)} (s< h) = eqNotLT h
-
--- fff : ∀ {Γ : TypingContext} {L M : Expr} {A B : TypeL} {i : Nat}
---   → [] ⊢ L ∶ A
---   → (A ∷ Γ) ⊢ M ∶ B
---   → FV M i
---   --------------------------
---   → Γ ⊢ substitute' i L M ∶ B
--- fff wt1 ⊢b m-const = ⊢b
--- fff wt1 ⊢n m-const = ⊢n
--- fff wt1 (⊢|| wt2 wt3) (m-binop h2 h3) = ⊢|| (fff wt1 wt2 h2) (fff wt1 wt3 h3)
--- fff wt1 (⊢&& wt2 wt3) (m-binop h2 h3) = ⊢&& (fff wt1 wt2 h2) (fff wt1 wt3 h3)
--- fff wt1 (⊢! wt2) (m-unop h) = ⊢! (fff wt1 wt2 h)
--- fff wt1 (⊢+ wt2 wt3) (m-binop h2 h3) = ⊢+ (fff wt1 wt2 h2) (fff wt1 wt3 h3)
--- fff wt1 (⊢- wt2 wt3) (m-binop h2 h3) = ⊢- (fff wt1 wt2 h2) (fff wt1 wt3 h3)
--- fff wt1 (⊢* wt2 wt3) (m-binop h2 h3) = ⊢* (fff wt1 wt2 h2) (fff wt1 wt3 h3)
--- fff wt1 (⊢< wt2 wt3) (m-binop h2 h3) = ⊢< (fff wt1 wt2 h2) (fff wt1 wt3 h3)
--- fff wt1 (⊢ite wt2 wt3 wt4) (m-ite h2 h3 h4) = ⊢ite (fff wt1 wt2 h2) (fff wt1 wt3 h3) (fff wt1 wt4 h4)
--- fff {Γ} {L} {Var i} {_} {_} {i'} wt1 (⊢v {A ∷ Γ} {i} {s≤s h}) (m-v {i} {i'} x) with eqNat i' i in r
--- ... | True = ⊥-elim (eqNotLT x r)
--- ... | False rewrite r = {!⊢v {Γ} {i} {h}!}
--- fff wt1 (⊢l wt2) (m-l h) = {!fff wt1 ? h!}
--- fff wt1 (⊢a wt2 wt3) (m-a h2 h3) = ⊢a (fff wt1 wt2 h2) (fff wt1 wt3 h3)
--- fff wt1 (⊢proj1 wt2) (m-unop h) = ⊢proj1 (fff wt1 wt2 h)
--- fff wt1 (⊢proj2 wt2) (m-unop h) = ⊢proj2 (fff wt1 wt2 h)
--- fff wt1 (⊢mkPair wt2 wt3) (m-binop h1 h2) = ⊢mkPair (fff wt1 wt2 h1) (fff wt1 wt3 h2)
--- fff wt1 (⊢inl wt2) (m-inl h) = ⊢inl (fff wt1 wt2 h)
--- fff wt1 (⊢inr wt2) (m-inr h) = ⊢inr (fff wt1 wt2 h)
--- fff wt1 (⊢case wt2 wt3 wt4) h = {!!}
-
--- wtShiftUp : ∀ {Γ : TypingContext} {V : Expr} {T : TypeL}
---   → Γ ⊢ V ∶ T
---   ------------------
---   → shiftUp' (ℕToNat (length Γ)) V ≡ V
--- wtShiftUp {Γ} {.(Const (BoolC _))} ⊢b = refl
--- wtShiftUp {Γ} {.(Const (NumC _))} ⊢n = refl
--- wtShiftUp {Γ} {.(BinOp Or _ _)} (⊢|| wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(BinOp And _ _)} (⊢&& wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(UnaryOp Not _)} (⊢! wt) rewrite wtShiftUp wt = refl
--- wtShiftUp {Γ} {.(BinOp Add _ _)} (⊢+ wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(BinOp Sub _ _)} (⊢- wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(BinOp Mul _ _)} (⊢* wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(BinOp LtInt _ _)} (⊢< wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(Ite _ _ _)} (⊢ite wt1 wt2 wt3) rewrite wtShiftUp wt1 | wtShiftUp wt2 | wtShiftUp wt3 = refl
--- wtShiftUp {Γ} {.(Lam _ _ _)} (⊢l wt) rewrite wtShiftUp wt = refl
--- wtShiftUp {Γ} {.(App _ _)} (⊢a wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(UnaryOp Proj1 _)} (⊢proj1 wt) rewrite wtShiftUp wt = refl
--- wtShiftUp {Γ} {.(UnaryOp Proj2 _)} (⊢proj2 wt) rewrite wtShiftUp wt = refl
--- wtShiftUp {Γ} {.(BinOp MkPair _ _)} (⊢mkPair wt1 wt2) rewrite wtShiftUp wt1 | wtShiftUp wt2 = refl
--- wtShiftUp {Γ} {.(Inl _ (Sum _ _))} (⊢inl wt) rewrite wtShiftUp wt = refl
--- wtShiftUp {Γ} {.(Inr _ (Sum _ _))} (⊢inr wt) rewrite wtShiftUp wt = refl
--- wtShiftUp {Γ} {.(Case _ _ _ _ _)} (⊢case wt1 wt2 wt3) rewrite wtShiftUp wt1 | wtShiftUp wt2 | wtShiftUp wt3 = refl
--- wtShiftUp {Γ} {Var i} (⊢v {h = h}) with ltNat i (ℕToNat (length Γ)) in r
--- ... | True rewrite r = refl
--- ... | False = ⊥-elim (gz r h)
-
-
--- -- actually I think we need to consider an arbitrary context for V since we are reducing under lambdas
--- substPreserve : ∀ {Γ : TypingContext} {N V : Expr} {A B : TypeL}
---   → [] ⊢ V ∶ A
---   → (A ∷ Γ) ⊢ N ∶ B
---   -----------------------
---   → Γ ⊢ substitute V N ∶ B
--- substPreserve wt1 ⊢b = ⊢b
--- substPreserve wt1 ⊢n = ⊢n
--- substPreserve wt1 (⊢|| wt2 wt3) = ⊢|| (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢&& wt2 wt3) = ⊢&& (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢! wt2) = ⊢! (substPreserve wt1 wt2)
--- substPreserve wt1 (⊢+ wt2 wt3) = ⊢+ (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢- wt2 wt3) = ⊢- (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢* wt2 wt3) = ⊢* (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢< wt2 wt3) = ⊢< (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢ite wt2 wt3 wt4) = ⊢ite (substPreserve wt1 wt2) (substPreserve wt1 wt3) (substPreserve wt1 wt4)
--- substPreserve {Γ} {Var Z} {V} wt1 ⊢v rewrite p Z V = weaken' wt1
--- -- This is a pathological case that does not happen in practice, but the theorem holds anyway
--- substPreserve {Γ} {Var (S i)} {V} wt1 (⊢v {h = h}) = ⊢v {h = ff {Γ} {i} h}
--- substPreserve {Γ} {Lam n dom body} {V} {A} {Arrow dom codom} wt1 (⊢l {A ∷ Γ} {n} {body} {dom} {codom} wt2)
---   rewrite ppp {V} {n} {dom} {body} | wtShiftUp wt1 | wtShiftUp wt1 = ⊢l {!!}
--- substPreserve wt1 (⊢a wt2 wt3) = ⊢a (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢proj1 wt2) = ⊢proj1 (substPreserve wt1 wt2)
--- substPreserve wt1 (⊢proj2 wt2) = ⊢proj2 (substPreserve wt1 wt2)
--- substPreserve wt1 (⊢mkPair wt2 wt3) = ⊢mkPair (substPreserve wt1 wt2) (substPreserve wt1 wt3)
--- substPreserve wt1 (⊢inl wt2) = ⊢inl (substPreserve wt1 wt2)
--- substPreserve wt1 (⊢inr wt2) = ⊢inr (substPreserve wt1 wt2)
--- substPreserve wt1 (⊢case wt2 wt3 wt4) = {!!}
