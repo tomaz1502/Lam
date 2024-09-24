@@ -19,16 +19,16 @@ Build with the `build.sh` script.
 
 ### Features
   - [x] Simple Types
+  - [x] Verify properties using Agda (Progress/Preservation)
   - [ ] Extensions (TaPL ch 11)
     + [x] Uninterpreted (opaque) Types
-    + [x] Numbers, booleans, ITE
-    + [ ] Equality, Strings
+    + [x] Numbers, booleans, ITE, ltNat
     + [x] Pairs
-    + [ ] Sums
+    + [x] Sums
+    + [x] Pattern Matching
     + [ ] General recursion
-    + [ ] Pattern Matching
   - [ ] Polymorphism
-  - [ ] Verify properties using Agda (Progress/Preservation)
+  - [ ] Recursive Types (Enabling strings)
   - [ ] Library of examples
 
 ### Usability
@@ -40,6 +40,7 @@ Build with the `build.sh` script.
     - [x] Define
     - [x] Load
     - [x] Typedef
+    - [x] Read
 
 ## Future Work
   - DAG instead of AST
