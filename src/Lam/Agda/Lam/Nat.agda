@@ -1,6 +1,6 @@
 module Lam.Nat where
 
-open import Haskell.Prelude hiding (Nat; iEqNat; length; _<_; lookup; _+_)
+open import Haskell.Prelude hiding (Nat; iEqNat; length; _<_; lookup; _+_; drop)
 open import Relation.Nullary using (¬_)
 open import Data.Empty                            using (⊥-elim; ⊥)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -19,6 +19,9 @@ eq->≡ : ∀ {i j : Nat} → ((i == j) ≡ True) → i ≡ j
 eq->≡ {Z} {Z} h = refl
 eq->≡ {S i} {S j} h = cong S (eq->≡ {i} {j} h)
 
+eq->not≡ : ∀ (i j : Nat) → ((i == j) ≡ False) → ¬ (i ≡ j)
+eq->not≡ (S i) .(S i) h refl = eq->not≡ i i h refl
+
 {-# COMPILE AGDA2HS Nat deriving (Eq, Show) #-}
 
 ltNat : Nat → Nat → Bool
@@ -26,10 +29,14 @@ ltNat Z (S _) = True
 ltNat (S x) (S y) = ltNat x y
 ltNat _ _     = False
 
-ltNatSuc : ∀ (i j : Nat) → ltNat i j ≡ False → ltNat (S i) j ≡ False
-ltNatSuc Z Z h = refl
-ltNatSuc (S i) Z h = refl
-ltNatSuc (S i) (S j) h = ltNatSuc i j h
+ltSuc : ∀ (x y : Nat) → ltNat x y ≡ False → ltNat (S x) y ≡ False
+ltSuc Z Z h = refl
+ltSuc (S x) Z h = refl
+ltSuc (S x) (S y) h = ltSuc x y h
+
+ltZ : ∀ {i} → ltNat i Z ≡ False
+ltZ {Z} = refl
+ltZ {S i} = refl
 
 {-# COMPILE AGDA2HS ltNat #-}
 
@@ -67,8 +74,22 @@ data _≤_ : Nat → Nat → Set where
   z≤ : ∀ {i} → Z ≤ i
   s≤s : ∀ {i j} → i ≤ j → (S i) ≤ (S j)
 
+sucLE : ∀ {i j : Nat} → S i ≤ S j → i ≤ j
+sucLE (s≤s h) = h
+
+decideLE : ∀ (i j : Nat) → (i ≤ j) ⊎ (¬ (i ≤ j))
+decideLE Z Z = inj₁ z≤
+decideLE Z (S j) = inj₁ z≤
+decideLE (S i) Z = inj₂ (λ ())
+decideLE (S i) (S j) with decideLE i j
+... | inj₁ h = inj₁ (s≤s h)
+... | inj₂ h = inj₂ (λ abs -> h (sucLE abs))
+
 _<_ : Nat -> Nat -> Set
 i < j = S i ≤ j
+
+<-rewrite : ∀ {i j k : Nat} → i < j → j ≡ k → i < k
+<-rewrite h refl = h
 
 not<Self : ∀ (i : Nat) → ¬ (i < i)
 not<Self (S i) (s≤s h) = not<Self i h
@@ -131,6 +152,10 @@ lookup : {A : Set} -> (l : List A) -> (i : Nat) -> (h : i < length l) -> A
 lookup (x ∷ l) Z h = x
 lookup (x ∷ l) (S i) (s≤s h) = lookup l i h
 
+piLookup : ∀ {A : Set} (Γ : List A) (i : Nat) (h1 : i < length Γ) (h2 : i < length Γ) → lookup Γ i h1 ≡ lookup Γ i h2
+piLookup (x ∷ g) Z h1 h2 = refl
+piLookup (x ∷ g) (S i) (s≤s h1) (s≤s h2) = piLookup g i h1 h2
+
 insert : {A : Set} → Nat → A → List A → List A
 insert Z t g = t ∷ g
 insert (S i) t [] = t ∷ []
@@ -156,9 +181,6 @@ removeLargeId Z [] h = refl
 removeLargeId (S i) [] h = refl
 removeLargeId (S i) (x ∷ L) (s≤s h) = cong (λ y -> x ∷ y) (removeLargeId i L h)
 
-sucLE : ∀ {i j : Nat} → S i ≤ S j → i ≤ j
-sucLE (s≤s h) = h
-
 sucLT : ∀ {i j : Nat} → S i < S j → i < j
 sucLT (s≤s h) = h
 
@@ -170,24 +192,11 @@ sucLT3 : ∀ {i : Nat} → i < S i
 sucLT3 {Z} = s≤s z≤
 sucLT3 {S i} = s≤s sucLT3
 
-decideLE : ∀ (i j : Nat) → (i ≤ j) ⊎ (¬ (i ≤ j))
-decideLE Z Z = inj₁ z≤
-decideLE Z (S j) = inj₁ z≤
-decideLE (S i) Z = inj₂ (λ ())
-decideLE (S i) (S j) with decideLE i j
-... | inj₁ h = inj₁ (s≤s h)
-... | inj₂ h = inj₂ (λ abs -> h (sucLE abs))
-
 sucEQ : ∀ {i j : Nat} → S i ≡ S j → i ≡ j
 sucEQ refl = refl
 
-decideEQ : ∀ (i j : Nat) → (i ≡ j) ⊎ (¬ (i ≡ j))
-decideEQ Z Z = inj₁ refl
-decideEQ Z (S j) = inj₂ (λ ())
-decideEQ (S i) Z = inj₂ (λ ())
-decideEQ (S i) (S j) with decideEQ i j
-... | inj₁ refl = inj₁ refl
-... | inj₂ neq = inj₂ (λ abs -> neq (sucEQ abs))
+sucNeq : ∀ {i j : Nat} → ¬ (S i ≡ S j) → ¬ (i ≡ j)
+sucNeq h1 refl = ⊥-elim (h1 refl)
 
 notLE->LT : ∀ {i j : Nat} → ¬ (i ≤ j) → j < i
 notLE->LT {Z} {Z} h = ⊥-elim (h ≤-refl)
@@ -201,13 +210,17 @@ removeLength Z (x ∷ L) = s≤s ≤-refl
 removeLength (S i) [] = z≤
 removeLength (S i) (x ∷ L) = s≤s (removeLength i L)
 
-removeLength2 : ∀ {A : Set} (i : Nat) (L : List A) → (length (remove i L)) ≤ length L
-removeLength2 Z [] = z≤
-removeLength2 Z (x ∷ L) = s≤Self (length L)
-removeLength2 (S i) [] = z≤
-removeLength2 (S i) (x ∷ L) = s≤s (removeLength2 i L)
+lengthRemove : ∀ {A : Set} {L : List A} {i j : Nat} → i < length L → i < j → i < length (remove j L)
+lengthRemove {_} {L} {i} {j} h1 h2 with decideLE (length L) j
+... | (inj₁ jBig) rewrite removeLargeId j L jBig = h1
+... | (inj₂ jSmall) = <≤-trans h2 (<s (<≤-trans (notLE->LT jSmall) (removeLength j L)))
 
 almostTrichotomy : ∀ (i j : Nat) → i ≤ j → (¬ (i ≡ j)) → i < j
 almostTrichotomy Z Z z≤ h2 = ⊥-elim (h2 refl)
 almostTrichotomy Z (S j) z≤ h2 = s≤s z≤
 almostTrichotomy (S i) (S j) (s≤s h1) h2 = s≤s (almostTrichotomy i j h1 λ eq -> h2 (cong S eq))
+
+drop : {A : Set} → Nat → List A → List A
+drop Z l = l
+drop (S i) [] = []
+drop (S i) (x ∷ l) = drop i l

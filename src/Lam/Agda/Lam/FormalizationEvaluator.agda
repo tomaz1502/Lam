@@ -344,7 +344,6 @@ stepNothingNormal {Case L _ M _ N} eq with smallStep L in eqL
     caseStepNothingR : ∀ {L M N x T id2 id3} → smallStepCase L id2 M id3 N Nothing ≡ Nothing → ¬ (L ≡ Inr x T)
     caseStepNothingR () refl
 
-
 caseStepNothing₂ : ∀ {L M N x id2 id3} → smallStepCase L id2 M id3 N Nothing ≡ Just x → (∃[ e1 ] ∃[ T1 ] (L ≡ Inl e1 T1)) ⊎ (∃[ e2 ] ∃[ T2 ] (L ≡ Inr e2 T2))
 caseStepNothing₂ {Inl L x₁} {M} {N} {x} eq = inj₁ ⟨ L , ⟨ x₁ , refl ⟩ ⟩
 caseStepNothing₂ {Inr L x₁} {M} {N} {x} eq = inj₂ ⟨ L , ⟨ x₁ , refl ⟩ ⟩
