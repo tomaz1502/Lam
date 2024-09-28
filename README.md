@@ -6,7 +6,7 @@ Dependencies: agda2hs version 1.2.
 Build with the `build.sh` script.
 
 ## Roadmap
-### Infrastructure
+### Basics
   - [x] Lexer
   - [x] Parser
   - [x] Tests
@@ -27,14 +27,26 @@ Build with the `build.sh` script.
     + [x] Sums
     + [x] Pattern Matching
     + [ ] General recursion
+  - [ ] More preprocessing besides erasing names (enable larger sums or products, for instance)
   - [ ] Polymorphism
   - [ ] Recursive Types (Enabling strings)
   - [ ] Library of examples
 
 ### Usability
+  - [ ] Editor Support
+    - [ ] Syntax Highlight (Vim, Emacs)
+    - [ ] Language Server Protocol
+  - [ ] Package Manager
+  - [ ] Nicer REPL
+    - [ ] Interpret arrows
+    - [ ] Autocomplete
   - [ ] Code Generation
   - [ ] Support for commentary
-  - [x] Error messages
+  - [ ] Specific error nessages
+    - [ ] Lexer
+    - [ ] Parser
+    - [ ] Type checker
+  - [ ] Documentation
   - [x] Commands
     - [x] Eval
     - [x] Define
