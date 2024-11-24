@@ -131,5 +131,6 @@ data Command : Set where
     EvalC    : RawExpr → Command
     LoadC    : Id → Command
     ReadC    : Id → Command
+    ExitC    : Command
 
 {-# COMPILE AGDA2HS Command #-}

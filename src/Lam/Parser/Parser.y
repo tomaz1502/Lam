@@ -44,6 +44,7 @@ import Lam.Parser.Lexer qualified as L
   ":="      { L.ColonEq    }
   "DEFINE"  { L.Define     }
   "EVAL"    { L.Eval       }
+  "EXIT"    { L.Exit       }
   "TYPEDEF" { L.Typedef    }
   "LOAD"    { L.Load       }
   "READ"    { L.Read       }
@@ -94,6 +95,7 @@ UntypedCommand :: { Command }
   | UntypedEvalCommand   { EvalC $1  }
   | LoadCommand          { LoadC $1 }
   | ReadCommand          { ReadC $1 }
+  | ExitCommand          { ExitC }
   -- we allow this here but throw an error later
   | TypedefCommand       { TypedefC $1 }
 
@@ -113,6 +115,7 @@ Command :: { Command }
   | EvalCommand    { EvalC $1 }
   | LoadCommand    { LoadC $1 }
   | ReadCommand    { ReadC $1 }
+  | ExitCommand    { ExitC }
 
 TypedefCommand :: { (Id, RawTypeL) }
   : "TYPEDEF" var ":=" RawTypeL ";"
@@ -131,6 +134,9 @@ LoadCommand :: { String }
 
 ReadCommand :: { String }
   : "READ" var ";" { $2 }
+
+ExitCommand :: { () }
+  : "EXIT" ";" { () }
 
 UntypedRawExpr :: { RawExpr }
   : UntypedRawExpr "." UntypedRawExpr { RawApp $1 $3  }

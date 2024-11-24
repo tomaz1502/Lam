@@ -10,8 +10,14 @@ import Data.List            ( isPrefixOf )
 import System.Environment   ( getArgs )
 
 import Lam.Context ( emptyContext )
-import Lam.Handler ( repl, handleFile )
+import Lam.Handler ( replWrapper, handleFile )
 import Lam.Result
+
+setup :: IO ()
+setup = undefined
+
+cleanup :: IO ()
+cleanup = undefined
 
 main :: IO ()
 main = do
@@ -20,7 +26,7 @@ main = do
   -- could be just map read
   let flagSet = [Untyped | "--untyped" `elem` flags]
   case nonFlags of
-    []      -> run repl flagSet
+    []      -> run replWrapper flagSet
     [fName] -> run (handleFile fName) flagSet
     _       -> error wrongUsageMsg
   where

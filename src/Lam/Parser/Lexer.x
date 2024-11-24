@@ -23,6 +23,7 @@ tokens :-
 <0> ","       { tok Comma           }
 <0> "lam"     { tok Lam             }
 <0> "EVAL"    { tok Eval            }
+<0> "EXIT"    { tok Exit            }
 <0> "TYPEDEF" { tok Typedef         }
 <0> "DEFINE"  { tok Define          }
 <0> "LOAD"    { tok Load            }
@@ -72,6 +73,7 @@ data Token =
   | Comma
   | Lam
   | Eval
+  | Exit
   | Typedef
   | Load
   | Read

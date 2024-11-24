@@ -3,13 +3,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Lam.Handler ( repl
+module Lam.Handler ( replWrapper
                    , handleFile
                    ) where
 
 import Control.Monad.RWS        ( get, put )
 import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError (..) )
 import Data.Map qualified as M
+import System.Posix
+    ( stdInput,
+      getTerminalAttributes,
+      TerminalState(Immediately) )
 
 import Lam.Context
 import Lam.Data
@@ -18,6 +22,8 @@ import Lam.Parser
 import Lam.Result
 import Lam.TypeChecker
 import Lam.Utils
+import Lam.Terminal.ReadRepl
+import System.Posix.Terminal (setTerminalAttributes)
 
 -- TODO: report cyclic dependencies
 loadFile :: String -> Result ()
@@ -72,6 +78,7 @@ handleCommand c =
         isUntyped <- askUntyped
         expr <- liftEither (parseRawExpr isUntyped exprS)
         handleDefine varName expr
+    ExitC -> return ()
 
 readCommand :: Result Command
 readCommand = do
@@ -82,15 +89,20 @@ readCommand = do
       liftIO (putStrLnFlush err) >>
       readCommand
     Right command -> pure command
-  where
-    readRepl :: IO String
-    readRepl = putStrFlush "> " >> getLine
 
 repl :: Result ()
 repl = do
   command <- readCommand
-  catchError (handleCommand command) (liftIO . putStrLnFlush)
+  case command of
+    ExitC -> return ()
+    _ -> catchError (handleCommand command) (liftIO . putStrLnFlush) >> repl
+
+replWrapper :: Result ()
+replWrapper = do
+  startingAttrs <- liftIO (getTerminalAttributes stdInput)
+  liftIO (setRawMode startingAttrs)
   repl
+  liftIO (setTerminalAttributes stdInput startingAttrs Immediately)
 
 handleFile :: String -> Result ()
 handleFile fName = do
