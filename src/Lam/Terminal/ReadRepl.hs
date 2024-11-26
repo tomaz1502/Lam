@@ -5,8 +5,6 @@ import System.Console.ANSI
 import GHC.IO.Handle
 import GHC.IO.StdHandles
 import System.IO (hReady)
-import System.Posix.Terminal
-import System.Posix (stdInput)
 
 type CmdHistory = [String]
 
@@ -22,21 +20,20 @@ update [] _ _ = []
 update (_ : tl) 0 a = a : tl
 update (hd : tl) i a = hd : update tl (i - 1) a
 
-readRepl :: CmdHistory -> IO String
-readRepl originalHistory =
+readRepl :: CmdHistory -> String -> IO String
+readRepl originalHistory prompt =
   loop 0 0 ("" : originalHistory)
   where
     loop pos hisPos history = do
       let cmd = history !! hisPos
       setCursorColumn 0
       clearLine
-      putStr ("> " ++ cmd)
-      setCursorColumn (pos + 2)
+      putStr (prompt ++ cmd)
+      setCursorColumn (pos + length prompt)
       hFlush stdout
       k <- getKey
       case k of
-        "\n" ->
-            putStr "\n" >> return cmd
+        "\n" -> putStr "\n" >> return cmd
         "\ESC[A" -> -- up
             let hisPos' = min (hisPos + 1) (length history - 1) in
             let pos' = length (history !! hisPos') in
@@ -57,17 +54,3 @@ readRepl originalHistory =
             let cmd' = take pos cmd ++ k ++ drop pos cmd in
             let history' = update history hisPos cmd' in
             loop (min (pos + 1) (length cmd')) hisPos history'
-
-setRawMode :: TerminalAttributes -> IO ()
-setRawMode attrs = do
-  let rawAttrs = withRawMode attrs
-  setTerminalAttributes stdInput rawAttrs Immediately
-
-withRawMode :: TerminalAttributes -> TerminalAttributes
-withRawMode attrs =
-  let withoutMode' = flip withoutMode in
-      foldl (\a f -> f a) attrs
-        [ withoutMode' EnableEcho
-        , withoutMode' ProcessInput
-        , withoutMode' ExtendedFunctions
-        ]

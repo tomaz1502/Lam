@@ -10,10 +10,6 @@ module Lam.Handler ( replWrapper
 import Control.Monad.RWS        ( get, put )
 import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError (..) )
 import Data.Map qualified as M
-import System.Posix
-    ( stdInput,
-      getTerminalAttributes,
-      TerminalState(Immediately) )
 
 import Lam.Context
 import Lam.Data
@@ -22,8 +18,8 @@ import Lam.Parser
 import Lam.Result
 import Lam.TypeChecker
 import Lam.Utils
+import Lam.Terminal.Raw
 import Lam.Terminal.ReadRepl
-import System.Posix.Terminal (setTerminalAttributes)
 
 -- TODO: report cyclic dependencies
 loadFile :: String -> Result ()
@@ -74,7 +70,7 @@ handleCommand c =
     EvalC rExpr                     -> handleEval rExpr
     LoadC path                      -> loadFile path
     ReadC varName                   -> do
-        exprS <- liftIO getLine
+        exprS <- liftIO (readRepl [] "")
         isUntyped <- askUntyped
         expr <- liftEither (parseRawExpr isUntyped exprS)
         handleDefine varName expr
@@ -82,7 +78,7 @@ handleCommand c =
 
 repl :: CmdHistory -> Result ()
 repl h = do
-  cmdStr <- liftIO (readRepl h)
+  cmdStr <- liftIO (readRepl h "> ")
   let h' = if null cmdStr then h else cmdStr : h
   isUntyped <- askUntyped
   case parseCommand isUntyped cmdStr of
@@ -95,11 +91,7 @@ repl h = do
         repl h'
 
 replWrapper :: Result ()
-replWrapper = do
-  startingAttrs <- liftIO (getTerminalAttributes stdInput)
-  liftIO (setRawMode startingAttrs)
-  repl []
-  liftIO (setTerminalAttributes stdInput startingAttrs Immediately)
+replWrapper = runInRawMode (repl [])
 
 handleFile :: String -> Result ()
 handleFile fName = do
