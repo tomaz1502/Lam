@@ -80,28 +80,25 @@ handleCommand c =
         handleDefine varName expr
     ExitC -> return ()
 
-readCommand :: Result Command
-readCommand = do
-  cmd <- liftIO readRepl
+repl :: CmdHistory -> Result ()
+repl h = do
+  cmdStr <- liftIO (readRepl h)
+  let h' = if null cmdStr then h else cmdStr : h
   isUntyped <- askUntyped
-  case parseCommand isUntyped cmd of
-    Left err ->
-      liftIO (putStrLnFlush err) >>
-      readCommand
-    Right command -> pure command
-
-repl :: Result ()
-repl = do
-  command <- readCommand
-  case command of
-    ExitC -> return ()
-    _ -> catchError (handleCommand command) (liftIO . putStrLnFlush) >> repl
+  case parseCommand isUntyped cmdStr of
+    Left err -> do
+      liftIO (putStrLnFlush ("Error parsing command: " <> err))
+      repl h'
+    Right ExitC -> return ()
+    Right cmd -> do
+        catchError (handleCommand cmd) (liftIO . putStrLnFlush)
+        repl h'
 
 replWrapper :: Result ()
 replWrapper = do
   startingAttrs <- liftIO (getTerminalAttributes stdInput)
   liftIO (setRawMode startingAttrs)
-  repl
+  repl []
   liftIO (setTerminalAttributes stdInput startingAttrs Immediately)
 
 handleFile :: String -> Result ()
