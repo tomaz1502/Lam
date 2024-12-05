@@ -26,7 +26,7 @@ jobs:
     - name: Install dependencies
       run: |
         stack update
-        stack install agda2hs
+        stack install agda2hs-1.2
         mkdir /home/runner/.agda
         cd /home/runner/.agda
         wget https://github.com/agda/agda2hs/archive/refs/tags/v1.2.tar.gz
