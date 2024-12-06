@@ -20,43 +20,52 @@ open import Lam.UtilsAgda
 data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
 
   ⊢b : ∀ {Γ : TypingContext} {b : Bool}
+    ----------------------------
     → Γ ⊢ Const (BoolC b) ∶ BoolT
 
   ⊢n : ∀ {Γ : TypingContext} {z : Int}
+    --------------------------
     → Γ ⊢ Const (NumC z) ∶ IntT
 
   ⊢|| : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ BoolT
     → Γ ⊢ M ∶ BoolT
+    -------------------------
     → Γ ⊢ BinOp Or L M ∶ BoolT
 
   ⊢&& : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ BoolT
     → Γ ⊢ M ∶ BoolT
+    --------------------------
     → Γ ⊢ BinOp And L M ∶ BoolT
 
   ⊢! : ∀ {L : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ BoolT
+    --------------------------
     → Γ ⊢ UnaryOp Not L ∶ BoolT
 
   ⊢+ : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ IntT
     → Γ ⊢ M ∶ IntT
+    -------------------------
     → Γ ⊢ BinOp Add L M ∶ IntT
 
   ⊢- : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ IntT
     → Γ ⊢ M ∶ IntT
+    -------------------------
     → Γ ⊢ BinOp Sub L M ∶ IntT
 
   ⊢* : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ IntT
     → Γ ⊢ M ∶ IntT
+    -------------------------
     → Γ ⊢ BinOp Mul L M ∶ IntT
 
   ⊢< : ∀ {L M : Expr} {Γ : TypingContext}
     → Γ ⊢ L ∶ IntT
     → Γ ⊢ M ∶ IntT
+    ----------------------------
     → Γ ⊢ BinOp LtInt L M ∶ BoolT
 
   ⊢ite : ∀ {Γ : TypingContext} {b t e : Expr} {A : TypeL}
@@ -68,7 +77,7 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
 
   ⊢v : ∀ {Γ : TypingContext} {i : Nat}
     → {h : i < length Γ}
-    --------------------------------
+    -------------------------
     → Γ ⊢ Var i ∶ lookup Γ i h
 
   ⊢l : ∀ {Γ : TypingContext} {name : Id} {body : Expr} {dom codom : TypeL}
@@ -100,20 +109,25 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
 
   ⊢inl : ∀ {Γ : TypingContext} {e : Expr} {t te : TypeL}
     → Γ ⊢ e ∶ te
-    ------------------------
+    --------------------------------
     → Γ ⊢ Inl e (Sum te t) ∶ Sum te t
 
   ⊢inr : ∀ {Γ : TypingContext} {e : Expr} {t te : TypeL}
     → Γ ⊢ e ∶ te
-    ------------------------
+    --------------------------------
     → Γ ⊢ Inr e (Sum t te) ∶ Sum t te
 
   ⊢case : ∀ {Γ : TypingContext} {e1 e2 e3 : Expr} {t tl tr : TypeL} {id2 id3 : Id}
     → Γ ⊢ e1 ∶ Sum tl tr
     → (tl ∷ Γ) ⊢ e2 ∶ t
     → (tr ∷ Γ) ⊢ e3 ∶ t
-    -----------------------
+    ------------------------------
     → Γ ⊢ Case e1 id2 e2 id3 e3 ∶ t
+
+  ⊢fix : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL}
+    → Γ ⊢ e ∶ Arrow t t
+    --------------
+    → Γ ⊢ Fix e ∶ t
 
 ⊢→tc : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → Γ ⊢ e ∶ t → typeCheck' Γ e ≡ Just t
 ⊢→tc ⊢b  = refl
@@ -150,6 +164,7 @@ data _⊢_∶_ : TypingContext → Expr → TypeL → Set where
 ⊢→tc {Γ} {Inl e te} (⊢inl {te = te'} h) rewrite ⊢→tc h | eqType-refl te' = refl
 ⊢→tc {Γ} {Inr e te} (⊢inr {te = te'} h) rewrite ⊢→tc h | eqType-refl te' = refl
 ⊢→tc (⊢case {t = t} h1 h2 h3) rewrite ⊢→tc h1 | ⊢→tc h2 | ⊢→tc h3 | eqType-refl t = refl
+⊢→tc (⊢fix {e = e} {t = t} h) rewrite ⊢→tc h | eqType-refl t = refl
 
 tc→⊢ : ∀ {Γ : TypingContext} {e : Expr} {t : TypeL} → typeCheck' Γ e ≡ Just t → Γ ⊢ e ∶ t
 tc→⊢ {Γ} {App e₁ e₂} {t} eq with typeCheck' Γ e₁ in e₁Type
@@ -215,6 +230,21 @@ tc→⊢ {Γ} {Case e1 _ e2 _ e3} eq with typeCheck' Γ e1 in eqE1
 ... | Just (Sum tl tr) with typeCheck' (tl ∷ Γ) e2 in eqE2 | typeCheck' (tr ∷ Γ) e3 in eqE3
 ...   | Just t2 | Just t3 with iteAbs {b = eqType t2 t3} (λ()) eq
 ...      | ⟨ x , y ⟩ rewrite eqType->≡ {t2} {t3} x | Just-injective y = ⊢case (tc→⊢ eqE1) (tc→⊢ eqE2) (tc→⊢ eqE3)
+tc→⊢ {Γ} {Fix e} {t} eq with typeCheck' Γ e in eqE
+... | Just (Arrow t1 t2) with iteAbs {b = eqType t1 t2} injection-maybe eq
+...   | ⟨ h1 , h2 ⟩
+          rewrite eqType->≡ {t1} {t2} h1
+                | Just-injective h2
+                | eqType-refl t = ⊢fix (tc→⊢ eqE)
+-- ... | Just (Arrow t1 t2) =
+--   let ⟨ h1 , h2 ⟩ = iteAbs {b = eqType t1 t2} injection-maybe eq in
+--   let h3 = eqType->≡ {t1} {t2} h1 in
+--   let h4 = Just-injective h2 in
+--   let z = subst (λ k -> (if eqType k t2 then Just k else Nothing) ≡ Just t) h3 eq in
+--   let w = subst (λ k -> (if k then Just t2 else Nothing) ≡ Just t) (eqType-refl t2) z in
+--   let p = subst (λ k -> typeCheck' Γ e ≡ Just (Arrow t1 k)) (Just-injective w) eqE in
+--   let p2 = subst (λ k -> typeCheck' Γ e ≡ Just (Arrow k t)) h4 p in
+--   ⊢fix (tc→⊢ p2)
 
 module Examples where
 
