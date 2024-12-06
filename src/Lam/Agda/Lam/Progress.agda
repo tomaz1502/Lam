@@ -121,3 +121,9 @@ progress {Case L _ M _ N} (⊢case wt wtl wtm) | done n | inj₂ a with viewInr 
 progress {Case L _ M _ N} (⊢case wt wtl wtm) | done (no-ne (noe-inr x)) | inj₂ a | inj₁ ⟨ _ , ⟨ _ , refl ⟩ ⟩ = step (r-case3 x)
 progress {Case L _ M _ N} (⊢case wt wtl wtm) | done n | inj₂ a | inj₂ b =
   done (no-ne (noe-case n (λ {L'} {T} z -> a ⟨ L' , ⟨ T , z ⟩ ⟩) (λ {L'} {T} z -> b ⟨ L' , ⟨ T , z ⟩ ⟩)))
+progress {Fix e} (⊢fix wt) with progress wt
+progress {Fix e} (⊢fix wt) | step r = step (r-fix1 r)
+progress {Fix e} (⊢fix wt) | done n with viewLam e
+progress {Fix .(Lam _ _ _)} (⊢fix wt) | done (no-a n) | inj₁ ⟨ _ , ⟨ _ , ⟨ _ , refl ⟩ ⟩ ⟩ = step (r-fix2 n)
+progress {Fix e}            (⊢fix wt) | done n | inj₂ hneq =
+  done (no-ne (noe-fix (stepNothingNeutral e hneq (normalStepNothing n))))

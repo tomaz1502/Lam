@@ -32,6 +32,7 @@ shiftDownUp i (Case L _ M _ N) rewrite shiftDownUp i L | shiftDownUp (S i) M | s
 shiftDownUp i (Const x) = refl
 shiftDownUp i (BinOp x L M) rewrite shiftDownUp i L | shiftDownUp i M = refl
 shiftDownUp i (UnaryOp x E) rewrite shiftDownUp i E = refl
+shiftDownUp i (Fix E) rewrite shiftDownUp i E = refl
 
 substVarZ : ∀ {V : Expr} → substitute V (Var Z) ≡ V
 substVarZ {V} rewrite shiftDownUp Z V = refl
@@ -82,6 +83,7 @@ shiftUpPreserve (⊢mkPair wt2 wt3) = ⊢mkPair (shiftUpPreserve wt2) (shiftUpPr
 shiftUpPreserve (⊢inl wt2) = ⊢inl (shiftUpPreserve wt2)
 shiftUpPreserve (⊢inr wt2) = ⊢inr (shiftUpPreserve wt2)
 shiftUpPreserve (⊢case wt2 wt3 wt4) = ⊢case (shiftUpPreserve wt2) (shiftUpPreserve wt3) (shiftUpPreserve wt4)
+shiftUpPreserve (⊢fix wt) = ⊢fix (shiftUpPreserve wt)
 
 data VarNotContained : Nat → Expr → Set where
   vn-v : ∀ {i c} → VarNotContained i (Const c)
@@ -94,6 +96,7 @@ data VarNotContained : Nat → Expr → Set where
   vn-lam : ∀ {n ty body i} → VarNotContained (S i) body → VarNotContained i (Lam n ty body)
   vn-case : ∀ {n2 n3 e1 e2 e3 i} → VarNotContained i e1 → VarNotContained (S i) e2 → VarNotContained (S i) e3 → VarNotContained i (Case e1 n2 e2 n3 e3)
   vn-var : ∀ {i j} → (¬ (i ≡ j)) → VarNotContained i (Var j)
+  vn-fix : ∀ {i e} → VarNotContained i e → VarNotContained i (Fix e)
 
 varNotContainedShiftUp : ∀ (E : Expr) (j : Nat) → VarNotContained j (shiftUp' j E)
 varNotContainedShiftUp (Var x) j with ltNat x j in r
@@ -110,6 +113,7 @@ varNotContainedShiftUp (Case E x E₁ x₁ E₂) j = vn-case (varNotContainedShi
 varNotContainedShiftUp (Const x) j = vn-v
 varNotContainedShiftUp (BinOp x E E₁) j = vn-binop (varNotContainedShiftUp E j) (varNotContainedShiftUp E₁ j)
 varNotContainedShiftUp (UnaryOp x E) j = vn-unop (varNotContainedShiftUp E j)
+varNotContainedShiftUp (Fix E) j = vn-fix (varNotContainedShiftUp E j)
 
 varNotContainedImplies : ∀ (E : Expr) (i j : Nat) → j ≤ S i → VarNotContained i E → (VarNotContained (S i) (shiftUp' j E))
 varNotContainedImplies (Const _) i j h1 vn-v = vn-v
@@ -124,12 +128,14 @@ varNotContainedImplies (Ite b t e) i j h1 (vn-ite h2 h3 h4) = vn-ite (varNotCont
 varNotContainedImplies (Inl e t) i j h1 (vn-inl h2) = vn-inl (varNotContainedImplies e i j h1 h2)
 varNotContainedImplies (Inr e t) i j h1 (vn-inr h2) = vn-inr (varNotContainedImplies e i j h1 h2)
 varNotContainedImplies (Lam _ _ E) i j h1 (vn-lam h2) = vn-lam (varNotContainedImplies E (S i) (S j) (s≤s h1) h2)
-varNotContainedImplies (Case e1 _ e2 _ e3) i j h1 (vn-case h2 h3 h4) = vn-case (varNotContainedImplies e1 i j h1 h2)
-                                                                         (varNotContainedImplies e2 (S i) (S j) (s≤s h1) h3)
-                                                                         (varNotContainedImplies e3 (S i) (S j) (s≤s h1) h4)
+varNotContainedImplies (Case e1 _ e2 _ e3) i j h1 (vn-case h2 h3 h4) =
+  vn-case (varNotContainedImplies e1 i j h1 h2)
+          (varNotContainedImplies e2 (S i) (S j) (s≤s h1) h3)
+          (varNotContainedImplies e3 (S i) (S j) (s≤s h1) h4)
 varNotContainedImplies (Var k) i j h1 (vn-var x) with ltNat k j in r
 ... | True rewrite r = vn-var (λ z -> not<Self k (<-rewrite (<≤-trans (lt->< r) h1) z))
 ... | False rewrite r = vn-var (λ z -> ⊥-elim (x (eqSuc z)))
+varNotContainedImplies (Fix e) i j h1 (vn-fix x) = vn-fix (varNotContainedImplies e i j h1 x)
 
 iterShiftUp : Nat → Nat → Expr → Expr
 iterShiftUp j Z e = e
@@ -166,6 +172,7 @@ shiftDownPreserve (⊢mkPair wt2 wt3) (vn-binop vn1 vn2) = ⊢mkPair (shiftDownP
 shiftDownPreserve (⊢inl wt2) (vn-inl vn) = ⊢inl (shiftDownPreserve wt2 vn)
 shiftDownPreserve (⊢inr wt2) (vn-inr vn) = ⊢inr (shiftDownPreserve wt2 vn)
 shiftDownPreserve (⊢case wt2 wt3 wt4) (vn-case vn1 vn2 vn3) = ⊢case (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2) (shiftDownPreserve wt4 vn3)
+shiftDownPreserve (⊢fix wt) (vn-fix h) = ⊢fix (shiftDownPreserve wt h)
 
 iterShiftUpConst : ∀ {c : ConstT} {i j : Nat} → iterShiftUp j i (Const c) ≡ (Const c)
 iterShiftUpConst {i = Z} = refl
@@ -194,6 +201,10 @@ iterShiftUpInl {e} {S i} {j} {T} rewrite iterShiftUpInl {shiftUp' j e} {i} {j} {
 iterShiftUpInr : ∀ {e : Expr} {i j : Nat} {T : TypeL} → iterShiftUp j i (Inr e T) ≡ (Inr (iterShiftUp j i e) T)
 iterShiftUpInr {i = Z} = refl
 iterShiftUpInr {e} {S i} {j} {T} rewrite iterShiftUpInr {shiftUp' j e} {i} {j} {T} = refl
+
+iterShiftUpFix : ∀ {e : Expr} {i j : Nat} → iterShiftUp j i (Fix e) ≡ (Fix (iterShiftUp j i e))
+iterShiftUpFix {i = Z} = refl
+iterShiftUpFix {e} {S i} {j} rewrite iterShiftUpFix {shiftUp' j e} {i} {j} = refl
 
 iterShiftUpVar1 : ∀ {i j k : Nat} → ltNat k j ≡ True →  iterShiftUp j i (Var k) ≡ Var k
 iterShiftUpVar1 {Z} h = refl
@@ -321,6 +332,7 @@ dropIterWt i j h (⊢inr {_} {e} {t} {te} wt) rewrite iterShiftUpInr {e} {i} {j}
 dropIterWt i j h (⊢case {_} {e1} {e2} {e3} {t} {tl} {tr} {id2} {id3} wt1 wt2 wt3)
   rewrite iterShiftUpCase {i} {j} {e1} {e2} {e3} {id2} {id3} =
     ⊢case (dropIterWt i j h wt1) (dropIterWt i (S j) (Eq.cong S h) wt2) (dropIterWt i (S j) (Eq.cong S h) wt3)
+dropIterWt i j h (⊢fix {_} {e} {te} wt) rewrite iterShiftUpFix {e} {i} {j} = ⊢fix (dropIterWt i j h wt)
 
 substPreserve' : ∀ {Γ : TypingContext} {V N : Expr} {A B : TypeL} {i j : Nat} {h : i < length Γ}
   → (drop j Γ) ⊢ V ∶ A
@@ -352,6 +364,7 @@ substPreserve' {j = j} wtv ih (⊢inl wtn) = ⊢inl (substPreserve' {j = j} wtv 
 substPreserve' {j = j} wtv ih (⊢inr wtn) = ⊢inr (substPreserve' {j = j} wtv ih wtn)
 substPreserve' {Γ} {V} {N} {A} {B} {i} {j} {h} wtv ih (⊢case {Γ} {e1} {e2} {e3} {t} {tl} {tr} wt1 wt2 wt3) rewrite iterShiftUpSuc {V} {j} =
   ⊢case (substPreserve' {j = j} wtv ih wt1) (substPreserve' {tl ∷ Γ} {V} {e2} {A} {t} {S i} {S j} {s≤s h} wtv ih wt2) (substPreserve' {tr ∷ Γ} {V} {e3} {A} {t} {S i} {S j} {s≤s h} wtv ih wt3)
+substPreserve' {j = j} wtv ih (⊢fix wt) = ⊢fix (substPreserve' {j = j} wtv ih wt)
 
 szNotContained : ∀ (V : Expr) → VarNotContained (S Z) (iterShiftUp Z (S (S Z)) V)
 szNotContained V rewrite iterShiftUpSuc {V} {S Z} = varNotContainedImplies (shiftUp V) Z Z (s≤Self Z) (varNotContainedShiftUp V Z)
@@ -366,6 +379,7 @@ substVarNotContained (App V V₁) (Lam x x₁ N) i h = vn-lam (substVarNotContai
 substVarNotContained (Ite V V₁ V₂) (Lam x x₁ N) i h = vn-lam (substVarNotContained (shiftUp (Ite V V₁ V₂)) N (S i) (varNotContainedImplies (Ite V V₁ V₂) i Z z≤ h))
 substVarNotContained (Inl V x₂) (Lam x x₁ N) i h = vn-lam (substVarNotContained (shiftUp (Inl V x₂)) N (S i) (varNotContainedImplies (Inl V x₂) i Z z≤ h))
 substVarNotContained (Inr V x₂) (Lam x x₁ N) i h = vn-lam (substVarNotContained (shiftUp (Inr V x₂)) N (S i) (varNotContainedImplies (Inr V x₂) i Z z≤ h))
+substVarNotContained (Fix V) (Lam x x₁ N) i h = vn-lam (substVarNotContained (shiftUp (Fix V)) N (S i) (varNotContainedImplies (Fix V) i Z z≤ h))
 substVarNotContained (Case V x₂ V₁ x₃ V₂) (Lam x x₁ N) i (vn-case h1 h2 h3) = vn-lam (substVarNotContained (shiftUp (Case V x₂ V₁ x₃ V₂)) N (S i) (vn-case (varNotContainedImplies V i Z z≤ h1) (varNotContainedImplies V₁ (S i) (S Z) (s≤s z≤) h2) (varNotContainedImplies V₂ (S i) (S Z) (s≤s z≤) h3)))
 substVarNotContained (Const x₂) (Lam x x₁ N) i vn-v = vn-lam (substVarNotContained (Const x₂) N (S i) vn-v)
 substVarNotContained (BinOp x₂ V V₁) (Lam x x₁ N) i h = vn-lam (substVarNotContained (shiftUp (BinOp x₂ V V₁)) N (S i) (varNotContainedImplies (BinOp x₂ V V₁) i Z z≤ h))
@@ -382,6 +396,7 @@ substVarNotContained (Ite e1 e2 e3) (Case N x N₁ x₁ N₂) i h = vn-case (sub
 substVarNotContained (Inl e t) (Case N x N₁ x₁ N₂) i h = vn-case (substVarNotContained (Inl e t) N i h) (substVarNotContained (shiftUp (Inl e t)) N₁ (S i) (varNotContainedImplies (Inl e t) i Z z≤ h)) ((substVarNotContained (shiftUp (Inl e t)) N₂ (S i) (varNotContainedImplies (Inl e t) i Z z≤ h)))
 substVarNotContained (Inr e t) (Case N x N₁ x₁ N₂) i h = vn-case (substVarNotContained (Inr e t) N i h) (substVarNotContained (shiftUp (Inr e t)) N₁ (S i) (varNotContainedImplies (Inr e t) i Z z≤ h)) ((substVarNotContained (shiftUp (Inr e t)) N₂ (S i) (varNotContainedImplies (Inr e t) i Z z≤ h)))
 substVarNotContained (Lam n ty b) (Case N x N₁ x₁ N₂) i h = vn-case (substVarNotContained (Lam n ty b) N i h) (substVarNotContained (shiftUp (Lam n ty b)) N₁ (S i) (varNotContainedImplies (Lam n ty b) i Z z≤ h)) ((substVarNotContained (shiftUp (Lam n ty b)) N₂ (S i) (varNotContainedImplies (Lam n ty b) i Z z≤ h)))
+substVarNotContained (Fix e) (Case N x N₁ x₁ N₂) i h = vn-case (substVarNotContained (Fix e) N i h) (substVarNotContained (shiftUp (Fix e)) N₁ (S i) (varNotContainedImplies (Fix e) i Z z≤ h)) ((substVarNotContained (shiftUp (Fix e)) N₂ (S i) (varNotContainedImplies (Fix e) i Z z≤ h)))
 substVarNotContained (Case E1 id2 E2 id3 E3) (Case N x N₁ x₁ N₂) i h = vn-case (substVarNotContained (Case E1 id2 E2 id3 E3) N i h) (substVarNotContained (shiftUp (Case E1 id2 E2 id3 E3)) N₁ (S i) (varNotContainedImplies (Case E1 id2 E2 id3 E3) i Z z≤ h)) ((substVarNotContained (shiftUp (Case E1 id2 E2 id3 E3)) N₂ (S i) (varNotContainedImplies (Case E1 id2 E2 id3 E3) i Z z≤ h)))
 substVarNotContained (Var z) (Case N x N₁ x₁ N₂) i (vn-var x₂) with (i == z) in r
 ... | True rewrite r | ltZ {z} = ⊥-elim (x₂ (eq->≡ r))
@@ -389,6 +404,7 @@ substVarNotContained (Var z) (Case N x N₁ x₁ N₂) i (vn-var x₂) with (i =
 substVarNotContained V (Const x) i h = vn-v
 substVarNotContained V (BinOp x N N₁) i h = vn-binop (substVarNotContained V N i h) (substVarNotContained V N₁ i h)
 substVarNotContained V (UnaryOp x N) i h = vn-unop (substVarNotContained V N i h)
+substVarNotContained V (Fix e) i h = vn-fix (substVarNotContained V e i h)
 
 substPreserve : ∀ {Γ : TypingContext} {V N : Expr} {A B : TypeL}
   → Γ ⊢ V ∶ A
@@ -420,6 +436,7 @@ substPreserve {g} {V} {Case e1 id2 e2 id3 e3} {A} {B} wt1 (⊢case {tl = tl} {tr
   let keyL = substPreserve' {tl ∷ A ∷ g} {V} {e2} {A} {B} {S Z} {S (S Z)} {s≤s (s≤s z≤)} wt1 refl wt3 in
   let keyR = substPreserve' {tr ∷ A ∷ g} {V} {e3} {A} {B} {S Z} {S (S Z)} {s≤s (s≤s z≤)} wt1 refl wt4 in
   ⊢case (substPreserve wt1 wt2) (shiftDownPreserve {i = Z} keyL (substVarNotContained (iterShiftUp Z (S (S Z)) V) e2 (S Z) (szNotContained V))) ((shiftDownPreserve keyR (substVarNotContained (iterShiftUp Z (S (S Z)) V) e3 (S Z) (szNotContained V))))
+substPreserve wt1 (⊢fix h) = ⊢fix (substPreserve wt1 h)
 
 preservation : ∀ {Γ : TypingContext} {L M : Expr} {T : TypeL}
   → Γ ⊢ L ∶ T
@@ -429,39 +446,44 @@ preservation : ∀ {Γ : TypingContext} {L M : Expr} {T : TypeL}
 preservation (⊢|| wt1 wt2) (r-binop1 red) = ⊢|| (preservation wt1 red) wt2
 preservation (⊢|| wt1 wt2) (r-binop2 _ red) = ⊢|| wt1 (preservation wt2 red)
 preservation (⊢|| wt wt₁) r-or = ⊢b
-preservation (⊢&& wt1 wt2) (r-binop1 red) = ⊢&& (preservation wt1 red) wt2
-preservation (⊢&& wt1 wt2) (r-binop2 _ red) = ⊢&& wt1 (preservation wt2 red)
+preservation (⊢&& wt1 wt2) (r-binop1 r) = ⊢&& (preservation wt1 r) wt2
+preservation (⊢&& wt1 wt2) (r-binop2 _ r) = ⊢&& wt1 (preservation wt2 r)
 preservation (⊢&& wt1 wt2) r-and = ⊢b
-preservation (⊢! wt) (r-unop red) = ⊢! (preservation wt red)
+preservation (⊢! wt) (r-unop r) = ⊢! (preservation wt r)
 preservation (⊢! wt) r-not = ⊢b
-preservation (⊢+ wt1 wt2) (r-binop1 red) = ⊢+ (preservation wt1 red) wt2
-preservation (⊢+ wt1 wt2) (r-binop2 _ red) = ⊢+ wt1 (preservation wt2 red)
+preservation (⊢+ wt1 wt2) (r-binop1 r) = ⊢+ (preservation wt1 r) wt2
+preservation (⊢+ wt1 wt2) (r-binop2 _ r) = ⊢+ wt1 (preservation wt2 r)
 preservation (⊢+ wt1 wt2) r-add = ⊢n
-preservation (⊢- wt1 wt2) (r-binop1 red) = ⊢- (preservation wt1 red) wt2
-preservation (⊢- wt1 wt2) (r-binop2 _ red) = ⊢- wt1 (preservation wt2 red)
+preservation (⊢- wt1 wt2) (r-binop1 r) = ⊢- (preservation wt1 r) wt2
+preservation (⊢- wt1 wt2) (r-binop2 _ r) = ⊢- wt1 (preservation wt2 r)
 preservation (⊢- wt1 wt2) r-sub = ⊢n
-preservation (⊢* wt1 wt2) (r-binop1 red) = ⊢* (preservation wt1 red) wt2
-preservation (⊢* wt1 wt2) (r-binop2 _ red) = ⊢* wt1 (preservation wt2 red)
+preservation (⊢* wt1 wt2) (r-binop1 r) = ⊢* (preservation wt1 r) wt2
+preservation (⊢* wt1 wt2) (r-binop2 _ r) = ⊢* wt1 (preservation wt2 r)
 preservation (⊢* wt1 wt2) r-mul = ⊢n
-preservation (⊢< wt1 wt2) (r-binop1 red) = ⊢< (preservation wt1 red) wt2
-preservation (⊢< wt1 wt2) (r-binop2 _ red) = ⊢< wt1 (preservation wt2 red)
+preservation (⊢< wt1 wt2) (r-binop1 r) = ⊢< (preservation wt1 r) wt2
+preservation (⊢< wt1 wt2) (r-binop2 _ r) = ⊢< wt1 (preservation wt2 r)
 preservation (⊢< wt1 wt2) r-ltInt = ⊢b
 preservation (⊢ite wt1 wt2 wt3) r-ite-true = wt2
 preservation (⊢ite wt1 wt2 wt3) r-ite-false = wt3
 preservation (⊢ite wt1 wt2 wt3) (r-ite red) = ⊢ite (preservation wt1 red) wt2 wt3
+preservation (⊢l wt) (r-l' red) = ⊢l (preservation wt red)
 preservation (⊢a wt1 wt2) (r-a red) = ⊢a (preservation wt1 red) wt2
 preservation (⊢a wt1 wt2) (r-a' _ red) = ⊢a wt1 (preservation wt2 red)
 preservation {Γ} {App (Lam nm dom body) L} {.(substitute L body)} {T} (⊢a (⊢l {dom = dom} wt1) wt2) (r-l nBody nL) =
   substPreserve {Γ} {L} {body} {dom} {T} wt2 wt1
-preservation (⊢proj1 wt) (r-unop red) = ⊢proj1 (preservation wt red)
+preservation (⊢proj1 wt) (r-unop r) = ⊢proj1 (preservation wt r)
 preservation (⊢proj1 (⊢mkPair wt _)) (r-proj1 _ _) = wt
-preservation (⊢proj2 wt) (r-unop red) = ⊢proj2 (preservation wt red)
+preservation (⊢proj2 wt) (r-unop r) = ⊢proj2 (preservation wt r)
 preservation (⊢proj2 (⊢mkPair _ wt2)) (r-proj2 _ _) = wt2
 preservation (⊢mkPair wt1 wt2) (r-binop1 red) = ⊢mkPair (preservation wt1 red) wt2
 preservation (⊢mkPair wt1 wt2) (r-binop2 _ red) = ⊢mkPair wt1 (preservation wt2 red)
-preservation (⊢inl wt) (r-inl red) = ⊢inl (preservation wt red)
-preservation (⊢inr wt) (r-inr red) = ⊢inr (preservation wt red)
+preservation (⊢inl wt) (r-inl r) = ⊢inl (preservation wt r)
+preservation (⊢inr wt) (r-inr r) = ⊢inr (preservation wt r)
 preservation (⊢case wt1 wt2 wt3) (r-case1 red) = ⊢case (preservation wt1 red) wt2 wt3
-preservation {Γ} {Case (Inl x (Sum tl tr)) id2 e2 id3 e3} {.(substitute x e2)} {T1} (⊢case (⊢inl wt1) wt2 wt3) (r-case2 red) = substPreserve {V = x} {N = e2} {A = tl} wt1 wt2
-preservation {Γ} {Case (Inr x (Sum tl tr)) id2 e2 id3 e3} {.(substitute x e3)} {T1} (⊢case (⊢inr wt1) wt2 wt3) (r-case3 red) = substPreserve {V = x} {N = e3} {A = tr} wt1 wt3
-preservation (⊢l wt) (r-l' red) = ⊢l (preservation wt red)
+preservation {Γ} {Case (Inl x (Sum tl tr)) id2 e2 id3 e3} {.(substitute x e2)} {T1} (⊢case (⊢inl wt1) wt2 wt3) (r-case2 red) =
+  substPreserve {V = x} {N = e2} {A = tl} wt1 wt2
+preservation {Γ} {Case (Inr x (Sum tl tr)) id2 e2 id3 e3} {.(substitute x e3)} {T1} (⊢case (⊢inr wt1) wt2 wt3) (r-case3 red) =
+  substPreserve {V = x} {N = e3} {A = tr} wt1 wt3
+preservation (⊢fix wt) (r-fix1 r) = ⊢fix (preservation wt r)
+-- Since it reduces to itself, we reuse the same witness for welltypedness. Luckly it's not in the same function
+preservation (⊢fix (⊢l wt)) (r-fix2 x) = substPreserve (⊢fix (⊢l wt)) wt
