@@ -22,6 +22,7 @@ tokens :-
 <0> "."       { tok Dot             }
 <0> ","       { tok Comma           }
 <0> "lam"     { tok Lam             }
+<0> "fix"     { tok Fix             }
 <0> "EVAL"    { tok Eval            }
 <0> "EXIT"    { tok Exit            }
 <0> "TYPEDEF" { tok Typedef         }
@@ -72,6 +73,7 @@ data Token =
   | Dot
   | Comma
   | Lam
+  | Fix
   | Eval
   | Exit
   | Typedef

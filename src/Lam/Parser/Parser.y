@@ -38,6 +38,7 @@ import Lam.Parser.Lexer qualified as L
 
 %token
   "lam"     { L.Lam        }
+  "fix"     { L.Fix        }
   ":"       { L.Colon      }
   "::"      { L.TypeColon  }
   ";"       { L.Semicolon  }
@@ -155,6 +156,7 @@ UntypedRawExpr :: { RawExpr }
   | "proj1" UntypedRawExpr { RawUnOp Proj1 $2 }
   | "proj2" UntypedRawExpr { RawUnOp Proj2 $2 }
   | "<" UntypedRawExpr "," UntypedRawExpr ">" { RawBinOp MkPair $2 $4 }
+  | "fix" UntypedRawExpr { RawFix $2 }
   | UntypedParExpr { $1 }
 
 UntypedParExpr : "(" UntypedRawExpr ")" { $2 }
@@ -180,6 +182,7 @@ RawExpr :: { RawExpr }
   | "inl" RawExpr "as" RawTypeL { RawInl $2 $4 }
   | "inr" RawExpr "as" RawTypeL { RawInr $2 $4 }
   | "case" RawExpr "of" "inl" var "=>" RawExpr "|" "inr" var "=>" RawExpr { RawCase $2 $5 $7 $10 $12 }
+  | "fix" RawExpr { RawFix $2 }
   | ParExpr { $1 }
 
 ParExpr : "(" RawExpr ")" { $2 }

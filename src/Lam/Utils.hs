@@ -92,6 +92,8 @@ prettyPrint = go []
         go ctx isUntyped (App e1 e2) =
            let f = go ctx isUntyped
            in unwords ["(", f e1, ".", f e2, ")"]
+        go ctx isUntyped (Fix e) =
+            unwords [ "( fix", go ctx isUntyped e, ")" ]
 
 untypedPrettyPrint, typedPrettyPrint :: Expr -> String
 untypedPrettyPrint = prettyPrint True

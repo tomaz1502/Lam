@@ -81,6 +81,9 @@ eraseNames = go []
       go (id2 : lctx) gctx e2 >>= \e2' ->
       go (id3 : lctx) gctx e3 >>= \e3' ->
       Right (Case e1' id2 e2' id3 e3')
+    go lctx gctx (RawFix e) =
+      go lctx gctx e >>= \e' ->
+      Right (Fix e')
 
 parseUntypedExpr :: String -> Either String Expr
 parseUntypedExpr str =
