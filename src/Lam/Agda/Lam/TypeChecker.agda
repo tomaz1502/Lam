@@ -125,6 +125,11 @@ typeCheck' gam (Case e1 _ e2 _ e3) =
         if eqType t2 t3 then Just t2 else Nothing
     ; _ -> Nothing
     }
+typeCheck' gam (Fix e) =
+  myCaseOf (typeCheck' gam e) λ
+  { (Just (Arrow te1 te2)) -> if eqType te1 te2 then Just te1 else Nothing
+  ; _ -> Nothing
+  }
 
 {-# COMPILE AGDA2HS typeCheck' #-}
 

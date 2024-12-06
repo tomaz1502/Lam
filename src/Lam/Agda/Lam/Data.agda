@@ -85,6 +85,7 @@ data RawExpr : Set where
   RawVar       : Id → RawExpr
   RawLam       : Id → RawTypeL → RawExpr → RawExpr
   RawApp       : RawExpr → RawExpr → RawExpr
+  RawFix       : RawExpr → RawExpr
   RawIte       : RawExpr → RawExpr → RawExpr → RawExpr
   RawInl       : RawExpr → RawTypeL → RawExpr
   RawInr       : RawExpr → RawTypeL → RawExpr
@@ -99,6 +100,7 @@ data Expr : Set where
   Var     : Nat → Expr
   Lam     : Id → TypeL → Expr → Expr
   App     : Expr → Expr → Expr
+  Fix     : Expr → Expr
   Ite     : Expr → Expr → Expr → Expr
   Inl     : Expr → TypeL → Expr
   Inr     : Expr → TypeL → Expr

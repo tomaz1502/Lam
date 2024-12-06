@@ -26,6 +26,8 @@ shiftUp' c (UnaryOp o e) = UnaryOp o (shiftUp' c e)
 shiftUp' _ (Const k) = Const k
 shiftUp' c (Inl e t) = Inl (shiftUp' c e) t
 shiftUp' c (Inr e t) = Inr (shiftUp' c e) t
+-- Fix doesn't change the deBruijn index
+shiftUp' c (Fix e)   = Fix (shiftUp' c e)
 
 {-# COMPILE AGDA2HS shiftUp' #-}
 
@@ -52,6 +54,7 @@ shiftDown' c (UnaryOp o e) = UnaryOp o (shiftDown' c e)
 shiftDown' _ (Const k) = Const k
 shiftDown' c (Inl e t) = Inl (shiftDown' c e) t
 shiftDown' c (Inr e t) = Inr (shiftDown' c e) t
+shiftDown' c (Fix e)   = Fix (shiftDown' c e)
 
 {-# COMPILE AGDA2HS shiftDown' #-}
 
@@ -73,6 +76,7 @@ substitute' i s (UnaryOp o e) = UnaryOp o (substitute' i s e)
 substitute' _ _ (Const k) = Const k
 substitute' i s (Inl e t) = Inl (substitute' i s e) t
 substitute' i s (Inr e t) = Inr (substitute' i s e) t
+substitute' i s (Fix e)   = Fix (substitute' i s e)
 substitute' i s (Case e1 id2 e2 id3 e3) = Case (substitute' i s e1) id2 (substitute' (S i) (shiftUp s) e2) id3 (substitute' (S i) (shiftUp s) e3)
 
 {-# COMPILE AGDA2HS substitute' #-}
@@ -142,6 +146,13 @@ smallStepApp _           _  Nothing    Nothing    = Nothing
 
 {-# COMPILE AGDA2HS smallStepApp #-}
 
+smallStepFix : Expr → Maybe Expr → Maybe Expr
+smallStepFix _ (Just e') = Just (Fix e')
+smallStepFix (Lam n ty e) Nothing = Just (substitute (Fix (Lam n ty e)) e)
+smallStepFix _ Nothing = Nothing
+
+{-# COMPILE AGDA2HS smallStepFix #-}
+
 smallStep : Expr → Maybe Expr
 smallStep (Var _) = Nothing
 smallStep (Lam n t e) = smallStep e >>= λ e' -> Just (Lam n t e')
@@ -149,9 +160,10 @@ smallStep (App e1 e2) = smallStepApp e1 e2 (smallStep e1) (smallStep e2)
 smallStep (BinOp o e1 e2) = smallStepBinOp o e1 e2 (smallStep e1) (smallStep e2)
 smallStep (UnaryOp o e) = smallStepUnOp o e (smallStep e)
 smallStep (Ite b t e) = smallStepIte b t e (smallStep b)
-smallStep (Inl e t) = smallStepInl e t  (smallStep e)
-smallStep (Inr e t) = smallStepInr e t  (smallStep e)
+smallStep (Inl e t) = smallStepInl e t (smallStep e)
+smallStep (Inr e t) = smallStepInr e t (smallStep e)
 smallStep (Case e1 id2 e2 id3 e3) = smallStepCase e1 id2 e2 id3 e3 (smallStep e1)
+smallStep (Fix e) = smallStepFix e (smallStep e)
 smallStep (Const _) = Nothing
 
 {-# COMPILE AGDA2HS smallStep #-}
