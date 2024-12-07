@@ -131,6 +131,7 @@ data Command : Set where
     TypedefC : Id × RawTypeL → Command
     DefineC  : Id × RawExpr → Command
     EvalC    : RawExpr → Command
+    CheckC   : RawExpr → Command
     LoadC    : Id → Command
     ReadC    : Id → Command
     ExitC    : Command

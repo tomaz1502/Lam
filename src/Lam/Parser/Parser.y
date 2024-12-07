@@ -45,6 +45,7 @@ import Lam.Parser.Lexer qualified as L
   ":="      { L.ColonEq    }
   "DEFINE"  { L.Define     }
   "EVAL"    { L.Eval       }
+  "CHECK"   { L.Check      }
   "EXIT"    { L.Exit       }
   "TYPEDEF" { L.Typedef    }
   "LOAD"    { L.Load       }
@@ -96,6 +97,7 @@ UntypedCommand :: { Command }
   | UntypedEvalCommand   { EvalC $1  }
   | LoadCommand          { LoadC $1 }
   | ReadCommand          { ReadC $1 }
+  | CheckCommand         { CheckC $1 }
   | ExitCommand          { ExitC }
   -- we allow this here but throw an error later
   | TypedefCommand       { TypedefC $1 }
@@ -106,6 +108,9 @@ UntypedDefineCommand :: { (Id, RawExpr) }
 UntypedEvalCommand :: { RawExpr }
   : "EVAL" ":" UntypedRawExpr ";" { $3 }
 
+UntypedCheckCommand :: { RawExpr }
+  : "CHECK" ":" UntypedRawExpr ";" { $3 }
+
 Program :: { [Command] }
   : Command Program { $1 : $2 }
   | { [] }
@@ -114,6 +119,7 @@ Command :: { Command }
   : TypedefCommand { TypedefC $1 }
   | DefineCommand  { DefineC $1 }
   | EvalCommand    { EvalC $1 }
+  | CheckCommand   { CheckC $1 }
   | LoadCommand    { LoadC $1 }
   | ReadCommand    { ReadC $1 }
   | ExitCommand    { ExitC }
@@ -128,6 +134,9 @@ DefineCommand :: { (Id, RawExpr) }
 
 EvalCommand :: { RawExpr }
   : "EVAL" ":" RawExpr ";" { $3 }
+
+CheckCommand :: { RawExpr }
+  : "CHECK" ":" RawExpr ";" { $3 }
 
 LoadCommand :: { String }
   : "LOAD" ":" path ";" { init (tail $3) {- Removes quotes -} }

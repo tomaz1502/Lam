@@ -24,6 +24,7 @@ tokens :-
 <0> "lam"     { tok Lam             }
 <0> "fix"     { tok Fix             }
 <0> "EVAL"    { tok Eval            }
+<0> "CHECK"   { tok Check           }
 <0> "EXIT"    { tok Exit            }
 <0> "TYPEDEF" { tok Typedef         }
 <0> "DEFINE"  { tok Define          }
@@ -75,6 +76,7 @@ data Token =
   | Lam
   | Fix
   | Eval
+  | Check
   | Exit
   | Typedef
   | Load

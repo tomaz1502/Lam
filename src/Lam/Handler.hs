@@ -4,7 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Lam.Handler ( replWrapper
-                   , handleFile
+                   , handleFileWrapper
                    ) where
 
 import Control.Monad.RWS        ( get, put )
@@ -57,9 +57,23 @@ handleEval rExpr = do
   else
     case typeCheck expr of
       Nothing -> throwError "Typing error."
-      Just t  ->
+      Just _  ->
         let normalizedExpr = eval expr in
-        let msg = untypedPrettyPrint normalizedExpr <> " :: " <> prettyPrintType t in
+        let msg = untypedPrettyPrint normalizedExpr in
+        liftIO (putStrLnFlush msg)
+
+handleCheck :: RawExpr -> Result ()
+handleCheck rExpr = do
+  gctx    <- get
+  expr    <- liftEither (eraseNames gctx rExpr)
+  isUntyped <- askUntyped
+  if isUntyped then
+    throwError "Trying to check type of an expr in an untyped context."
+  else
+    case typeCheck expr of
+      Nothing -> throwError "Typing error."
+      Just t  ->
+        let msg = prettyPrintType t in
         liftIO (putStrLnFlush msg)
 
 handleCommand :: Command -> Result ()
@@ -68,12 +82,13 @@ handleCommand c =
     TypedefC (macroName, macroType) -> handleTypedef macroName macroType
     DefineC  (macroName, macroExpr) -> handleDefine macroName macroExpr
     EvalC rExpr                     -> handleEval rExpr
+    CheckC rExpr                    -> handleCheck rExpr
     LoadC path                      -> loadFile path
     ReadC varName                   -> do
-        exprS <- liftIO (readRepl [] "")
-        isUntyped <- askUntyped
-        expr <- liftEither (parseRawExpr isUntyped exprS)
-        handleDefine varName expr
+      exprS <- liftIO (readRepl [] "")
+      isUntyped <- askUntyped
+      expr <- liftEither (parseRawExpr isUntyped exprS)
+      handleDefine varName expr
     ExitC -> return ()
 
 repl :: CmdHistory -> Result ()
@@ -99,3 +114,6 @@ handleFile fName = do
   sc      <- liftIO $ readFile fName
   prog    <- liftEither (parseProg isUntyped sc)
   mapM_ handleCommand prog
+
+handleFileWrapper :: String -> Result ()
+handleFileWrapper fName = runInRawMode (handleFile fName)
