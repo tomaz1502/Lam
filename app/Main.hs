@@ -13,12 +13,6 @@ import Lam.Context ( emptyContext )
 import Lam.Handler ( replWrapper, handleFileWrapper )
 import Lam.Result
 
-setup :: IO ()
-setup = undefined
-
-cleanup :: IO ()
-cleanup = undefined
-
 main :: IO ()
 main = do
   args <- getArgs
