@@ -20,13 +20,13 @@ Build with the `build.sh` script.
 ### Features
   - [x] Simple Types
   - [x] Verify properties using Agda (Progress/Preservation)
-  - [ ] Extensions (TaPL ch 11)
+  - [x] Extensions (TaPL ch 11)
     + [x] Uninterpreted (opaque) Types
     + [x] Numbers, booleans, ITE, ltNat
     + [x] Pairs
     + [x] Sums
     + [x] Pattern Matching
-    + [ ] General recursion
+    + [x] General recursion
   - [ ] More preprocessing besides erasing names (enable larger sums or products, for instance)
   - [ ] Polymorphism
   - [ ] Recursive Types (Enabling strings)
@@ -38,7 +38,7 @@ Build with the `build.sh` script.
     - [ ] Language Server Protocol
   - [ ] Package Manager
   - [ ] Nicer REPL
-    - [ ] Interpret arrows
+    - [x] Interpret arrows
     - [ ] Autocomplete
   - [ ] Code Generation
   - [ ] Support for commentary
@@ -52,7 +52,8 @@ Build with the `build.sh` script.
     - [x] Define
     - [x] Load
     - [x] Typedef
-    - [x] Read
+    - [x] Read (type safety?)
+    - [x] Check
 
 ## Future Work
   - DAG instead of AST
