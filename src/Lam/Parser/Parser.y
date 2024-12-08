@@ -27,9 +27,7 @@ import Lam.Parser.Lexer qualified as L
 %left "<" ">"
 %left "&&" "||"
 %left "+" "-"
-%right "+T"
 %left "*"
-%right "*T"
 %left "!"
 %left "proj1"
 %left "proj2"
@@ -82,8 +80,8 @@ import Lam.Parser.Lexer qualified as L
   "of"      { L.Of         }
   "|"       { L.Pipe       }
   "as"      { L.As         }
-  "+T"      { L.PlusT      }
-  "*T"      { L.ProdT      }
+  "Sum"     { L.SumT       }
+  "Prod"    { L.ProdT      }
 %%
 
 
@@ -202,8 +200,8 @@ RawTypeL :: { RawTypeL }
   | "Int" { RawIntT }
   | "Bool" { RawBoolT }
   | var { FreeType $1 }
-  | RawTypeL "*T" RawTypeL { RawProd $1 $3 }
-  | RawTypeL "+T" RawTypeL { RawSum $1 $3 }
+  | "Prod" RawTypeL RawTypeL { RawProd $2 $3 }
+  | "Sum" RawTypeL RawTypeL { RawSum $2 $3 }
   | ParType { $1 }
 
 ParType : "(" RawTypeL ")" { $2 }

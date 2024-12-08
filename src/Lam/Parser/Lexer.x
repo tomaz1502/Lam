@@ -30,6 +30,8 @@ tokens :-
 <0> "DEFINE"  { tok Define          }
 <0> "LOAD"    { tok Load            }
 <0> "READ"    { tok Read            }
+<0> "Sum"     { tok SumT            }
+<0> "Prod"    { tok ProdT           }
 <0> ":"       { tok Colon           }
 <0> "::"      { tok TypeColon       }
 <0> ":="      { tok ColonEq         }
@@ -57,8 +59,6 @@ tokens :-
 <0> "of"      { tok Of              }
 <0> "|"       { tok Pipe            }
 <0> "as"      { tok As              }
-<0> "+T"      { tok PlusT           }
-<0> "*T"      { tok ProdT           }
 <0> @id       { tok (Var "")        }
 <0> @path     { tok (Path "")       }
 <0> @digits   { tok (NumVal 0)      }
@@ -112,7 +112,7 @@ data Token =
   | Pipe
   | As
   | ProdT
-  | PlusT
+  | SumT
   | EOF
   deriving Show
 
