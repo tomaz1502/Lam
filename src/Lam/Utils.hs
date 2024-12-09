@@ -24,7 +24,6 @@ pickFresh ctx nm
 prettyPrintType :: TypeL -> String
 prettyPrintType BoolT = "Bool"
 prettyPrintType IntT = "Int"
-prettyPrintType U = "U"
 prettyPrintType (Prod t1 t2) =
   unwords [ "( Prod", prettyPrintType t1, prettyPrintType t2, ")" ]
 prettyPrintType (Sum t1 t2) =

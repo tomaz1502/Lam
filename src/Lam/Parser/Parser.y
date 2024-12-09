@@ -149,7 +149,7 @@ ExitCommand :: { () }
 UntypedRawExpr :: { RawExpr }
   : UntypedRawExpr "." UntypedRawExpr { RawApp $1 $3  }
   | "lam" CommaSeparatedIdents "->" UntypedRawExpr %shift
-    { joinLams $2 RawU $4 }
+    { joinLams $2 RawIntT $4 }
   | var { RawVar $1 }
   | number { RawConst (NumC $1) }
   | boolean { RawConst (BoolC $1) }
@@ -196,7 +196,6 @@ ParExpr : "(" RawExpr ")" { $2 }
 
 RawTypeL :: { RawTypeL }
   : RawTypeL "=>" RawTypeL { RawArrow $1 $3 }
-  | "U" { RawU }
   | "Int" { RawIntT }
   | "Bool" { RawBoolT }
   | var { FreeType $1 }

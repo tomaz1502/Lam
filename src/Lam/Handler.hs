@@ -116,4 +116,4 @@ handleFile fName = do
   mapM_ handleCommand prog
 
 handleFileWrapper :: String -> Result ()
-handleFileWrapper fName = runInRawMode (handleFile fName)
+handleFileWrapper = runInRawMode . handleFile

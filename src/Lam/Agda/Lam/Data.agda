@@ -14,7 +14,6 @@ Id = String
 data RawTypeL : Set where
   RawBoolT : RawTypeL
   RawIntT  : RawTypeL
-  RawU     : RawTypeL
   RawProd  : RawTypeL → RawTypeL → RawTypeL
   RawSum   : RawTypeL → RawTypeL → RawTypeL
   RawArrow : RawTypeL → RawTypeL → RawTypeL
@@ -25,13 +24,22 @@ data RawTypeL : Set where
 data TypeL : Set where
   BoolT : TypeL
   IntT  : TypeL
--- U is an opaque type
-  U     : TypeL
   Arrow : TypeL → TypeL → TypeL
   Prod  : TypeL → TypeL → TypeL
   Sum   : TypeL → TypeL → TypeL
 
-{-# COMPILE AGDA2HS TypeL deriving (Eq, Show) #-}
+{-# COMPILE AGDA2HS TypeL deriving Show #-}
+
+instance
+  iEqType : Eq TypeL
+  iEqType ._==_ BoolT BoolT = true
+  iEqType ._==_ IntT IntT = true
+  iEqType ._==_ (Arrow t11 t12) (Arrow t21 t22) = t11 == t21 && t12 == t22
+  iEqType ._==_ (Prod t11 t12) (Prod t21 t22) = t11 == t21 && t12 == t22
+  iEqType ._==_ (Sum t11 t12) (Sum t21 t22) = t11 == t21 && t12 == t22
+  iEqType ._==_ _ _ = false
+
+{-# COMPILE AGDA2HS iEqType #-}
 
 data ConstT : Set where
   NumC : Int → ConstT
@@ -123,6 +131,8 @@ instance
     o1 == o2 && e1 == e2
   iExprEq ._==_ (Ite b1 t1 e1) (Ite b2 t2 e2) =
     b1 == b2 && t1 == t2 && e1 == e2
+  iExprEq ._==_ (Inl e1 t1) (Inl e2 t2) = e1 == e2 && t1 == t2
+  iExprEq ._==_ (Inr e1 t1) (Inr e2 t2) = e1 == e2 && t1 == t2
   iExprEq ._==_ _ _ = false
 
 {-# COMPILE AGDA2HS iExprEq #-}

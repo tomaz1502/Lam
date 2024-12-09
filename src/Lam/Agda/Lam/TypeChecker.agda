@@ -24,7 +24,7 @@ typeCheck' gam (Ite b t e)       =
     { BoolT ->
         typeCheck' gam t >>= λ tt ->
           typeCheck' gam e >>= λ te ->
-            if eqType tt te then (Just tt) else Nothing
+            if tt == te then (Just tt) else Nothing
     ; _ -> Nothing
     }
 typeCheck' _ (Const (NumC _))  = Just IntT
@@ -34,7 +34,7 @@ typeCheck' gam (Lam _ t e)       =
   typeCheck' (t ∷ gam) e >>= λ t' -> Just (Arrow t t')
 typeCheck' gam (App e1 e2) =
   myCaseOf (typeCheck' gam e1)
-    λ { (Just (Arrow t11 t12)) -> typeCheck' gam e2 >>= λ t2 -> if eqType t11 t2 then Just t12 else Nothing
+    λ { (Just (Arrow t11 t12)) -> typeCheck' gam e2 >>= λ t2 -> if t11 == t2 then Just t12 else Nothing
       ; _ -> Nothing
       }
 typeCheck' gam (BinOp Add e1 e2) =
@@ -109,12 +109,12 @@ typeCheck' gam (BinOp MkPair e1 e2) =
   Just (Prod t1 t2)
 typeCheck' gam (Inl e t) =
   myCaseOf t λ
-    { (Sum tl tr) -> typeCheck' gam e >>= λ te -> if eqType tl te then Just (Sum tl tr) else Nothing
+    { (Sum tl tr) -> typeCheck' gam e >>= λ te -> if tl == te then Just (Sum tl tr) else Nothing
     ; _ -> Nothing
     }
 typeCheck' gam (Inr e t) =
   myCaseOf t λ
-    { (Sum tl tr) -> typeCheck' gam e >>= λ te -> if eqType tr te then Just (Sum tl tr) else Nothing
+    { (Sum tl tr) -> typeCheck' gam e >>= λ te -> if tr == te then Just (Sum tl tr) else Nothing
     ; _ -> Nothing
     }
 typeCheck' gam (Case e1 _ e2 _ e3) =
@@ -122,12 +122,12 @@ typeCheck' gam (Case e1 _ e2 _ e3) =
     { (Just (Sum tl tr)) ->
         typeCheck' (tl ∷ gam) e2 >>= λ t2 ->
         typeCheck' (tr ∷ gam) e3 >>= λ t3 ->
-        if eqType t2 t3 then Just t2 else Nothing
+        if t2 == t3 then Just t2 else Nothing
     ; _ -> Nothing
     }
 typeCheck' gam (Fix e) =
   myCaseOf (typeCheck' gam e) λ
-  { (Just (Arrow te1 te2)) -> if eqType te1 te2 then Just te1 else Nothing
+  { (Just (Arrow te1 te2)) -> if te1 == te2 then Just te1 else Nothing
   ; _ -> Nothing
   }
 

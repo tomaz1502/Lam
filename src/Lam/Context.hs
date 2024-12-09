@@ -28,7 +28,6 @@ expandType gctx (RawProd t1 t2) =
   Right (Prod t1' t2')
 expandType _ RawBoolT = Right BoolT
 expandType _ RawIntT = Right IntT
-expandType _ RawU = Right U
 expandType gctx (RawArrow t1 t2) =
   expandType gctx t1 >>= \t1' ->
   expandType gctx t2 >>= \t2' ->
