@@ -33,6 +33,8 @@ import Lam.Parser.Lexer qualified as L
 %left "proj2"
 %left "inl"
 %left "inr"
+%left "fix"
+%left "Sum" "Prod"
 
 %token
   "lam"     { L.Lam        }
@@ -51,7 +53,6 @@ import Lam.Parser.Lexer qualified as L
   var       { L.Var $$     }
   "->"      { L.Arrow      }
   "=>"      { L.TypeArrow  }
-  "U"       { L.BaseType   }
   "Int"     { L.IntType    }
   "Bool"    { L.BoolType   }
   "."       { L.Dot        }
@@ -91,23 +92,14 @@ UntypedProgram :: { [Command] }
     { [] }
 
 UntypedCommand :: { Command }
-  : UntypedDefineCommand { DefineC $1  }
-  | UntypedEvalCommand   { EvalC $1  }
+  : DefineCommand { DefineC $1  }
+  | EvalCommand   { EvalC $1  }
   | LoadCommand          { LoadC $1 }
   | ReadCommand          { ReadC $1 }
   | CheckCommand         { CheckC $1 }
   | ExitCommand          { ExitC }
   -- we allow this here but throw an error later
   | TypedefCommand       { TypedefC $1 }
-
-UntypedDefineCommand :: { (Id, RawExpr) }
-  : "DEFINE" var ":=" UntypedRawExpr ";" { ($2, $4) }
-
-UntypedEvalCommand :: { RawExpr }
-  : "EVAL" ":" UntypedRawExpr ";" { $3 }
-
-UntypedCheckCommand :: { RawExpr }
-  : "CHECK" ":" UntypedRawExpr ";" { $3 }
 
 Program :: { [Command] }
   : Command Program { $1 : $2 }
