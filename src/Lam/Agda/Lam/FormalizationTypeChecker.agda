@@ -188,7 +188,7 @@ tc→⊢ {Γ} {Const (NumC _)} {t} eq rewrite sym (Just-injective eq)  = ⊢n
 tc→⊢ {Γ} {Ite b t e} {ty} eq with typeCheck' Γ b in bPf
 ... | Just BoolT with typeCheck' Γ t in tPf
 ...   | Just tt with typeCheck' Γ e in ePf
-...     | Just te with iteAbs {b = eqType tt te} (λ()) eq
+...     | Just te with iteAbs {b = tt == te} (λ()) eq
 ...       | ⟨ eqTypeTtTe , justTyEqTt ⟩
             rewrite
               sym (Just-injective justTyEqTt)
@@ -221,30 +221,21 @@ tc→⊢ {Γ} {UnaryOp Proj1 e} eq with typeCheck' Γ e in eqE
 tc→⊢ {Γ} {UnaryOp Proj2 e} eq with typeCheck' Γ e in eqE
 ... | Just (Prod t1 t2) rewrite sym (Just-injective eq) = ⊢proj2 (tc→⊢ eqE)
 tc→⊢ {Γ} {Inl e (Sum tl' tr)} eq with typeCheck' Γ e in eqE
-tc→⊢ {Γ} {Inl e (Sum tl' tr)} eq | Just tl with iteAbs {b = eqType tl' tl} (λ ()) eq
+tc→⊢ {Γ} {Inl e (Sum tl' tr)} eq | Just tl with iteAbs {b = tl' == tl} (λ ()) eq
 ... | ⟨ a , b ⟩ rewrite sym (Just-injective b) | eqType->≡ {tl'} {tl} a = ⊢inl (tc→⊢ eqE)
 tc→⊢ {Γ} {Inr e (Sum tl tr')} eq with typeCheck' Γ e in eqE
-tc→⊢ {Γ} {Inr e (Sum tl tr')} eq | Just tr with iteAbs {b = eqType tr' tr} (λ ()) eq
+tc→⊢ {Γ} {Inr e (Sum tl tr')} eq | Just tr with iteAbs {b = tr' == tr} (λ ()) eq
 ... | ⟨ a , b ⟩ rewrite sym (Just-injective b) | eqType->≡ {tr'} {tr} a = ⊢inr (tc→⊢ eqE)
 tc→⊢ {Γ} {Case e1 _ e2 _ e3} eq with typeCheck' Γ e1 in eqE1
 ... | Just (Sum tl tr) with typeCheck' (tl ∷ Γ) e2 in eqE2 | typeCheck' (tr ∷ Γ) e3 in eqE3
-...   | Just t2 | Just t3 with iteAbs {b = eqType t2 t3} (λ()) eq
+...   | Just t2 | Just t3 with iteAbs {b = t2 == t3} (λ()) eq
 ...      | ⟨ x , y ⟩ rewrite eqType->≡ {t2} {t3} x | Just-injective y = ⊢case (tc→⊢ eqE1) (tc→⊢ eqE2) (tc→⊢ eqE3)
 tc→⊢ {Γ} {Fix e} {t} eq with typeCheck' Γ e in eqE
-... | Just (Arrow t1 t2) with iteAbs {b = eqType t1 t2} injection-maybe eq
+... | Just (Arrow t1 t2) with iteAbs {b = t1 == t2} injection-maybe eq
 ...   | ⟨ h1 , h2 ⟩
           rewrite eqType->≡ {t1} {t2} h1
                 | Just-injective h2
                 | eqType-refl t = ⊢fix (tc→⊢ eqE)
--- ... | Just (Arrow t1 t2) =
---   let ⟨ h1 , h2 ⟩ = iteAbs {b = eqType t1 t2} injection-maybe eq in
---   let h3 = eqType->≡ {t1} {t2} h1 in
---   let h4 = Just-injective h2 in
---   let z = subst (λ k -> (if eqType k t2 then Just k else Nothing) ≡ Just t) h3 eq in
---   let w = subst (λ k -> (if k then Just t2 else Nothing) ≡ Just t) (eqType-refl t2) z in
---   let p = subst (λ k -> typeCheck' Γ e ≡ Just (Arrow t1 k)) (Just-injective w) eqE in
---   let p2 = subst (λ k -> typeCheck' Γ e ≡ Just (Arrow k t)) h4 p in
---   ⊢fix (tc→⊢ p2)
 
 module Examples where
 
