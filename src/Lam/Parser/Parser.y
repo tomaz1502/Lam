@@ -124,6 +124,7 @@ DefineCommand :: { (Id, RawExpr) }
 
 EvalCommand :: { RawExpr }
   : "EVAL" ":" RawExpr ";" { $3 }
+  | RawExpr ";" { $1 }
 
 CheckCommand :: { RawExpr }
   : "CHECK" ":" RawExpr ";" { $3 }
