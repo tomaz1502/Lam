@@ -42,7 +42,7 @@ genIdentifier = listOf1 genLetter `suchThat` notForbidden
 
 instance Arbitrary TypeL where
   arbitrary = frequency
-    [ (3, pure U)
+    [ (3, pure BoolT)
     , (1, Arrow <$> arbitrary <*> arbitrary)
     ]
 

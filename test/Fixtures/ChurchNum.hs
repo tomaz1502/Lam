@@ -22,21 +22,21 @@ encodeChurchP n
 
 encodeChurchE :: Int -> Expr
 encodeChurchE n
-  | n >= 0    = Lam "s" (Arrow U U) $
-                  Lam "z" U $
+  | n >= 0    = Lam "s" (Arrow BoolT BoolT) $
+                  Lam "z" BoolT $
                     applyN n (App (Var (S Z))) (Var Z)
   | otherwise = error "negative church (expr)"
 
 mulChurch :: Expr -> Expr -> Expr
 mulChurch n m =
-  Lam "f" (Arrow U U) $
-    Lam "x" U $
+  Lam "f" (Arrow BoolT BoolT) $
+    Lam "x" BoolT $
       App (App n (App m (Var (S Z)))) (Var Z)
 
 addChurch :: Expr -> Expr -> Expr
 addChurch n m =
-  Lam "f" (Arrow U U) $
-    Lam "x" U $
+  Lam "f" (Arrow BoolT BoolT) $
+    Lam "x" BoolT $
       App (App n (Var (S Z))) (App (App m (Var (S Z))) (Var Z))
 
 -- notice:
