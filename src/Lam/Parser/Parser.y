@@ -92,8 +92,8 @@ UntypedProgram :: { [Command] }
     { [] }
 
 UntypedCommand :: { Command }
-  : DefineCommand { DefineC $1  }
-  | EvalCommand   { EvalC $1  }
+  : UntypedDefineCommand { DefineC $1  }
+  | UntypedEvalCommand   { EvalC $1  }
   | LoadCommand          { LoadC $1 }
   | ReadCommand          { ReadC $1 }
   | CheckCommand         { CheckC $1 }
@@ -117,6 +117,12 @@ Command :: { Command }
 TypedefCommand :: { (Id, RawTypeL) }
   : "TYPEDEF" var ":=" RawTypeL ";"
     { ($2, $4) }
+
+UntypedDefineCommand :: { (Id, RawExpr) }
+  : "DEFINE" var ":=" UntypedRawExpr ";" { ($2, $4) }
+
+UntypedEvalCommand :: { RawExpr }
+  : "EVAL" ":" UntypedRawExpr ";" { $3 }
 
 -- we allow name shadowing
 DefineCommand :: { (Id, RawExpr) }
