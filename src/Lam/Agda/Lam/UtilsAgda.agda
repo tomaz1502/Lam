@@ -5,10 +5,10 @@ open import Data.Empty       using (⊥-elim)
 open import Data.Fin.Base    using (fromℕ<)
 open import Data.List hiding (length; lookup)
 open import Data.Product     using (_×_) renaming (_,_ to ⟨_,_⟩)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans)
 open import Relation.Nullary using (¬_)
 
-open import Haskell.Prelude hiding (_<_; length; lookup; _×_; Nat; cong; cong₂; case_of_)
+open import Haskell.Prelude hiding (_<_; length; lookup; _×_; Nat; case_of_)
 
 open import Lam.Data
 open import Lam.Nat

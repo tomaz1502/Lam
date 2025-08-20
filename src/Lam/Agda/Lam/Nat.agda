@@ -1,9 +1,10 @@
 module Lam.Nat where
 
-open import Haskell.Prelude hiding (Nat; iEqNat; length; _<_; lookup; _+_; drop)
-open import Relation.Nullary using (¬_)
+open import Haskell.Prelude                       hiding (Nat; iEqNat; length; _<_; lookup; _+_; drop)
+open import Relation.Nullary                      using (¬_)
 open import Data.Empty                            using (⊥-elim; ⊥)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Sum                              using (_⊎_; inj₁; inj₂)
+open import Relation.Binary.PropositionalEquality using (cong)
 
 data Nat : Set where
   Z : Nat

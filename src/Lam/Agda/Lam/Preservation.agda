@@ -73,8 +73,8 @@ shiftUpPreserve (⊢* wt2 wt3) = ⊢* (shiftUpPreserve wt2) (shiftUpPreserve wt3
 shiftUpPreserve (⊢< wt2 wt3) = ⊢< (shiftUpPreserve wt2) (shiftUpPreserve wt3)
 shiftUpPreserve (⊢ite wt2 wt3 wt4) = ⊢ite (shiftUpPreserve wt2) (shiftUpPreserve wt3) (shiftUpPreserve wt4)
 shiftUpPreserve {Γ} {V} {A} {T} {i} (⊢v {Γ} {j} {h}) with ltNat j i in r
-... | True rewrite r | lookupInsertAfter {A} {Γ} {j} {i} {h} {<-trans h insertIncLength} (lt->< r) = ⊢v
-... | False rewrite r | lookupInsertBefore {A} Γ j i h (<≤-trans (s< h) insertIncLength) (lt->≤ r) = ⊢v
+... | True rewrite lookupInsertAfter {A} {Γ} {j} {i} {h} {<-trans h insertIncLength} (lt->< r) = ⊢v
+... | False rewrite lookupInsertBefore {A} Γ j i h (<≤-trans (s< h) insertIncLength) (lt->≤ r) = ⊢v
 shiftUpPreserve (⊢l wt) = ⊢l (shiftUpPreserve wt)
 shiftUpPreserve (⊢a wt2 wt3) = ⊢a (shiftUpPreserve wt2) (shiftUpPreserve wt3)
 shiftUpPreserve (⊢proj1 wt2) = ⊢proj1 (shiftUpPreserve wt2)
@@ -100,8 +100,8 @@ data VarNotContained : Nat → Expr → Set where
 
 varNotContainedShiftUp : ∀ (E : Expr) (j : Nat) → VarNotContained j (shiftUp' j E)
 varNotContainedShiftUp (Var x) j with ltNat x j in r
-... | True rewrite r = vn-var λ z -> not<Self x (<-rewrite (lt->< r) z)
-... | False rewrite r = vn-var λ z -> not<Self j (<-rewrite (≤<-trans (lt->≤ r) sucLT3) (sym z))
+... | True = vn-var λ z -> not<Self x (<-rewrite (lt->< r) z)
+... | False = vn-var λ z -> not<Self j (<-rewrite (≤<-trans (lt->≤ r) sucLT3) (sym z))
 varNotContainedShiftUp (Lam x x₁ E) j = vn-lam (varNotContainedShiftUp E (S j))
 varNotContainedShiftUp (App E E₁) j = vn-app (varNotContainedShiftUp E j) (varNotContainedShiftUp E₁ j)
 varNotContainedShiftUp (Ite E E₁ E₂) j = vn-ite (varNotContainedShiftUp E j) (varNotContainedShiftUp E₁ j)
@@ -133,8 +133,8 @@ varNotContainedImplies (Case e1 _ e2 _ e3) i j h1 (vn-case h2 h3 h4) =
           (varNotContainedImplies e2 (S i) (S j) (s≤s h1) h3)
           (varNotContainedImplies e3 (S i) (S j) (s≤s h1) h4)
 varNotContainedImplies (Var k) i j h1 (vn-var x) with ltNat k j in r
-... | True rewrite r = vn-var (λ z -> not<Self k (<-rewrite (<≤-trans (lt->< r) h1) z))
-... | False rewrite r = vn-var (λ z -> ⊥-elim (x (eqSuc z)))
+... | True = vn-var (λ z -> not<Self k (<-rewrite (<≤-trans (lt->< r) h1) z))
+... | False = vn-var (λ z -> ⊥-elim (x (eqSuc z)))
 varNotContainedImplies (Fix e) i j h1 (vn-fix x) = vn-fix (varNotContainedImplies e i j h1 x)
 
 iterShiftUp : Nat → Nat → Expr → Expr
@@ -162,7 +162,7 @@ shiftDownPreserve (⊢< wt2 wt3) (vn-binop vn1 vn2) = ⊢< (shiftDownPreserve wt
 shiftDownPreserve (⊢ite wt2 wt3 wt4) (vn-ite vn1 vn2 vn3) = ⊢ite (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2) (shiftDownPreserve wt4 vn3)
 shiftDownPreserve {Γ} {V} {T} {i} (⊢v {Γ} {j} {h}) (vn-var vn) with ltNat j (S i) in r
 shiftDownPreserve {Γ} {.(Var (S j'))} {.(lookup Γ (S j') h)} {i} (⊢v {Γ} {S j'} {h}) (vn-var vn) | False
-  rewrite r | lookupRemoveBefore Γ j' (S i) h (sucLT (<≤-trans h (removeLength (S i) Γ))) (almostTrichotomy i j' (lt->≤ r) (sucNeq vn)) = ⊢v
+  rewrite lookupRemoveBefore Γ j' (S i) h (sucLT (<≤-trans h (removeLength (S i) Γ))) (almostTrichotomy i j' (lt->≤ r) (sucNeq vn)) = ⊢v
 ... | True rewrite lookupRemoveAfter Γ j (S i) h (lengthRemove h (lt->< r)) (lt->< r) = ⊢v
 shiftDownPreserve (⊢l wt) (vn-lam vn) = ⊢l (shiftDownPreserve wt vn)
 shiftDownPreserve (⊢a wt2 wt3) (vn-app vn1 vn2) = ⊢a (shiftDownPreserve wt2 vn1) (shiftDownPreserve wt3 vn2)
@@ -212,7 +212,7 @@ iterShiftUpVar1 {S i} {j} {k} h rewrite h | iterShiftUpVar1 {i} {j} {k} h = refl
 
 iterShiftUpVar2 : ∀ {i j k : Nat} → ltNat k j ≡ False →  iterShiftUp j i (Var k) ≡ Var (add i k)
 iterShiftUpVar2 {Z} h = refl
-iterShiftUpVar2 {S i} {j} {k} h rewrite h | iterShiftUpVar2 {i} {j} {k} h | sym (addSuc i k) = iterShiftUpVar2 {i} {j} {S k} (ltSuc k j h)
+iterShiftUpVar2 {S i} {j} {k} h rewrite h | sym (addSuc i k) = iterShiftUpVar2 {i} {j} {S k} (ltSuc k j h)
 
 iterShiftUpLam : ∀ {i j : Nat} {e : Expr} {T : TypeL} {n : Id} → iterShiftUp j i (Lam n T e) ≡ Lam n T (iterShiftUp (S j) i e)
 iterShiftUpLam {i = Z} = refl
@@ -253,7 +253,7 @@ lengthConcatDrop : ∀ {A : Set} (i k : Nat) (L1 L2 : List A) → add i k < leng
 lengthConcatDrop Z Z [] (x ∷ L2) (s≤s h) = s≤s h
 lengthConcatDrop Z (S k) [] (x ∷ L2) (s≤s h) = s≤s h
 lengthConcatDrop Z k (x ∷ L1) L2 (s≤s h) = s≤s h
-lengthConcatDrop (S i) k (x ∷ L1) [] (s≤s h) rewrite ++-identityʳ (x ∷ L1) | ++-identityʳ L1 = s≤s (≤-trans (≤-trans (addInc i k) (s≤Self (add i k))) h)
+lengthConcatDrop (S i) k (x ∷ L1) [] (s≤s h) rewrite ++-identityʳ L1 = s≤s (≤-trans (≤-trans (addInc i k) (s≤Self (add i k))) h)
 lengthConcatDrop (S i) k L1 (x₁ ∷ L2) h = lengthConcatDrop i k L1 L2 (sucLT (<-rewrite h (sym (lengthConcatCons L1 L2 x₁))))
 
 lengthConcatDrop2 : ∀ {A : Set} (i k : Nat) (L1 L2 : List A) → i < length L2 → k < length (L1 ++ (drop i L2)) → add i k < length (L1 ++ L2)
@@ -352,8 +352,8 @@ substPreserve' {j = j} wtv ih (⊢< wtn wtn₁) = ⊢< (substPreserve' {j = j} w
 substPreserve' {j = j} wtv ih (⊢ite wtn wtn₁ wtn₂) =
   ⊢ite (substPreserve' {j = j} wtv ih wtn) (substPreserve' {j = j} wtv ih wtn₁) (substPreserve' {j = j} wtv ih wtn₂)
 substPreserve' {Γ} {V} {Var k} {A} {B} {i} {j} {h} wtv ih (⊢v {Γ} {k} {hk}) with (i == k) in r
-... | True rewrite r | eq->≡ {i} {k} r | piLookup Γ k h hk | ih = dropIterWt j Z refl wtv
-... | False rewrite r = ⊢v
+... | True rewrite eq->≡ {i} {k} r | piLookup Γ k h hk | ih = dropIterWt j Z refl wtv
+... | False = ⊢v
 substPreserve' {Γ} {V} {N} {A} {B} {i} {j} {h} wtv ih (⊢l {Γ} {n} {body} {dom} {codom} wtn) rewrite iterShiftUpSuc {V} {j} =
   ⊢l (substPreserve' {dom ∷ Γ} {V} {body} {A} {codom} {S i} {S j} {s≤s h} wtv ih wtn)
 substPreserve' {j = j} wtv ih (⊢a wtn wtn₁) = ⊢a (substPreserve' {j = j} wtv ih wtn) (substPreserve' {j = j} wtv ih wtn₁)
@@ -371,8 +371,8 @@ szNotContained V rewrite iterShiftUpSuc {V} {S Z} = varNotContainedImplies (shif
 
 substVarNotContained : ∀ (V N : Expr) (i : Nat) → VarNotContained i V → VarNotContained i (substitute' i V N)
 substVarNotContained V (Var x) i h with (i == x) in r
-... | True rewrite r = h
-... | False rewrite r = vn-var λ z -> eq->not≡ i x r z
+... | True = h
+... | False = vn-var λ z -> eq->not≡ i x r z
 substVarNotContained (Var y) (Lam x x₁ N) i (vn-var x₂) rewrite ltZ {y} = vn-lam (substVarNotContained (Var (S y)) N (S i) (vn-var λ z -> x₂ (eqSuc z)))
 substVarNotContained (Lam x₂ x₃ V) (Lam x x₁ N) i (vn-lam h) = vn-lam (substVarNotContained (shiftUp (Lam x₂ x₃ V)) N (S i) (vn-lam (varNotContainedImplies V (S i) (S Z) (s≤s z≤) h)))
 substVarNotContained (App V V₁) (Lam x x₁ N) i h = vn-lam (substVarNotContained (shiftUp (App V V₁)) N (S i) (varNotContainedImplies (App V V₁) i Z z≤ h))
@@ -399,7 +399,7 @@ substVarNotContained (Lam n ty b) (Case N x N₁ x₁ N₂) i h = vn-case (subst
 substVarNotContained (Fix e) (Case N x N₁ x₁ N₂) i h = vn-case (substVarNotContained (Fix e) N i h) (substVarNotContained (shiftUp (Fix e)) N₁ (S i) (varNotContainedImplies (Fix e) i Z z≤ h)) ((substVarNotContained (shiftUp (Fix e)) N₂ (S i) (varNotContainedImplies (Fix e) i Z z≤ h)))
 substVarNotContained (Case E1 id2 E2 id3 E3) (Case N x N₁ x₁ N₂) i h = vn-case (substVarNotContained (Case E1 id2 E2 id3 E3) N i h) (substVarNotContained (shiftUp (Case E1 id2 E2 id3 E3)) N₁ (S i) (varNotContainedImplies (Case E1 id2 E2 id3 E3) i Z z≤ h)) ((substVarNotContained (shiftUp (Case E1 id2 E2 id3 E3)) N₂ (S i) (varNotContainedImplies (Case E1 id2 E2 id3 E3) i Z z≤ h)))
 substVarNotContained (Var z) (Case N x N₁ x₁ N₂) i (vn-var x₂) with (i == z) in r
-... | True rewrite r | ltZ {z} = ⊥-elim (x₂ (eq->≡ r))
+... | True rewrite ltZ {z} = ⊥-elim (x₂ (eq->≡ r))
 ... | False rewrite ltZ {z} = vn-case (substVarNotContained (Var z) N i (vn-var x₂)) (substVarNotContained (Var (S z)) N₁ (S i) (vn-var λ z -> x₂ (eqSuc z))) ((substVarNotContained (Var (S z)) N₂ (S i) (vn-var λ z -> x₂ (eqSuc z))))
 substVarNotContained V (Const x) i h = vn-v
 substVarNotContained V (BinOp x N N₁) i h = vn-binop (substVarNotContained V N i h) (substVarNotContained V N₁ i h)
