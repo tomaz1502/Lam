@@ -3,13 +3,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Lam.Handler ( replWrapper
-                   , handleFileWrapper
+module Lam.Handler ( repl
+                   , handleFile
                    ) where
 
 import Control.Monad.RWS        ( get, put )
 import Control.Monad.Except     ( liftEither, MonadIO(liftIO), MonadError (..) )
 import Data.Map qualified as M
+import System.Console.Haskeline
 
 import Lam.Context
 import Lam.Data
@@ -18,8 +19,6 @@ import Lam.Parser
 import Lam.Result
 import Lam.TypeChecker
 import Lam.Utils
-import Lam.Terminal.Raw
-import Lam.Terminal.ReadRepl
 
 -- TODO: report cyclic dependencies
 loadFile :: String -> Result ()
@@ -85,28 +84,31 @@ handleCommand c =
     CheckC rExpr                    -> handleCheck rExpr
     LoadC path                      -> loadFile path
     ReadC varName                   -> do
-      exprS <- liftIO (readRepl [] "")
-      isUntyped <- askUntyped
-      expr <- liftEither (parseRawExpr isUntyped exprS)
-      handleDefine varName expr
+      -- exprS <- liftIO (readRepl [] "")
+      maybeExpr <- liftIO (runInputT defaultSettings (getInputLine "> "))
+      case maybeExpr of
+        Nothing -> return ()
+        Just exprS -> do
+          isUntyped <- askUntyped
+          expr <- liftEither (parseRawExpr isUntyped exprS)
+          handleDefine varName expr
     ExitC -> return ()
 
-repl :: CmdHistory -> Result ()
-repl h = do
-  cmdStr <- liftIO (readRepl h "> ")
-  let h' = if null cmdStr then h else cmdStr : h
-  isUntyped <- askUntyped
-  case parseCommand isUntyped cmdStr of
-    Left err -> do
-      liftIO (putStrLnFlush ("Error parsing command: " <> err))
-      repl h'
-    Right ExitC -> return ()
-    Right cmd -> do
-        catchError (handleCommand cmd) (liftIO . putStrLnFlush)
-        repl h'
-
-replWrapper :: Result ()
-replWrapper = runInRawMode (repl [])
+repl :: Result ()
+repl = do
+  maybeCmd <- liftIO (runInputT (Settings (complete defaultSettings) (Just ".foo_history") True) (getInputLine "> "))
+  case maybeCmd of
+    Nothing -> return ()
+    Just cmdStr -> do
+      isUntyped <- askUntyped
+      case parseCommand isUntyped cmdStr of
+        Left err -> do
+          liftIO (putStrLnFlush ("Error parsing command: " <> err))
+          repl
+        Right ExitC -> return ()
+        Right cmd -> do
+            catchError (handleCommand cmd) (liftIO . putStrLnFlush)
+            repl
 
 handleFile :: String -> Result ()
 handleFile fName = do
@@ -114,6 +116,3 @@ handleFile fName = do
   sc      <- liftIO $ readFile fName
   prog    <- liftEither (parseProg isUntyped sc)
   mapM_ handleCommand prog
-
-handleFileWrapper :: String -> Result ()
-handleFileWrapper = runInRawMode . handleFile
